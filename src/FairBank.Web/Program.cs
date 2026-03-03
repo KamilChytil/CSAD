@@ -13,6 +13,9 @@ builder.Services.AddScoped(sp =>
 
 builder.Services.AddScoped<IFairBankApi, FairBankApiClient>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped(sp => new FairBank.Web.Shared.Services.Chat.ChatService(
+    sp.GetRequiredService<HttpClient>(), 
+    builder.HostEnvironment.BaseAddress));
 
 builder.Services.AddSingleton<AuthStateService>();
 

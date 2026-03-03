@@ -3,10 +3,10 @@
     <Project Path="src/FairBank.ApiGateway/FairBank.ApiGateway.csproj" />
     <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
     <Project Path="src/FairBank.Web/FairBank.Web.csproj" />
+    <Project Path="src/FairBank.Admin.Web/FairBank.Admin.Web.csproj" />
     <Project Path="src/FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
   </Folder>
   <Folder Name="/src/Web/">
-    <Project Path="src/FairBank.Web.Admin/FairBank.Web.Admin.csproj" />
     <Project Path="src/FairBank.Web.Auth/FairBank.Web.Auth.csproj" />
     <Project Path="src/FairBank.Web.Overview/FairBank.Web.Overview.csproj" />
     <Project Path="src/FairBank.Web.Payments/FairBank.Web.Payments.csproj" />
@@ -27,6 +27,18 @@
     <Project Path="src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Domain/FairBank.Identity.Domain.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Infrastructure/FairBank.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Payments/">
+    <Project Path="src/Services/Payments/FairBank.Payments.Api/FairBank.Payments.Api.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Application/FairBank.Payments.Application.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Domain/FairBank.Payments.Domain.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Infrastructure/FairBank.Payments.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Chat/">
+    <Project Path="src/Services/Chat/FairBank.Chat.Api/FairBank.Chat.Api.csproj" />
+    <Project Path="src/Services/Chat/FairBank.Chat.Application/FairBank.Chat.Application.csproj" />
+    <Project Path="src/Services/Chat/FairBank.Chat.Domain/FairBank.Chat.Domain.csproj" />
+    <Project Path="src/Services/Chat/FairBank.Chat.Infrastructure/FairBank.Chat.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />

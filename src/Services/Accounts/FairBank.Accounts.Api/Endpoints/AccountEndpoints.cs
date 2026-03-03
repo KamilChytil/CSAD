@@ -5,6 +5,7 @@ using FairBank.Accounts.Application.Commands.RejectTransaction;
 using FairBank.Accounts.Application.Commands.SetSpendingLimit;
 using FairBank.Accounts.Application.Commands.WithdrawMoney;
 using FairBank.Accounts.Application.Queries.GetAccountById;
+using FairBank.Accounts.Application.Queries.GetAccountByNumber;
 using FairBank.Accounts.Application.Queries.GetPendingTransactions;
 using MediatR;
 
@@ -31,6 +32,15 @@ public static class AccountEndpoints
             return result is not null ? Results.Ok(result) : Results.NotFound();
         })
         .WithName("GetAccountById")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/by-number/{accountNumber}", async (string accountNumber, ISender sender) =>
+        {
+            var result = await sender.Send(new GetAccountByNumberQuery(accountNumber));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetAccountByNumber")
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 

@@ -1,0 +1,138 @@
+@page "/zpravy"
+@using FairBank.Web.Shared.Models.Chat
+@using FairBank.Web.Shared.Services.Chat
+@using FairBank.Web.Shared.Services
+@inject ChatService ChatService
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="chat-list-container">
+    <div class="chat-list-header">
+        <h2>💬 Zprávy</h2>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="chat-list-empty">Načítání konverzací...</div>
+    }
+    else if (!_conversations.Any())
+    {
+        <div class="chat-list-empty">Žádné konverzace</div>
+    }
+    else
+    {
+        <div class="chat-list">
+            @foreach (var conv in _conversations)
+            {
+                <div class="chat-list-item" @onclick="() => OpenConversation(conv.Id)">
+                    <div class="chat-list-icon">@GetIcon(conv.Type)</div>
+                    <div class="chat-list-info">
+                        <div class="chat-list-label">@conv.Label</div>
+                        <div class="chat-list-last">@(conv.LastMessage ?? "Žádné zprávy")</div>
+                    </div>
+                    @if (conv.LastMessageAt.HasValue)
+                    {
+                        <div class="chat-list-time">@conv.LastMessageAt.Value.ToShortTimeString()</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .chat-list-container {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+    .chat-list-header {
+        margin-bottom: 1.5rem;
+    }
+    .chat-list-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    .chat-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .chat-list-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .chat-list-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-1px);
+    }
+    .chat-list-icon {
+        font-size: 1.8rem;
+        flex-shrink: 0;
+    }
+    .chat-list-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .chat-list-label {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .chat-list-last {
+        font-size: 0.85rem;
+        color: #888;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .chat-list-time {
+        font-size: 0.75rem;
+        color: #aaa;
+        flex-shrink: 0;
+    }
+    .chat-list-empty {
+        text-align: center;
+        color: #aaa;
+        margin-top: 3rem;
+    }
+</style>
+
+@code {
+    private List<ConversationDto> _conversations = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = AuthService.CurrentSession;
+        if (session == null) { await Task.Delay(100); session = AuthService.CurrentSession; }
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+
+        // Initialize SignalR connection early
+        await ChatService.InitializeAsync(session.Token);
+
+        var label = $"{session.FirstName} {session.LastName}";
+
+        // For parents: GetConversationsAsync handles Support + family rooms
+        // parentId is null unless this user is a child (we don't know that here without extra API call)
+        // The chat API determines this from the query params
+        var convs = await ChatService.GetConversationsAsync(session.UserId, session.Role, label, parentId: null);
+        _conversations = convs.ToList();
+        _loading = false;
+    }
+
+    private void OpenConversation(Guid id) => Navigation.NavigateTo($"/zpravy/{id}");
+
+    private static string GetIcon(string type) => type switch
+    {
+        "Support" => "🏦",
+        "Family"  => "👨‍👩‍👧",
+        _         => "💬"
+    };
+}

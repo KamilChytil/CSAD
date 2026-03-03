@@ -1,6 +1,7 @@
 using FairBank.Accounts.Api.Endpoints;
 using FairBank.Accounts.Application;
 using FairBank.Accounts.Infrastructure;
+using FairBank.SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -8,7 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration)
-    .WriteTo.Console());
+    .WriteTo.Console()
+    .WriteTo.Kafka(
+        ctx.Configuration["Kafka:BootstrapServers"] ?? "kafka:9092",
+        ctx.Configuration["Kafka:Topic"] ?? "fairbank-logs"));
 
 builder.Services.AddAccountsApplication();
 

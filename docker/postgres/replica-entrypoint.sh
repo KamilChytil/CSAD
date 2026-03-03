@@ -22,7 +22,11 @@ if [ -z "$(ls -A /var/lib/postgresql/data 2>/dev/null)" ]; then
   echo "Base backup complete. Starting replica..."
 fi
 
-# Start PostgreSQL
-exec postgres \
+# Ensure correct ownership and permissions
+chown -R postgres:postgres /var/lib/postgresql/data
+chmod 0700 /var/lib/postgresql/data
+
+# Start PostgreSQL as postgres user
+exec su-exec postgres postgres \
   -c hot_standby=on \
   -c shared_buffers=64MB

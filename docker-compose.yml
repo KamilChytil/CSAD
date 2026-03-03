@@ -8,12 +8,27 @@ services:
     container_name: fairbank-web
     ports:
       - "80:80"
+    environment:
+      ENABLE_CACHE: "true"    # set to "false" to disable FE caching (for testing)
     depends_on:
       - api-gateway
     networks:
+      - frontend
+
+  # ─── Admin Web App (Standalone Logging UI) ────────
+  admin-web-app:
+    build:
+      context: .
+      dockerfile: src/FairBank.Admin.Web/Dockerfile
+    container_name: fairbank-admin-web
+    ports:
+      - "8081:8080"
+    depends_on:
+      - kafka
+    networks:
       - backend
 
-  # ─── Internal services (closed Docker network) ───────────
+  # ─── API Gateway (bridges frontend ↔ backend) ───────────
   api-gateway:
     build:
       context: .
@@ -24,7 +39,9 @@ services:
     depends_on:
       - identity-api
       - accounts-api
+      - payments-api
     networks:
+      - frontend
       - backend
 
   identity-api:
@@ -59,6 +76,59 @@ services:
     networks:
       - backend
 
+  # ─── Kafka ──────────────────────────────────────────────
+  kafka:
+    image: apache/kafka:latest
+    container_name: fairbank-kafka
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+    networks:
+      - backend
+
+  payments-api:
+    build:
+      context: .
+      dockerfile: src/Services/Payments/FairBank.Payments.Api/Dockerfile
+    container_name: fairbank-payments-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=payments_service"
+      Services__AccountsApi: "http://accounts-api:8080"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      accounts-api:
+        condition: service_started
+    networks:
+      - backend
+
+  chat-api:
+    build:
+      context: .
+      dockerfile: src/Services/Chat/FairBank.Chat.Api/Dockerfile
+    container_name: fairbank-chat-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=chat_service"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - backend
+
   # ─── PostgreSQL Primary ──────────────────────────────────
   postgres-primary:
     image: postgres:16-alpine
@@ -87,7 +157,7 @@ services:
         -c log_connections=on
         -c log_disconnections=on
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank"]
+      test: [ "CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -111,7 +181,7 @@ services:
       postgres-primary:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank"]
+      test: [ "CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -119,9 +189,11 @@ services:
       - backend
 
 networks:
+  frontend:
+    driver: bridge
   backend:
     driver: bridge
-    internal: false
+    internal: true
 
 volumes:
   pgdata-primary:

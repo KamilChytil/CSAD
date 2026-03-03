@@ -10,6 +10,9 @@ namespace FairBank.Identity.Api.Seeders;
 
 public static class AdminSeeder
 {
+    /// <summary>
+    /// Seeds all demo accounts on startup. Skips any that already exist (idempotent).
+    /// </summary>
     public static async Task SeedAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
@@ -21,23 +24,32 @@ public static class AdminSeeder
         var unitOfWork = scope.ServiceProvider
             .GetRequiredService<IUnitOfWork>();
 
-        var email = Email.Create(settings.Email);
+        // All demo accounts to seed — admin from config, rest hardcoded for hackathon
+        var demoAccounts = new[]
+        {
+            (settings.Email, settings.Password, settings.FirstName, settings.LastName, UserRole.Admin),
+            ("client@fairbank.cz", "Client123!", "Jan", "Novák", UserRole.Client),
+            ("banker@fairbank.cz", "Banker123!", "Marie", "Svobodová", UserRole.Banker),
+        };
 
-        if (await userRepository.ExistsWithEmailAsync(email))
-            return;
+        var anyAdded = false;
 
-        var passwordHash = Convert.ToBase64String(
-            System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(settings.Password)));
+        foreach (var (emailStr, password, firstName, lastName, role) in demoAccounts)
+        {
+            var email = Email.Create(emailStr);
 
-        var admin = User.Create(
-            settings.FirstName,
-            settings.LastName,
-            email,
-            passwordHash,
-            UserRole.Admin);
+            if (await userRepository.ExistsWithEmailAsync(email))
+                continue;
 
-        await userRepository.AddAsync(admin);
-        await unitOfWork.SaveChangesAsync();
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+
+            var user = User.Create(firstName, lastName, email, passwordHash, role);
+
+            await userRepository.AddAsync(user);
+            anyAdded = true;
+        }
+
+        if (anyAdded)
+            await unitOfWork.SaveChangesAsync();
     }
 }

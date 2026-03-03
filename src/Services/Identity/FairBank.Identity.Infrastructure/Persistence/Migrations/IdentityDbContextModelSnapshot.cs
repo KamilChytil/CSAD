@@ -29,11 +29,25 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ActiveSessionId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<int>("FailedLoginAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -51,6 +65,9 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
@@ -64,10 +81,16 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<DateTime?>("SessionExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.HasIndex("ParentId");
 
@@ -80,31 +103,6 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.OwnsOne("FairBank.Identity.Domain.ValueObjects.Email", "Email", b1 =>
-                        {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(320)
-                                .HasColumnType("character varying(320)")
-                                .HasColumnName("email");
-
-                            b1.HasKey("UserId");
-
-                            b1.HasIndex("Value")
-                                .IsUnique();
-
-                            b1.ToTable("users", "identity_service");
-
-                            b1.WithOwner()
-                                .HasForeignKey("UserId");
-                        });
-
-                    b.Navigation("Email")
-                        .IsRequired();
 
                     b.Navigation("Parent");
                 });

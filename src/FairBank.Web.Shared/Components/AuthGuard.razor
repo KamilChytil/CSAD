@@ -33,7 +33,7 @@ else
     private bool _initialized;
 
     private static readonly HashSet<string> PublicRoutes =
-        ["/prihlaseni", "/registrace"];
+        ["/login", "/register"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -73,7 +73,7 @@ else
     {
         if (!IsPublicRoute())
         {
-            Nav.NavigateTo("/prihlaseni?expired=1", forceLoad: false);
+            Nav.NavigateTo("/login?expired=1", forceLoad: false);
         }
     }
 

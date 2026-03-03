@@ -1,0 +1,71 @@
+@page "/"
+@page "/admin"
+@namespace FairBank.Admin.Web.Components.Pages
+
+<PageHeader Title="ADMIN" />
+
+<div class="page-content">
+    <ContentCard Title="Správa systému">
+        <ChildContent>
+            <div class="info-row">
+                <span class="info-label">Služba</span>
+                <span class="info-value status-active">Admin Portal</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Stav</span>
+                <span class="info-value status-active">Aktivní</span>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Logy (Kafka → SQLite)">
+        <ChildContent>
+            @if (_logs is null)
+            {
+                <p class="empty-state">Načítání logů…</p>
+            }
+            else if (_logs.Count == 0)
+            {
+                <p class="empty-state">Zatím žádné logy.</p>
+            }
+            else
+            {
+                <div style="max-height:400px;overflow-y:auto;">
+                    @foreach (var log in _logs)
+                    {
+                        <div class="info-row">
+                            <span class="info-label">@log.Timestamp.ToString("HH:mm:ss") [@log.Level]</span>
+                            <span class="info-value">@log.Service — @log.Message</span>
+                        </div>
+                    }
+                </div>
+            }
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Uživatelé">
+        <ChildContent>
+            <p class="empty-state">Správa uživatelů bude přidána v další verzi.</p>
+        </ChildContent>
+    </ContentCard>
+</div>
+
+@code {
+    [Inject] private IDbContextFactory<FairBank.Admin.Web.Data.LogDbContext> DbFactory { get; set; } = default!;
+
+    private List<FairBank.Admin.Web.Data.LogEntry>? _logs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _logs = await db.Logs
+            .OrderByDescending(l => l.Timestamp)
+            .Take(50)
+            .ToListAsync();
+    }
+}
