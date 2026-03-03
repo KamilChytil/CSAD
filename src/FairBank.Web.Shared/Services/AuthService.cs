@@ -9,7 +9,9 @@ namespace FairBank.Web.Shared.Services;
 public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, IDisposable
 {
     private const string SessionStorageKey = "fairbank_session";
-    private const string LockedUntilStorageKey = "fairbank_locked_until";
+    // NOTE: Lockout is NOT stored in localStorage. It lives only in server-side DB
+    // (User.LockedUntil) and in-memory on the frontend (_lockedUntil). Clearing
+    // browser storage cannot bypass lockout — the server returns HTTP 429.
 
     private const int InactivityTimeoutMinutes = 5;
 
@@ -28,7 +30,6 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
 
     public async Task InitializeAsync()
     {
-        await LoadLockoutStateAsync();
         await LoadSessionAsync();
 
         if (_currentSession is not null)
@@ -58,9 +59,8 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
-        await LoadLockoutStateAsync();
-
-        // Fast local check — avoids sending request while we know the lockout hasn't expired.
+        // Fast in-memory check — avoids sending request while we know the lockout hasn't expired.
+        // This is NOT a security control. Even if bypassed, the server returns 429 from DB state.
         if (IsLocked)
             return null;
 
@@ -69,14 +69,12 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
             var response = await http.PostAsJsonAsync("api/v1/auth/login", request);
 
             // 429 = server-side lockout — read the unlock time from the response body.
+            // Stored in-memory only. Clearing localStorage does NOT bypass this.
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             {
                 var lockout = await response.Content.ReadFromJsonAsync<LoginLockoutResponse>();
                 if (lockout is not null)
-                {
                     _lockedUntil = lockout.LockedUntil;
-                    await SaveLockoutStateAsync();
-                }
                 AuthStateChanged?.Invoke();
                 return null;
             }
@@ -91,9 +89,8 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
             if (loginResponse is null) return null;
 
-            // Success — clear any cached lockout.
+            // Success — clear any in-memory lockout cache.
             _lockedUntil = null;
-            await SaveLockoutStateAsync();
 
             _currentSession = new AuthSession(
                 loginResponse.SessionId,
@@ -175,8 +172,9 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         }
         catch
         {
-            // Network error — optimistically allow (avoids offline false-logout)
-            return true;
+            // Network error — fail closed. Banking app must not allow access
+            // when it cannot verify the session with the server.
+            return false;
         }
     }
 
@@ -251,35 +249,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         }
     }
 
-    private async Task SaveLockoutStateAsync()
-    {
-        try
-        {
-            if (_lockedUntil.HasValue)
-                await js.InvokeVoidAsync("localStorage.setItem", LockedUntilStorageKey, _lockedUntil.Value.ToString("O"));
-            else
-                await js.InvokeVoidAsync("localStorage.removeItem", LockedUntilStorageKey);
-        }
-        catch { }
-    }
-
-    private async Task LoadLockoutStateAsync()
-    {
-        try
-        {
-            var lockedStr = await js.InvokeAsync<string?>("localStorage.getItem", LockedUntilStorageKey);
-            if (!string.IsNullOrEmpty(lockedStr) && DateTime.TryParse(lockedStr, out var locked))
-                _lockedUntil = locked > DateTime.UtcNow ? locked : null;
-            else
-                _lockedUntil = null;
-
-            // Auto-clear expired lockout from localStorage
-            if (_lockedUntil is null && !string.IsNullOrEmpty(lockedStr))
-                await js.InvokeVoidAsync("localStorage.removeItem", LockedUntilStorageKey);
-        }
-        catch
-        {
-            _lockedUntil = null;
-        }
-    }
+    // Lockout is NOT persisted in localStorage — it exists only in server DB
+    // (User.LockedUntil) and in-memory (_lockedUntil) for UI display.
+    // Clearing browser storage does NOT bypass lockout.
 }

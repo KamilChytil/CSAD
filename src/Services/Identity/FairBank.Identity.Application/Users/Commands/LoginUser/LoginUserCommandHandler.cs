@@ -49,11 +49,11 @@ public sealed class LoginUserCommandHandler(
 
         // Successful login — create new session (invalidates any previous session)
         var sessionId = Guid.NewGuid();
-        user.RecordSuccessfulLogin(sessionId);
+        var expiresAt = DateTime.UtcNow.AddHours(8);
+        user.RecordSuccessfulLogin(sessionId, expiresAt);
         await unitOfWork.SaveChangesAsync(ct);
 
         var token = SessionTokenHelper.Encode(user.Id, sessionId);
-        var expiresAt = DateTime.UtcNow.AddHours(8);
 
         return new LoginResponse(
             Token: token,

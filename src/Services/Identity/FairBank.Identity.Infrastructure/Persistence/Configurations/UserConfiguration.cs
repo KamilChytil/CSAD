@@ -64,6 +64,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.ActiveSessionId);
 
+        builder.Property(u => u.SessionExpiresAt);
+
         // Global query filter: soft delete
         builder.HasQueryFilter(u => !u.IsDeleted);
     }
