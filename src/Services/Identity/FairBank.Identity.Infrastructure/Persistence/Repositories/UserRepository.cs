@@ -25,7 +25,7 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
 
     public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
     {
-        return await db.Users.FirstOrDefaultAsync(u => u.Email.Value == email.Value, ct);
+        return await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
     }
 
     public async Task<bool> ExistsWithEmailAsync(Email email, CancellationToken ct = default)
