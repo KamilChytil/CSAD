@@ -3,6 +3,9 @@
     <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Accounts/">
+    <Project Path="src/Services/Accounts/FairBank.Accounts.Domain/FairBank.Accounts.Domain.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj" />
@@ -10,6 +13,7 @@
     <Project Path="src/Services/Identity/FairBank.Identity.Infrastructure/FairBank.Identity.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />
   </Folder>
 </Solution>

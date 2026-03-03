@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../../FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>
