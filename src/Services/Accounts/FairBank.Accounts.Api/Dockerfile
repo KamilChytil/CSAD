@@ -17,7 +17,7 @@ COPY src/Services/Accounts/FairBank.Accounts.Api/FairBank.Accounts.Api.csproj sr
 RUN dotnet restore src/Services/Accounts/FairBank.Accounts.Api/FairBank.Accounts.Api.csproj
 
 COPY src/ src/
-RUN dotnet publish src/Services/Accounts/FairBank.Accounts.Api/FairBank.Accounts.Api.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish src/Services/Accounts/FairBank.Accounts.Api/FairBank.Accounts.Api.csproj -c Release -o /app/publish
 
 FROM base AS final
 RUN addgroup -g 1000 -S appgroup && adduser -u 1000 -S appuser -G appgroup

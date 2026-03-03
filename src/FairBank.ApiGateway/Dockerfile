@@ -12,7 +12,7 @@ COPY src/FairBank.ApiGateway/FairBank.ApiGateway.csproj src/FairBank.ApiGateway/
 RUN dotnet restore src/FairBank.ApiGateway/FairBank.ApiGateway.csproj
 
 COPY src/FairBank.ApiGateway/ src/FairBank.ApiGateway/
-RUN dotnet publish src/FairBank.ApiGateway/FairBank.ApiGateway.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish src/FairBank.ApiGateway/FairBank.ApiGateway.csproj -c Release -o /app/publish
 
 FROM base AS final
 RUN addgroup -g 1000 -S appgroup && adduser -u 1000 -S appuser -G appgroup
