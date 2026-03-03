@@ -2,34 +2,24 @@ using Microsoft.JSInterop;
 
 namespace FairBank.Web.Shared.Services;
 
-public class ThemeService
+public sealed class ThemeService(IJSRuntime js)
 {
-    private readonly IJSRuntime _js;
+    // Must match the key used in index.html inline <script>
     private const string StorageKey = "vb-theme";
+
     public bool IsDarkMode { get; private set; }
 
     public event Action? OnThemeChanged;
-
-    public ThemeService(IJSRuntime js)
-    {
-        _js = js;
-    }
 
     public async Task InitializeAsync()
     {
         try
         {
-            var theme = await _js.InvokeAsync<string>("localStorage.getItem", StorageKey);
-            IsDarkMode = theme == "dark";
-            // No need to ApplyTheme here if index.html handles it, but let's be safe
-            await ApplyThemeToDocument();
+            var saved = await js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            IsDarkMode = saved == "dark";
+            await ApplyThemeAsync();
         }
-        catch { }
-    }
-
-    public async Task ToggleAsync()
-    {
-        await SetDarkModeAsync(!IsDarkMode);
+        catch { /* JS interop may not be available during prerendering */ }
     }
 
     public async Task SetDarkModeAsync(bool isDark)
@@ -37,18 +27,27 @@ public class ThemeService
         IsDarkMode = isDark;
         try
         {
-            await _js.InvokeVoidAsync("localStorage.setItem", StorageKey, isDark ? "dark" : "light");
-            await ApplyThemeToDocument();
-            OnThemeChanged?.Invoke();
+            await js.InvokeVoidAsync("localStorage.setItem", StorageKey, isDark ? "dark" : "light");
+            await ApplyThemeAsync();
         }
         catch { }
+        OnThemeChanged?.Invoke();
     }
 
-    private async Task ApplyThemeToDocument()
+    public async Task ToggleAsync()
+    {
+        await SetDarkModeAsync(!IsDarkMode);
+    }
+
+    private async Task ApplyThemeAsync()
     {
         try
         {
-            await _js.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", IsDarkMode ? "dark" : "light");
+            // CSS uses [data-theme="dark"] selectors — must set/remove the attribute
+            if (IsDarkMode)
+                await js.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
+            else
+                await js.InvokeVoidAsync("document.documentElement.removeAttribute", "data-theme");
         }
         catch { }
     }

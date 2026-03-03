@@ -29,9 +29,9 @@ public sealed class GetConversationsQueryHandler(
         var results = new List<ConversationSummaryDto>();
         var autoReleaseTimeout = TimeSpan.FromHours(2);
 
-        if (request.UserRole is "Banker" or "Admin")
+        if (request.UserRole is "Employee" or "Admin" or "Banker")
         {
-            // Bankers see ALL support conversations
+            // Bankers/admins see ALL support conversations
             var all = await convRepo.GetAllSupportAsync(ct);
             foreach (var conv in all)
             {

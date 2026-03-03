@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FairBank.Accounts.Domain.Enums;
 using FairBank.Accounts.Domain.Events;
 using FairBank.Accounts.Domain.ValueObjects;
@@ -6,19 +7,20 @@ namespace FairBank.Accounts.Domain.Aggregates;
 
 public sealed class PendingTransaction
 {
-    public Guid Id { get; private set; }
-    public Guid AccountId { get; private set; }
-    public Money Amount { get; private set; } = null!;
-    public string Description { get; private set; } = null!;
-    public Guid RequestedBy { get; private set; }
-    public Guid? ApproverId { get; private set; }
-    public PendingTransactionStatus Status { get; private set; }
-    public string? RejectionReason { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? ResolvedAt { get; private set; }
+    [JsonInclude] public Guid Id { get; private set; }
+    [JsonInclude] public Guid AccountId { get; private set; }
+    [JsonInclude] public Money Amount { get; private set; } = null!;
+    [JsonInclude] public string Description { get; private set; } = null!;
+    [JsonInclude] public Guid RequestedBy { get; private set; }
+    [JsonInclude] public Guid? ApproverId { get; private set; }
+    [JsonInclude] public PendingTransactionStatus Status { get; private set; }
+    [JsonInclude] public string? RejectionReason { get; private set; }
+    [JsonInclude] public DateTime CreatedAt { get; private set; }
+    [JsonInclude] public DateTime? ResolvedAt { get; private set; }
 
     private readonly List<object> _uncommittedEvents = [];
 
+    [JsonConstructor]
     private PendingTransaction() { }
 
     public static PendingTransaction Create(

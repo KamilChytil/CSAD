@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FairBank.Accounts.Domain.Enums;
 using FairBank.SharedKernel.Domain;
 
@@ -8,6 +9,7 @@ public sealed class Money : ValueObject
     public decimal Amount { get; }
     public Currency Currency { get; }
 
+    [JsonConstructor]
     private Money(decimal amount, Currency currency)
     {
         Amount = amount;

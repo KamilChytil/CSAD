@@ -111,8 +111,8 @@
 @code {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
-    private decimal _balance = 2_393_070m;
-    private string _accountNumber = "";
+    private decimal _balance = 0m;
+    private string _accountNumber = "---";
     private List<TransactionVm> _transactions = [];
     private List<ChallengeVm> _challenges = [];
     private List<MilestoneVm> _savingsMilestones = [];

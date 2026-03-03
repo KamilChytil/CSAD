@@ -17,6 +17,9 @@ public interface IAuthService
 
     bool IsLocked { get; }
 
+    /// <summary>True pokud relace existovala, ale vypršela nebo byla zneplatněna. False při prvním přístupu bez relace.</summary>
+    bool WasSessionExpired { get; }
+
     event Action? AuthStateChanged;
 
     Task<LoginResponse?> LoginAsync(LoginRequest request);
