@@ -1,3 +1,4 @@
+using FairBank.Identity.Application.Users.Commands.LoginUser;
 using FairBank.Identity.Application.Users.Commands.RegisterUser;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
 using MediatR;
@@ -18,6 +19,16 @@ public static class UserEndpoints
         })
         .WithName("RegisterUser")
         .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/login", async (LoginUserCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return result is not null ? Results.Ok(result) : Results.Unauthorized();
+        })
+        .WithName("LoginUser")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>

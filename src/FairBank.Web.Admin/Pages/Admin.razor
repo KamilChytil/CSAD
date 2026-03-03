@@ -1,0 +1,61 @@
+@page "/admin"
+@namespace FairBank.Web.Admin.Pages
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageHeader Title="ADMIN" />
+
+<div class="page-content">
+    <ContentCard Title="Správa systému">
+        <ChildContent>
+            <div class="info-row">
+                <span class="info-label">Přihlášen jako</span>
+                <span class="info-value">@Auth.CurrentUser?.Email</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Jméno</span>
+                <span class="info-value">@Auth.CurrentUser?.FirstName @Auth.CurrentUser?.LastName</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Role</span>
+                <span class="info-value status-active">@Auth.CurrentUser?.Role</span>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Uživatelé">
+        <ChildContent>
+            <p class="empty-state">Správa uživatelů bude přidána v další verzi.</p>
+        </ChildContent>
+    </ContentCard>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Auth.OnChanged += HandleAuthChanged;
+
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        if (!Auth.IsAdmin)
+            Nav.NavigateTo("/prehled", replace: true);
+    }
+
+    private void HandleAuthChanged()
+    {
+        if (!Auth.IsAuthenticated || !Auth.IsAdmin)
+            Nav.NavigateTo("/login", replace: true);
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Auth.OnChanged -= HandleAuthChanged;
+    }
+}

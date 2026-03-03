@@ -16,6 +16,7 @@ public interface IFairBankApi
 
     // Auth
     Task<LoginResponse?> LoginAsync(LoginRequest request);
+    Task<UserResponse?> LoginAsync(string email, string password);
     Task LogoutAsync(string token);
     Task<UserResponse?> RegisterExtendedAsync(RegisterRequest request);
     Task<bool> ValidateSessionAsync(Guid sessionId, string token);
