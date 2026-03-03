@@ -21,7 +21,7 @@
         @if (Auth.IsLocked)
         {
             <div class="auth-alert auth-alert-danger">
-                <span class="alert-icon">🔒</span>
+                <span class="alert-icon"><VbIcon Name="lock" Size="sm" /></span>
                 <div>
                     <strong>Účet dočasně zablokován</strong>
                     <p>Příliš mnoho neúspěšných pokusů. Zkuste to znovu za chvíli.</p>
@@ -32,7 +32,7 @@
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
             <div class="auth-alert auth-alert-danger">
-                <span class="alert-icon">⚠️</span>
+                <span class="alert-icon"><VbIcon Name="warning" Size="sm" /></span>
                 <span>@_errorMessage</span>
             </div>
         }
@@ -40,7 +40,7 @@
         @if (_sessionExpired)
         {
             <div class="auth-alert auth-alert-warning">
-                <span class="alert-icon">⏰</span>
+                <span class="alert-icon"><VbIcon Name="clock" Size="sm" /></span>
                 <span>Relace vypršela. Přihlaste se znovu.</span>
             </div>
         }
@@ -70,7 +70,7 @@
                        disabled="@(Auth.IsLocked || _isLoading)"
                        @onkeydown="HandleKeyDown" />
                 <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility">
-                    @(_showPassword ? "🙈" : "👁️")
+                    <VbIcon Name="@(_showPassword ? "eye-off" : "eye")" Size="sm" />
                 </button>
             </div>
             @if (_passwordError)
