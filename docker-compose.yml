@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fairbank-postgres
+    environment:
+      POSTGRES_DB: fairbank
+      POSTGRES_USER: fairbank_admin
+      POSTGRES_PASSWORD: fairbank_secret_2026
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command: >
+      postgres
+        -c shared_buffers=128MB
+        -c effective_cache_size=384MB
+        -c work_mem=8MB
+        -c log_statement=all
+        -c log_connections=on
+        -c log_disconnections=on
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pgdata:
