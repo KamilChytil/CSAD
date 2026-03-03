@@ -126,4 +126,41 @@ public class CurrencyConverterTests
         converter.GetAllRates().Should().BeEmpty();
         converter.RateDate.Should().Be("2026-01-01");
     }
+
+    // ── Static helper tests ──
+
+    [Fact]
+    public void GetName_ValidCurrency_ReturnsCzechName()
+    {
+        CurrencyConverter.GetName("czk").Should().Be("Česká koruna");
+    }
+
+    [Fact]
+    public void GetName_UnknownCurrency_ReturnsUppercaseCode()
+    {
+        CurrencyConverter.GetName("xyz").Should().Be("XYZ");
+    }
+
+    [Fact]
+    public void GetFlag_ValidCurrency_ReturnsFlag()
+    {
+        CurrencyConverter.GetFlag("eur").Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void GetFlag_UnknownCurrency_ReturnsEmptyString()
+    {
+        CurrencyConverter.GetFlag("xyz").Should().BeEmpty();
+    }
+
+    // ── Edge case tests ──
+
+    [Fact]
+    public void LoadRates_NullOrEmptyInput_DoesNotThrow()
+    {
+        var converter = new CurrencyConverter();
+        converter.LoadRates("");
+        converter.GetAllRates().Should().BeEmpty();
+        converter.RateDate.Should().BeNull();
+    }
 }
