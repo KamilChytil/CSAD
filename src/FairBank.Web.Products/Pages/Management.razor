@@ -1,0 +1,307 @@
+@page "/sprava"
+@namespace FairBank.Web.Products.Pages
+@inject IFairBankApi Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<PageHeader Title="SPRÁVA ŽÁDOSTÍ" />
+
+<div class="page-content">
+    @if (_isLoading)
+    {
+        <ContentCard Title="Správa žádostí">
+            <ChildContent>
+                <p>Načítání žádostí...</p>
+            </ChildContent>
+        </ContentCard>
+    }
+    else if (!_applications.Any())
+    {
+        <ContentCard Title="Žádné čekající žádosti">
+            <ChildContent>
+                <p class="empty-state">✅ Všechny žádosti byly zpracovány.</p>
+            </ChildContent>
+        </ContentCard>
+    }
+    else
+    {
+        <ContentCard Title="@($"Čekající žádosti ({_applications.Count})")">
+            <ChildContent>
+                <div class="application-list">
+                    @foreach (var app in _applications)
+                    {
+                        <div class="application-card" @onclick="() => SelectApplication(app)">
+                            <div class="application-type">
+                                <span>@GetProductIcon(app.ProductType) @GetProductLabel(app.ProductType)</span>
+                            </div>
+                            <div class="application-details">
+                                <div>
+                                    <span class="status-badge status-pending">⏳ Čeká na schválení</span>
+                                </div>
+                                <div>
+                                    <strong>@app.MonthlyPayment.ToString("N0") Kč/měsíc</strong>
+                                </div>
+                                <div>
+                                    Podáno: @app.CreatedAt.ToString("d. M. yyyy")
+                                </div>
+                                <div>
+                                    Žadatel: @app.UserId.ToString()[..8]...
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (_successMessage is not null)
+    {
+        <ContentCard Title="Výsledek">
+            <ChildContent>
+                <p class="empty-state">@_successMessage</p>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (_selectedApp is not null)
+    {
+        <div class="modal-overlay" @onclick="CloseDetail">
+            <div class="modal-card management-detail" @onclick:stopPropagation>
+                <h3>Detail žádosti</h3>
+
+                <div class="form-group">
+                    <label class="form-label">Typ produktu</label>
+                    <p>@GetProductIcon(_selectedApp.ProductType) @GetProductLabel(_selectedApp.ProductType)</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Měsíční platba</label>
+                    <p><strong>@_selectedApp.MonthlyPayment.ToString("N0") Kč/měsíc</strong></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Datum podání</label>
+                    <p>@_selectedApp.CreatedAt.ToString("d. M. yyyy HH:mm")</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Žadatel (UserId)</label>
+                    <p>@_selectedApp.UserId</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Parametry žádosti</label>
+                    <div class="application-params">
+                        @foreach (var param in ParseParameters(_selectedApp.Parameters))
+                        {
+                            <div class="param-row">
+                                <span class="param-label">@GetParamLabel(param.Key):</span>
+                                <span class="param-value">@param.Value</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Poznámka (volitelné)</label>
+                    <textarea class="form-input" @bind="_reviewNote" rows="3" placeholder="Důvod schválení/zamítnutí..."></textarea>
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <p class="error-message">@_errorMessage</p>
+                }
+
+                <div class="management-actions">
+                    <VbButton OnClick="ApproveSelected" Disabled="@_isProcessing">
+                        ✅ Schválit
+                    </VbButton>
+                    <VbButton OnClick="RejectSelected" Variant="danger" Disabled="@_isProcessing">
+                        ❌ Zamítnout
+                    </VbButton>
+                    <VbButton OnClick="CloseDetail" Variant="outline">
+                        Zavřít
+                    </VbButton>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ProductApplicationDto> _applications = [];
+    private ProductApplicationDto? _selectedApp;
+    private string _reviewNote = string.Empty;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsStaff)
+        {
+            Nav.NavigateTo("/prehled");
+            return;
+        }
+
+        await LoadApplications();
+    }
+
+    private async Task LoadApplications()
+    {
+        _isLoading = true;
+        try
+        {
+            _applications = await Api.GetPendingApplicationsAsync();
+        }
+        catch
+        {
+            _applications = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SelectApplication(ProductApplicationDto app)
+    {
+        _selectedApp = app;
+        _reviewNote = string.Empty;
+        _errorMessage = null;
+        _successMessage = null;
+    }
+
+    private void CloseDetail()
+    {
+        _selectedApp = null;
+        _reviewNote = string.Empty;
+        _errorMessage = null;
+    }
+
+    private async Task ApproveSelected()
+    {
+        if (_selectedApp is null) return;
+
+        _isProcessing = true;
+        _errorMessage = null;
+        try
+        {
+            var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
+            await Api.ApproveApplicationAsync(_selectedApp.Id, Auth.CurrentUser!.Id, note);
+            _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla schválena.";
+            CloseDetail();
+            await LoadApplications();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Chyba při schvalování: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task RejectSelected()
+    {
+        if (_selectedApp is null) return;
+
+        _isProcessing = true;
+        _errorMessage = null;
+        try
+        {
+            var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
+            await Api.RejectApplicationAsync(_selectedApp.Id, Auth.CurrentUser!.Id, note);
+            _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla zamítnuta.";
+            CloseDetail();
+            await LoadApplications();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Chyba při zamítání: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private static Dictionary<string, object?> ParseParameters(string json)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            var result = new Dictionary<string, object?>();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                result[prop.Name] = prop.Value.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.Number => prop.Value.TryGetDecimal(out var d) ? d.ToString("N2") : prop.Value.ToString(),
+                    System.Text.Json.JsonValueKind.True => "Ano",
+                    System.Text.Json.JsonValueKind.False => "Ne",
+                    System.Text.Json.JsonValueKind.Null => "-",
+                    _ => prop.Value.ToString()
+                };
+            }
+            return result;
+        }
+        catch
+        {
+            return new Dictionary<string, object?> { ["raw"] = json };
+        }
+    }
+
+    private static string GetParamLabel(string key) => key switch
+    {
+        "amount" => "Částka",
+        "months" => "Doba splácení (měsíce)",
+        "interestRate" => "Úroková sazba",
+        "rpsn" => "RPSN",
+        "totalCost" => "Celkové náklady",
+        "propertyPrice" => "Cena nemovitosti",
+        "loanAmount" => "Výše úvěru",
+        "years" => "Doba splácení (roky)",
+        "fixation" => "Fixace (roky)",
+        "ltv" => "LTV",
+        "monthlyPayment" => "Měsíční platba",
+        "destination" => "Destinace",
+        "variant" => "Varianta",
+        "days" => "Počet dnů",
+        "persons" => "Počet osob",
+        "totalPrice" => "Celková cena",
+        "propertyType" => "Typ nemovitosti",
+        "propertyValue" => "Hodnota nemovitosti",
+        "includesContents" => "Včetně vybavení",
+        "annualPremium" => "Roční pojistné",
+        "monthlyPremium" => "Měsíční pojistné",
+        "age" => "Věk",
+        "coverageAmount" => "Výše krytí",
+        "loanPayment" => "Splátka úvěru",
+        _ => key
+    };
+
+    private static string GetProductIcon(string productType) => productType switch
+    {
+        "PersonalLoan" => "💰",
+        "Mortgage" => "🏠",
+        "TravelInsurance" => "✈️",
+        "PropertyInsurance" => "🏡",
+        "LifeInsurance" => "❤️",
+        "PaymentProtection" => "🛡️",
+        _ => "📄"
+    };
+
+    private static string GetProductLabel(string productType) => productType switch
+    {
+        "PersonalLoan" => "Osobní úvěr",
+        "Mortgage" => "Hypotéka",
+        "TravelInsurance" => "Cestovní pojištění",
+        "PropertyInsurance" => "Pojištění nemovitosti",
+        "LifeInsurance" => "Životní pojištění",
+        "PaymentProtection" => "Pojištění splátek",
+        _ => productType
+    };
+}
