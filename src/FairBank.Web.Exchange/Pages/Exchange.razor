@@ -1,0 +1,212 @@
+@page "/kurzy"
+@namespace FairBank.Web.Exchange.Pages
+@using FairBank.Web.Exchange.Services
+@inject HttpClient Http
+
+<PageHeader Title="SMĚNNÉ KURZY" />
+
+<div class="page-content">
+
+    @* ── Currency Converter ── *@
+    <ContentCard Title="Převodník měn">
+        <ChildContent>
+            <div class="converter-row">
+                <div class="form-group">
+                    <label class="form-label">Částka</label>
+                    <input class="form-input" type="number" min="0" step="0.01"
+                           @bind="_amount" @bind:event="oninput" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Z měny</label>
+                    <select class="form-input" @bind="_fromCurrency">
+                        @foreach (var curr in _dropdownCurrencies)
+                        {
+                            <option value="@curr">@(curr.ToUpperInvariant()) — @(CurrencyConverter.GetName(curr))</option>
+                        }
+                    </select>
+                </div>
+                <div class="converter-swap">
+                    <VbButton Variant="outline" OnClick="SwapCurrencies">⇄</VbButton>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Na měnu</label>
+                    <select class="form-input" @bind="_toCurrency">
+                        @foreach (var curr in _dropdownCurrencies)
+                        {
+                            <option value="@curr">@(curr.ToUpperInvariant()) — @(CurrencyConverter.GetName(curr))</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @if (_convertedAmount is not null)
+            {
+                <div class="conversion-result">
+                    <span class="conversion-from">@_amount.ToString("N2") @_fromCurrency.ToUpperInvariant()</span>
+                    <span class="conversion-arrow">=</span>
+                    <span class="conversion-to">@_convertedAmount.Value.ToString("N2") @_toCurrency.ToUpperInvariant()</span>
+                </div>
+            }
+
+            <VbButton OnClick="Convert">Převést</VbButton>
+        </ChildContent>
+    </ContentCard>
+
+    @* ── Exchange Rate Table ── *@
+    <ContentCard Title="Kurzy k CZK">
+        <HeaderAction>
+            @if (!string.IsNullOrEmpty(_converter.RateDate))
+            {
+                <span class="rate-date">@_converter.RateDate</span>
+            }
+        </HeaderAction>
+        <ChildContent>
+            @if (_isLoading)
+            {
+                <div class="empty-state-card">
+                    <PokerChip Value="..." Size="lg" />
+                    <p class="empty-state">Načítám kurzy...</p>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="empty-state-card">
+                    <PokerChip Value="!" Size="lg" />
+                    <p class="empty-state">@_error</p>
+                    <VbButton OnClick="LoadRates">Zkusit znovu</VbButton>
+                </div>
+            }
+            else
+            {
+                <div class="rate-table">
+                    <div class="rate-table-header">
+                        <span class="rate-col-flag">Měna</span>
+                        <span class="rate-col-code"></span>
+                        <span class="rate-col-rate">1 CZK =</span>
+                        <span class="rate-col-inverse">1 měna = CZK</span>
+                    </div>
+                    @foreach (var rate in _displayRates)
+                    {
+                        <div class="rate-table-row">
+                            <span class="rate-col-flag">@rate.Flag</span>
+                            <span class="rate-col-code">@rate.Code</span>
+                            <span class="rate-col-rate">@rate.RateFromCzk.ToString("F4")</span>
+                            <span class="rate-col-inverse">@rate.RateToCzk.ToString("F2") Kč</span>
+                        </div>
+                    }
+                </div>
+            }
+        </ChildContent>
+    </ContentCard>
+
+</div>
+
+@code {
+    private readonly CurrencyConverter _converter = new();
+
+    private bool _isLoading = true;
+    private string? _error;
+
+    // Converter state
+    private decimal _amount = 1000;
+    private string _fromCurrency = "czk";
+    private string _toCurrency = "eur";
+    private decimal? _convertedAmount;
+
+    // Dropdown: all fiat currencies, CZK first then alphabetical
+    private List<string> _dropdownCurrencies = [];
+
+    // Rate table: 12 major currencies
+    private static readonly string[] _tableCurrencies =
+        ["eur", "usd", "gbp", "chf", "pln", "jpy", "sek", "nok", "dkk", "huf", "cad", "aud"];
+
+    private List<DisplayRate> _displayRates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRates();
+    }
+
+    private async Task LoadRates()
+    {
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var url = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/czk.json";
+            var json = await Http.GetStringAsync(url);
+            _converter.LoadRates(json);
+            BuildDropdownCurrencies();
+            BuildDisplayRates();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Nepodařilo se načíst kurzy: {ex.Message}";
+
+            // Try fallback URL
+            try
+            {
+                var fallback = "https://latest.currency-api.pages.dev/v1/currencies/czk.json";
+                var json = await Http.GetStringAsync(fallback);
+                _converter.LoadRates(json);
+                _error = null;
+                BuildDropdownCurrencies();
+                BuildDisplayRates();
+            }
+            catch
+            {
+                // Keep original error
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void BuildDropdownCurrencies()
+    {
+        var fiatKeys = _converter.GetFiatRates().Keys
+            .Where(c => !string.Equals(c, "czk", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        _dropdownCurrencies = new List<string> { "czk" };
+        _dropdownCurrencies.AddRange(fiatKeys);
+    }
+
+    private void BuildDisplayRates()
+    {
+        _displayRates.Clear();
+        var allRates = _converter.GetAllRates();
+
+        foreach (var code in _tableCurrencies)
+        {
+            if (allRates.TryGetValue(code, out var rateFromCzk) && rateFromCzk > 0)
+            {
+                _displayRates.Add(new DisplayRate(
+                    CurrencyConverter.GetFlag(code),
+                    code.ToUpperInvariant(),
+                    CurrencyConverter.GetName(code),
+                    rateFromCzk,
+                    1m / rateFromCzk));
+            }
+        }
+    }
+
+    private void Convert()
+    {
+        _convertedAmount = _converter.Convert(_amount, _fromCurrency, _toCurrency);
+    }
+
+    private void SwapCurrencies()
+    {
+        (_fromCurrency, _toCurrency) = (_toCurrency, _fromCurrency);
+        if (_convertedAmount is not null)
+            Convert();
+    }
+
+    private sealed record DisplayRate(string Flag, string Code, string Name, decimal RateFromCzk, decimal RateToCzk);
+}
