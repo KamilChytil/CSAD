@@ -14,6 +14,7 @@
     <Project Path="src/FairBank.Web.Investments/FairBank.Web.Investments.csproj" />
     <Project Path="src/FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
     <Project Path="src/FairBank.Web.Exchange/FairBank.Web.Exchange.csproj" />
+    <Project Path="src/FairBank.Web.Products/FairBank.Web.Products.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/">
