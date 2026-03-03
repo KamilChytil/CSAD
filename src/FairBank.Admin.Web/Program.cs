@@ -3,14 +3,12 @@ using FairBank.Admin.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.AddAntiforgery();
+builder.Services.AddOpenApi();
 
 // Add DbContext for Log Persistence
 builder.Services.AddPooledDbContextFactory<LogDbContext>(options =>
@@ -20,15 +18,9 @@ builder.Services.AddPooledDbContextFactory<LogDbContext>(options =>
 builder.Services.AddSingleton<KafkaLogConsumerService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<KafkaLogConsumerService>());
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddCascadingAuthenticationState();
-
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/login";
-        options.AccessDeniedPath = "/login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    .AddCookie(options => {
+        options.ExpireTimeSpan = TimeSpan.FromHours(24);
     });
 
 builder.Services.AddAuthorization();
@@ -43,25 +35,35 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+// Minimal API Endpoints
+app.MapOpenApi();
+app.MapScalarApiReference();
+
+app.MapGet("/api/logs", async (
+    IDbContextFactory<LogDbContext> dbFactory,
+    string? search,
+    string? level,
+    string? service,
+    int limit = 100) =>
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-}
+    using var db = dbFactory.CreateDbContext();
+    var query = db.Logs.AsQueryable();
 
-app.UseStaticFiles();
-app.UseAntiforgery();
+    if (!string.IsNullOrWhiteSpace(search))
+        query = query.Where(l => l.Message.Contains(search));
 
-app.UseAuthentication();
-app.UseAuthorization();
+    if (!string.IsNullOrWhiteSpace(level))
+        query = query.Where(l => l.Level == level);
 
-app.MapRazorComponents<FairBank.Admin.Web.Components.App>()
-    .AddInteractiveServerRenderMode();
+    if (!string.IsNullOrWhiteSpace(service))
+        query = query.Where(l => l.Service == service);
 
-app.MapGet("/logout", async (HttpContext context) =>
-{
-    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Redirect("/login");
-});
+    return await query.OrderByDescending(l => l.Timestamp)
+                      .Take(limit)
+                      .ToListAsync();
+})
+.WithName("GetLogs");
+
+app.MapGet("/api/health", () => Results.Ok(new { status = "Healthy", service = "AdminApi" }));
 
 app.Run();
