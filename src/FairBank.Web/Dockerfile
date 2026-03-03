@@ -37,7 +37,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
 COPY src/FairBank.Web/nginx.conf.template /etc/nginx/conf.d/default.conf.template
 COPY src/FairBank.Web/docker-entrypoint.sh /docker-entrypoint-vabank.sh
-RUN chmod +x /docker-entrypoint-vabank.sh
+RUN sed -i 's/\r//' /docker-entrypoint-vabank.sh && chmod +x /docker-entrypoint-vabank.sh
 
 # Default: caching ON (set ENABLE_CACHE=false to disable)
 ENV ENABLE_CACHE=true
