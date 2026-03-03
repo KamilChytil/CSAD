@@ -29,7 +29,7 @@ public class CreateAccountCommandHandlerTests
         result.IsActive.Should().BeTrue();
         result.AccountNumber.Should().StartWith("FAIR-");
 
-        await _eventStore.Received(1).AppendEventsAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
+        await _eventStore.Received(1).StartStreamAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
