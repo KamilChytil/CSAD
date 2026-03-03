@@ -12,6 +12,9 @@ public sealed class Account
     public Money Balance { get; private set; } = null!;
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public Money? SpendingLimit { get; private set; }
+    public bool RequiresApproval { get; private set; }
+    public Money? ApprovalThreshold { get; private set; }
 
     private readonly List<object> _uncommittedEvents = [];
 
@@ -72,6 +75,22 @@ public sealed class Account
         IsActive = false;
     }
 
+    public void SetSpendingLimit(Money limit, Money? approvalThreshold = null)
+    {
+        EnsureActive();
+        SpendingLimit = limit;
+        RequiresApproval = true;
+        ApprovalThreshold = approvalThreshold ?? limit;
+
+        RaiseEvent(new SpendingLimitSet(Id, limit.Amount, limit.Currency, DateTime.UtcNow));
+    }
+
+    public bool NeedsApproval(Money amount)
+    {
+        if (!RequiresApproval || ApprovalThreshold is null) return false;
+        return amount.Amount > ApprovalThreshold.Amount;
+    }
+
     // --- Event Sourcing support ---
 
     public IReadOnlyList<object> GetUncommittedEvents() => _uncommittedEvents.AsReadOnly();
@@ -105,5 +124,12 @@ public sealed class Account
     public void Apply(MoneyWithdrawn @event)
     {
         Balance = Balance.Subtract(Money.Create(@event.Amount, @event.Currency));
+    }
+
+    public void Apply(SpendingLimitSet @event)
+    {
+        SpendingLimit = Money.Create(@event.Limit, @event.Currency);
+        RequiresApproval = true;
+        ApprovalThreshold = SpendingLimit;
     }
 }

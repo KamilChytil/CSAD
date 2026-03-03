@@ -16,6 +16,10 @@ public sealed class User : AggregateRoot<Guid>
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
     public DateTime? DeletedAt { get; private set; }
+    public Guid? ParentId { get; private set; }
+    public User? Parent { get; private set; }
+    private readonly List<User> _children = [];
+    public IReadOnlyCollection<User> Children => _children.AsReadOnly();
 
     private User() { } // EF Core
 
@@ -43,6 +47,18 @@ public sealed class User : AggregateRoot<Guid>
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    public static User CreateChild(
+        string firstName,
+        string lastName,
+        Email email,
+        string passwordHash,
+        Guid parentId)
+    {
+        var child = Create(firstName, lastName, email, passwordHash, Enums.UserRole.Child);
+        child.ParentId = parentId;
+        return child;
     }
 
     public void SoftDelete()

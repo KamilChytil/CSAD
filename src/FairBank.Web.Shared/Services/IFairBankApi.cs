@@ -20,4 +20,16 @@ public interface IFairBankApi
     Task LogoutAsync(string token);
     Task<UserResponse?> RegisterExtendedAsync(RegisterRequest request);
     Task<bool> ValidateSessionAsync(Guid sessionId, string token);
+
+    // Children
+    Task<List<UserResponse>> GetChildrenAsync(Guid parentId);
+    Task<UserResponse> CreateChildAsync(Guid parentId, string firstName, string lastName, string email, string password);
+
+    // Account queries
+    Task<List<AccountResponse>> GetAccountsByOwnerAsync(Guid ownerId);
+
+    // Pending transactions
+    Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId);
+    Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId);
+    Task<PendingTransactionDto> RejectTransactionAsync(Guid transactionId, Guid approverId, string reason);
 }

@@ -23,12 +23,14 @@ public static class DependencyInjection
             // Auto-create schema in development
             options.AutoCreateSchemaObjects = AutoCreate.All;
 
-            // Register aggregate for event sourcing
+            // Register aggregates for event sourcing
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
         })
         .UseLightweightSessions();
 
         services.AddScoped<IAccountEventStore, MartenAccountEventStore>();
+        services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
 
         return services;
     }

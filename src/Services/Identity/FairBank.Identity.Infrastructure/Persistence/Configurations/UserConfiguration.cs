@@ -44,6 +44,19 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsDeleted).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
 
+        // Parent-child self-reference
+        builder.Property(u => u.ParentId);
+
+        builder.HasOne(u => u.Parent)
+            .WithMany(u => u.Children)
+            .HasForeignKey(u => u.ParentId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasIndex(u => u.ParentId);
+
+        builder.Navigation(u => u.Children).HasField("_children");
+
         // Global query filter: soft delete
         builder.HasQueryFilter(u => !u.IsDeleted);
     }
