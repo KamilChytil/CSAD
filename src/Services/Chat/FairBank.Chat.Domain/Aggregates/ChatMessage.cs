@@ -1,30 +1,26 @@
-using FairBank.SharedKernel.Domain;
+using FairBank.Chat.Domain.Enums;
 
 namespace FairBank.Chat.Domain.Aggregates;
 
-public sealed class ChatMessage : AggregateRoot<Guid>
+public sealed class ChatMessage
 {
-    private ChatMessage() { }
-
-    private ChatMessage(Guid senderId, Guid receiverId, string content)
-    {
-        Id = Guid.NewGuid();
-        SenderId = senderId;
-        ReceiverId = receiverId;
-        Content = content;
-        SentAt = DateTime.UtcNow;
-    }
-
+    public Guid Id { get; private set; }
+    public Guid ConversationId { get; private set; }
     public Guid SenderId { get; private set; }
-    public Guid ReceiverId { get; private set; }
+    public string SenderName { get; private set; } = string.Empty;
     public string Content { get; private set; } = string.Empty;
     public DateTime SentAt { get; private set; }
 
-    public static ChatMessage Create(Guid senderId, Guid receiverId, string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("Message content cannot be empty.");
+    private ChatMessage() { }
 
-        return new ChatMessage(senderId, receiverId, content);
-    }
+    public static ChatMessage Create(Guid conversationId, Guid senderId, string senderName, string content)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            ConversationId = conversationId,
+            SenderId = senderId,
+            SenderName = senderName,
+            Content = content,
+            SentAt = DateTime.UtcNow
+        };
 }

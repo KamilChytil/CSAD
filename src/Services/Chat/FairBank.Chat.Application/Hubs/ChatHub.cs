@@ -1,4 +1,5 @@
 using FairBank.Chat.Application.Messages.Commands.SendMessage;
+using FairBank.Chat.Application.Messages.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
@@ -6,31 +7,34 @@ namespace FairBank.Chat.Application.Hubs;
 
 public sealed class ChatHub(ISender sender) : Hub
 {
-    public async Task SendMessage(Guid receiverId, string content)
+    /// <summary>Client joins the SignalR group for a conversation room.</summary>
+    public async Task JoinConversation(string conversationId)
     {
-        // For simplicity, we assume the user is authenticated and we can get their ID from claims
-        // In a real app, we'd use Context.UserIdentifier
-        var senderIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        
-        if (senderIdClaim == null)
-        {
-            // Placeholder: for university project demo, we might need a way to pass senderId
-            // but for now, we'll try to use the name identifier if available.
-            return;
-        }
-
-        var senderId = Guid.Parse(senderIdClaim.Value);
-        
-        var command = new SendMessageCommand(senderId, receiverId, content);
-        await sender.Send(command);
-
-        // Notify both sender and receiver
-        await Clients.Users(senderId.ToString(), receiverId.ToString())
-            .SendAsync("ReceiveMessage", senderId, content);
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"conv-{conversationId}");
     }
 
-    public async Task JoinConversation(Guid otherUserId)
+    /// <summary>Client leaves a conversation room.</summary>
+    public async Task LeaveConversation(string conversationId)
     {
-        // Optional: logic for tracking who is talking to whom
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"conv-{conversationId}");
+    }
+
+    /// <summary>Send a message to a conversation room. All group members receive it in real time.</summary>
+    public async Task SendMessage(Guid conversationId, Guid senderId, string senderName, string content)
+    {
+        var command = new SendMessageCommand(conversationId, senderId, senderName, content);
+        var saved = await sender.Send(command);
+
+        // Broadcast to everyone in the conversation group (including sender for echo)
+        await Clients.Group($"conv-{conversationId}")
+            .SendAsync("ReceiveMessage", new
+            {
+                saved.Id,
+                saved.ConversationId,
+                saved.SenderId,
+                saved.SenderName,
+                saved.Content,
+                saved.SentAt
+            });
     }
 }

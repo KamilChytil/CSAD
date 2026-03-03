@@ -1,6 +1,5 @@
 @using Microsoft.AspNetCore.Components.Routing
 @inject AuthStateService Auth
-@inject IAuthService AuthSvc
 @implements IDisposable
 
 <nav class="bottom-nav">
@@ -20,7 +19,7 @@
         <span class="nav-icon">📈</span>
         <span class="nav-label">Investice</span>
     </NavLink>
-    <NavLink class="nav-item" href="@GetChatUrl()">
+    <NavLink class="nav-item" href="zpravy">
         <span class="nav-icon">💬</span>
         <span class="nav-label">Zprávy</span>
     </NavLink>
@@ -47,17 +46,6 @@
     }
 
     private void HandleAuthChanged() => InvokeAsync(StateHasChanged);
-
-    private string GetChatUrl()
-    {
-        var session = AuthSvc.CurrentSession;
-        if (session == null) return "prehled";
-        
-        // Banker sees Client, Client sees Banker
-        return session.UserId == Guid.Parse("b0000000-0000-0000-0000-000000000001")
-            ? "chat/c0000000-0000-0000-0000-000000000001"
-            : "chat/b0000000-0000-0000-0000-000000000001";
-    }
 
     public void Dispose()
     {

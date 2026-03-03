@@ -1,9 +1,9 @@
 using FairBank.Chat.Domain.Aggregates;
-using FairBank.SharedKernel.Domain;
 
 namespace FairBank.Chat.Domain.Ports;
 
-public interface IChatRepository : IRepository<ChatMessage, Guid>
+public interface IChatRepository
 {
-    Task<IEnumerable<ChatMessage>> GetMessagesBetweenUsersAsync(Guid user1Id, Guid user2Id, CancellationToken ct = default);
+    Task SaveMessageAsync(ChatMessage message, CancellationToken ct = default);
+    Task<IEnumerable<ChatMessage>> GetMessagesByConversationAsync(Guid conversationId, CancellationToken ct = default);
 }

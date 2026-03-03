@@ -1,22 +1,33 @@
-using FairBank.Chat.Domain.Aggregates;
+using FairBank.Chat.Application.Messages.DTOs;
 using FairBank.Chat.Domain.Ports;
-using FairBank.SharedKernel.Application;
 using MediatR;
 
 namespace FairBank.Chat.Application.Messages.Commands.SendMessage;
 
-public sealed record SendMessageCommand(Guid SenderId, Guid ReceiverId, string Content) : IRequest<Guid>;
+public sealed record SendMessageCommand(
+    Guid ConversationId,
+    Guid SenderId,
+    string SenderName,
+    string Content) : IRequest<ChatMessageResponse>;
 
-public sealed class SendMessageCommandHandler(IChatRepository chatRepository, IUnitOfWork unitOfWork)
-    : IRequestHandler<SendMessageCommand, Guid>
+public sealed class SendMessageCommandHandler(IChatRepository repo) : IRequestHandler<SendMessageCommand, ChatMessageResponse>
 {
-    public async Task<Guid> Handle(SendMessageCommand request, CancellationToken ct)
+    public async Task<ChatMessageResponse> Handle(SendMessageCommand request, CancellationToken ct)
     {
-        var message = ChatMessage.Create(request.SenderId, request.ReceiverId, request.Content);
-        
-        await chatRepository.AddAsync(message, ct);
-        await unitOfWork.SaveChangesAsync(ct);
-        
-        return message.Id;
+        var message = Domain.Aggregates.ChatMessage.Create(
+            request.ConversationId,
+            request.SenderId,
+            request.SenderName,
+            request.Content);
+
+        await repo.SaveMessageAsync(message, ct);
+
+        return new ChatMessageResponse(
+            message.Id,
+            message.ConversationId,
+            message.SenderId,
+            message.SenderName,
+            message.Content,
+            message.SentAt);
     }
 }

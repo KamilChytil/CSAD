@@ -2,7 +2,9 @@ namespace FairBank.Web.Shared.Models.Chat;
 
 public sealed record ChatMessageDto(
     Guid Id,
+    Guid ConversationId,
     Guid SenderId,
-    Guid ReceiverId,
+    string SenderName,
     string Content,
-    DateTime SentAt);
+    DateTime SentAt
+);
