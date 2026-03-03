@@ -9,6 +9,10 @@
         @ChildContent
     </div>
 }
+else if (_initialized && IsPublicRoute())
+{
+    @ChildContent
+}
 else if (_initialized)
 {
     @* Nepřihlášen — přesměrování probíhá v OnInitializedAsync *@
@@ -59,11 +63,15 @@ else
         });
     }
 
-    private void RedirectToLoginIfNeeded()
+    private bool IsPublicRoute()
     {
         var relativePath = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+        return PublicRoutes.Contains(relativePath.ToLowerInvariant());
+    }
 
-        if (!PublicRoutes.Contains(relativePath.ToLowerInvariant()))
+    private void RedirectToLoginIfNeeded()
+    {
+        if (!IsPublicRoute())
         {
             Nav.NavigateTo("/prihlaseni?expired=1", forceLoad: false);
         }
