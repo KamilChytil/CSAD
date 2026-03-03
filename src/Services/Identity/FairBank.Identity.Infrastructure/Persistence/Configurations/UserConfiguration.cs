@@ -1,0 +1,50 @@
+using FairBank.Identity.Domain.Entities;
+using FairBank.Identity.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace FairBank.Identity.Infrastructure.Persistence.Configurations;
+
+public sealed class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.ToTable("users");
+
+        builder.HasKey(u => u.Id);
+
+        builder.Property(u => u.FirstName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(u => u.LastName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.OwnsOne(u => u.Email, email =>
+        {
+            email.Property(e => e.Value)
+                .HasColumnName("email")
+                .HasMaxLength(320)
+                .IsRequired();
+
+            email.HasIndex(e => e.Value).IsUnique();
+        });
+
+        builder.Property(u => u.PasswordHash)
+            .HasMaxLength(500)
+            .IsRequired();
+
+        builder.Property(u => u.Role)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(u => u.IsActive).IsRequired();
+        builder.Property(u => u.IsDeleted).IsRequired();
+        builder.Property(u => u.CreatedAt).IsRequired();
+
+        // Global query filter: soft delete
+        builder.HasQueryFilter(u => !u.IsDeleted);
+    }
+}

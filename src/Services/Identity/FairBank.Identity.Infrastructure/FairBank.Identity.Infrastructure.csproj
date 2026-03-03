@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.Identity.Domain/FairBank.Identity.Domain.csproj" />
+    <ProjectReference Include="../FairBank.Identity.Application/FairBank.Identity.Application.csproj" />
+  </ItemGroup>
+</Project>
