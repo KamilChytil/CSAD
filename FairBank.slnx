@@ -41,6 +41,12 @@
     <Project Path="src/Services/Chat/FairBank.Chat.Domain/FairBank.Chat.Domain.csproj" />
     <Project Path="src/Services/Chat/FairBank.Chat.Infrastructure/FairBank.Chat.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Products/">
+    <Project Path="src/Services/Products/FairBank.Products.Api/FairBank.Products.Api.csproj" />
+    <Project Path="src/Services/Products/FairBank.Products.Application/FairBank.Products.Application.csproj" />
+    <Project Path="src/Services/Products/FairBank.Products.Domain/FairBank.Products.Domain.csproj" />
+    <Project Path="src/Services/Products/FairBank.Products.Infrastructure/FairBank.Products.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />
