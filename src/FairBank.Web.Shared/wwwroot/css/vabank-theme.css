@@ -752,6 +752,7 @@ body {
 
 /* ── Auth Pages ──────────────────────────────────────────── */
 .auth-page {
+    width: 100%;
     min-height: 100dvh;
     background: linear-gradient(180deg, var(--vb-black) 0%, var(--vb-dark) 40%, var(--vb-bg) 40%);
     display: flex;
@@ -1230,15 +1231,6 @@ body {
 
 /* Tablet / small desktop */
 @media (min-width: 431px) and (max-width: 599px) {
-    body {
-        background: var(--vb-gray-900);
-    }
-    .vb-app {
-        border-left: 1px solid var(--vb-dark);
-        border-right: 1px solid var(--vb-dark);
-    }
-
-    /* Auth card wider on tablet */
     .auth-card {
         max-width: 460px;
     }
@@ -1247,16 +1239,15 @@ body {
 /* Desktop: ≥ 600px — sidebar layout */
 @media screen and (min-width: 600px) {
     body {
-        background: var(--vb-gray-900);
+        background: var(--vb-bg);
     }
 
     .vb-app {
-        max-width: 1280px;
+        max-width: none;
+        width: 100%;
         display: flex;
         flex-direction: row;
         box-shadow: none;
-        border-left: 1px solid var(--vb-dark);
-        border-right: 1px solid var(--vb-dark);
     }
 
     .vb-content-area {
@@ -1418,7 +1409,7 @@ body {
     }
 
     .auth-card {
-        max-width: 520px;
+        max-width: 540px;
         padding: 36px 32px;
     }
 
