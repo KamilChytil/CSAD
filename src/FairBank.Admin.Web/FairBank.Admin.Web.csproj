@@ -13,4 +13,8 @@
     <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

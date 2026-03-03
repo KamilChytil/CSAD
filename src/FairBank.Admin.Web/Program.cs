@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
+using FairBank.Admin.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Blazor Server
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 // Add services to the container.
 builder.Services.AddOpenApi();
@@ -34,6 +39,9 @@ using (var scope = app.Services.CreateScope())
     using var db = factory.CreateDbContext();
     db.Database.EnsureCreated();
 }
+
+app.UseStaticFiles();
+app.UseAntiforgery();
 
 // Minimal API Endpoints
 app.MapOpenApi();
@@ -65,5 +73,9 @@ app.MapGet("/api/logs", async (
 .WithName("GetLogs");
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "Healthy", service = "AdminApi" }));
+
+// Blazor Server UI
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
