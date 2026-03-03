@@ -9,7 +9,7 @@ services:
     ports:
       - "80:80"
     environment:
-      ENABLE_CACHE: "true"    # set to "false" to disable FE caching (for testing)
+      ENABLE_CACHE: "false"    # set to "false" to disable FE caching (for testing)
     depends_on:
       - api-gateway
     networks:
@@ -26,6 +26,7 @@ services:
     depends_on:
       - kafka
     networks:
+      - frontend
       - backend
 
   # ─── API Gateway (bridges frontend ↔ backend) ───────────

@@ -3,290 +3,429 @@
 @inject IFairBankApi Api
 @inject IAuthService Auth
 
-<PageHeader Title="PLATBY" />
+<PageHeader Title="PLATBY" ShowChip="false">
+    <Actions>
+        <div class="page-tabs">
+            <button class="page-tab @(_pageView == "platby" ? "active" : "")" @onclick='() => _pageView = "platby"'>PLATBY</button>
+            <button class="page-tab @(_pageView == "pohyby" ? "active" : "")" @onclick='() => _pageView = "pohyby"'>Pohyby</button>
+            <button class="page-tab @(_pageView == "menu" ? "active" : "")" @onclick='() => _pageView = "menu"'>Menu</button>
+        </div>
+    </Actions>
+</PageHeader>
 
-<div class="page-content">
+<div class="page-content payments-page">
 
-    @* ── TAB NAVIGATION ─────────────────────────── *@
-    <div class="tab-bar">
-        <button class="tab-btn @(_activeTab == "payment" ? "active" : "")" @onclick='() => SetTab("payment")'>Nová platba</button>
-        <button class="tab-btn @(_activeTab == "instant" ? "active" : "")" @onclick='() => SetTab("instant")'>Okamžitá</button>
-        <button class="tab-btn @(_activeTab == "transfer" ? "active" : "")" @onclick='() => SetTab("transfer")'>Převod</button>
-        <button class="tab-btn @(_activeTab == "standing" ? "active" : "")" @onclick='() => SetTab("standing")'>Trvalé příkazy</button>
-        <button class="tab-btn @(_activeTab == "templates" ? "active" : "")" @onclick='() => SetTab("templates")'>Šablony</button>
-    </div>
-
-    @* ── STANDARD / INSTANT PAYMENT ─────────────── *@
-    @if (_activeTab is "payment" or "instant")
+    @if (_pageView == "platby")
     {
-        <ContentCard Title="@(_activeTab == "instant" ? "Okamžitá platba" : "Nová platba")">
+        @* ── QUICK ACTIONS GRID ──────────────────── *@
+        <ContentCard Title="Rychlé akce" CssClass="section-quick-actions">
+            <Icon><VbIcon Name="utilities" Size="sm" Color="var(--vb-red)" /></Icon>
             <ChildContent>
-                @if (_templates.Any())
-                {
-                    <div class="form-group">
-                        <label class="form-label">Použít šablonu</label>
-                        <select class="form-input" @onchange="OnTemplateSelected">
-                            <option value="">— vyberte šablonu —</option>
-                            @foreach (var t in _templates)
+                <div class="quick-actions">
+                    <button class="quick-action-btn" @onclick='() => SetTab("payment")'>
+                        <div class="quick-action-icon"><VbIcon Name="send" Size="md" /></div>
+                        <span>Poslat</span>
+                    </button>
+                    <button class="quick-action-btn" @onclick='() => SetTab("payment")'>
+                        <div class="quick-action-icon"><VbIcon Name="qr" Size="md" /></div>
+                        <span>QR Platba</span>
+                    </button>
+                    <button class="quick-action-btn" @onclick='() => SetTab("standing")'>
+                        <div class="quick-action-icon"><VbIcon Name="clock" Size="md" /></div>
+                        <span>Trvalý příkaz</span>
+                    </button>
+                    <button class="quick-action-btn" @onclick='() => SetTab("templates")'>
+                        <div class="quick-action-icon"><VbIcon Name="star" Size="md" /></div>
+                        <span>Šablony</span>
+                    </button>
+                    <button class="quick-action-btn" @onclick='() => SetTab("transfer")'>
+                        <div class="quick-action-icon"><VbIcon Name="transfer" Size="md" /></div>
+                        <span>Převod</span>
+                    </button>
+                    <button class="quick-action-btn" @onclick='() => SetTab("instant")'>
+                        <div class="quick-action-icon"><VbIcon Name="utilities" Size="md" /></div>
+                        <span>Okamžitá</span>
+                    </button>
+                </div>
+            </ChildContent>
+        </ContentCard>
+
+        @* ── CONTACTS FOR TRANSFER ───────────────── *@
+        <ContentCard Title="KONTAKTY PRO PŘEVOD">
+            <Icon><VbIcon Name="user" Size="sm" Color="var(--vb-red)" /></Icon>
+            <HeaderAction><button class="link-action" @onclick='() => SetTab("templates")'>Spravovat</button></HeaderAction>
+            <ChildContent>
+                <div class="contacts-row">
+                    @foreach (var contact in _contacts)
+                    {
+                        <button class="contact-chip" @onclick="() => UseContact(contact)">
+                            <div class="contact-avatar">@contact.Initials</div>
+                            <span class="contact-name">@contact.Name</span>
+                        </button>
+                    }
+                    <button class="contact-chip contact-add" @onclick='() => SetTab("templates")'>
+                        <div class="contact-avatar"><VbIcon Name="plus" Size="xs" /></div>
+                        <span class="contact-name">Přidat</span>
+                    </button>
+                </div>
+            </ChildContent>
+        </ContentCard>
+
+        @* ── PAYMENT CALENDAR ────────────────────── *@
+        <ContentCard Title="KALENDÁŘ PLATEB" CssClass="section-calendar">
+            <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                <div class="calendar-widget">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" @onclick="PrevMonth">&lt;</button>
+                        <span class="calendar-month">@_calendarDate.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("cs-CZ"))</span>
+                        <button class="calendar-nav" @onclick="NextMonth">&gt;</button>
+                    </div>
+                    <div class="calendar-grid">
+                        @foreach (var day in new[] { "Po", "Út", "St", "Čt", "Pá", "So", "Ne" })
+                        {
+                            <span class="calendar-day-header">@day</span>
+                        }
+                        @foreach (var day in GetCalendarDays())
+                        {
+                            var hasPayment = _upcomingPaymentDays.Contains(day.Day) && day.Month == _calendarDate.Month;
+                            <button class="calendar-day @(day.Month != _calendarDate.Month ? "other-month" : "") @(day.Date == DateTime.Today ? "today" : "") @(hasPayment ? "has-payment" : "")">
+                                @day.Day
+                            </button>
+                        }
+                    </div>
+                    @if (_standingOrders.Any(s => s.IsActive))
+                    {
+                        <div class="calendar-upcoming">
+                            <span class="calendar-upcoming-title">Nadcházející platby</span>
+                            @foreach (var so in _standingOrders.Where(s => s.IsActive).Take(3))
                             {
-                                <option value="@t.Id">@t.Name (@t.RecipientAccountNumber)</option>
+                                <div class="calendar-event">
+                                    <span class="calendar-event-date">@so.NextExecutionDate.ToString("dd.MM.")</span>
+                                    <span class="calendar-event-desc">@so.Description — @so.Amount.ToString("N0") @so.Currency</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (_pageView == "pohyby")
+    {
+        @* ── BALANCE HERO IN POHYBY VIEW ─────────── *@
+        <BalanceCard Amount="@_accountBalance" Currency="Kč" Variant="hero" Label="ZŮSTATEK" />
+
+        @* ── TRANSACTION LIST ────────────────────── *@
+        <ContentCard Title="TRANSAKCE">
+            <Icon><VbIcon Name="transfer" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                @foreach (var tx in _history)
+                {
+                    var isSent = tx.SenderAccountId == _selectedAccountId;
+                    <TransactionItem
+                        Description="@($"{(isSent ? "→" : "←")} {tx.RecipientAccountNumber}: {tx.Description ?? ""}")"
+                        Date="@tx.CreatedAt"
+                        Amount="@(isSent ? -tx.Amount : tx.Amount)"
+                        Currency="Kč"
+                        Type="@(isSent ? "withdrawal" : "deposit")"
+                        Category="@GetCategory(tx.Description)" />
+                }
+                @if (!_history.Any())
+                {
+                    <p class="empty-state">Zatím žádné platby</p>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (_pageView == "menu")
+    {
+        @* ── TAB NAVIGATION ─────────────────────── *@
+        <div class="tab-bar">
+            <button class="tab-btn @(_activeTab == "payment" ? "active" : "")" @onclick='() => SetTab("payment")'>
+                <VbIcon Name="send" Size="xs" /> Nová platba
+            </button>
+            <button class="tab-btn @(_activeTab == "instant" ? "active" : "")" @onclick='() => SetTab("instant")'>
+                <VbIcon Name="utilities" Size="xs" /> Okamžitá
+            </button>
+            <button class="tab-btn @(_activeTab == "transfer" ? "active" : "")" @onclick='() => SetTab("transfer")'>
+                <VbIcon Name="transfer" Size="xs" /> Převod
+            </button>
+            <button class="tab-btn @(_activeTab == "standing" ? "active" : "")" @onclick='() => SetTab("standing")'>
+                <VbIcon Name="clock" Size="xs" /> Trvalé příkazy
+            </button>
+            <button class="tab-btn @(_activeTab == "templates" ? "active" : "")" @onclick='() => SetTab("templates")'>
+                <VbIcon Name="star" Size="xs" /> Šablony
+            </button>
+        </div>
+
+        @* ── STANDARD / INSTANT PAYMENT ─────────── *@
+        @if (_activeTab is "payment" or "instant")
+        {
+            <ContentCard Title="@(_activeTab == "instant" ? "Okamžitá platba" : "Nová platba")">
+                <Icon><VbIcon Name="@(_activeTab == "instant" ? "utilities" : "send")" Size="sm" Color="var(--vb-red)" /></Icon>
+                <ChildContent>
+                    @if (_templates.Any())
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Použít šablonu</label>
+                            <select class="form-input" @onchange="OnTemplateSelected">
+                                <option value="">— vyberte šablonu —</option>
+                                @foreach (var t in _templates)
+                                {
+                                    <option value="@t.Id">@t.Name (@t.RecipientAccountNumber)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="form-group">
+                        <label class="form-label">Příjemce (číslo účtu)</label>
+                        <input class="form-input" @bind="_recipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Částka</label>
+                        <div class="input-with-suffix">
+                            <input class="form-input" type="number" @bind="_amount" placeholder="0" />
+                            <span class="input-suffix">Kč</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Popis</label>
+                        <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
+                    </div>
+                    @if (_activeTab == "instant")
+                    {
+                        <div class="info-banner"><VbIcon Name="utilities" Size="xs" /> Okamžitá platba bude zpracována ihned</div>
+                    }
+                    <VbButton OnClick="SendPayment" FullWidth="true" Disabled="@(_amount <= 0 || string.IsNullOrWhiteSpace(_recipient) || _isLoading)">
+                        @if (_isLoading) { <span>Odesílám...</span> } else { <span>@(_activeTab == "instant" ? "Odeslat okamžitě" : "Odeslat platbu")</span> }
+                    </VbButton>
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="error-banner">@_errorMessage</div>
+                    }
+                    @if (_paymentSuccess)
+                    {
+                        <div class="success-banner"><VbIcon Name="shield" Size="xs" /> Platba úspěšně odeslána</div>
+                    }
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── INTERNAL TRANSFER ──────────────────── *@
+        @if (_activeTab == "transfer")
+        {
+            <ContentCard Title="Převod mezi účty">
+                <Icon><VbIcon Name="transfer" Size="sm" Color="var(--vb-red)" /></Icon>
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Z účtu</label>
+                        <select class="form-input" @bind="_transferFromAccountId">
+                            <option value="">— vyberte účet —</option>
+                            @foreach (var acc in _accounts)
+                            {
+                                <option value="@acc.Id">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
                         </select>
                     </div>
-                }
-                <div class="form-group">
-                    <label class="form-label">Příjemce (číslo účtu)</label>
-                    <input class="form-input" @bind="_recipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Částka</label>
-                    <div class="input-with-suffix">
-                        <input class="form-input" type="number" @bind="_amount" placeholder="0" />
-                        <span class="input-suffix">Kč</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Popis</label>
-                    <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
-                </div>
-                @if (_activeTab == "instant")
-                {
-                    <div class="info-banner">⚡ Okamžitá platba bude zpracována ihned</div>
-                }
-                <VbButton OnClick="SendPayment" Disabled="@(_amount <= 0 || string.IsNullOrWhiteSpace(_recipient) || _isLoading)">
-                    @if (_isLoading) { <span>Odesílám...</span> } else { <span>@(_activeTab == "instant" ? "Odeslat okamžitě" : "Odeslat platbu")</span> }
-                </VbButton>
-                @if (!string.IsNullOrWhiteSpace(_errorMessage))
-                {
-                    <div class="error-banner">@_errorMessage</div>
-                }
-                @if (_paymentSuccess)
-                {
-                    <div class="success-banner">✓ Platba úspěšně odeslána</div>
-                }
-            </ChildContent>
-        </ContentCard>
-    }
-
-    @* ── INTERNAL TRANSFER ──────────────────────── *@
-    @if (_activeTab == "transfer")
-    {
-        <ContentCard Title="Převod mezi účty">
-            <ChildContent>
-                <div class="form-group">
-                    <label class="form-label">Z účtu</label>
-                    <select class="form-input" @bind="_transferFromAccountId">
-                        <option value="">— vyberte účet —</option>
-                        @foreach (var acc in _accounts)
-                        {
-                            <option value="@acc.Id">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Na účet</label>
-                    <select class="form-input" @bind="_transferToAccountNumber">
-                        <option value="">— vyberte cílový účet —</option>
-                        @foreach (var acc in _accounts.Where(a => a.Id.ToString() != _transferFromAccountId))
-                        {
-                            <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Částka</label>
-                    <div class="input-with-suffix">
-                        <input class="form-input" type="number" @bind="_transferAmount" placeholder="0" />
-                        <span class="input-suffix">Kč</span>
-                    </div>
-                </div>
-                <VbButton OnClick="SendTransfer" Disabled="@(_transferAmount <= 0 || string.IsNullOrWhiteSpace(_transferFromAccountId) || string.IsNullOrWhiteSpace(_transferToAccountNumber) || _isLoading)">
-                    @if (_isLoading) { <span>Převádím...</span> } else { <span>Převést</span> }
-                </VbButton>
-                @if (!string.IsNullOrWhiteSpace(_errorMessage))
-                {
-                    <div class="error-banner">@_errorMessage</div>
-                }
-                @if (_paymentSuccess)
-                {
-                    <div class="success-banner">✓ Převod úspěšně proveden</div>
-                }
-            </ChildContent>
-        </ContentCard>
-    }
-
-    @* ── STANDING ORDER ─────────────────────────── *@
-    @if (_activeTab == "standing")
-    {
-        <ContentCard Title="Nový trvalý příkaz">
-            <ChildContent>
-                <div class="form-group">
-                    <label class="form-label">Příjemce (číslo účtu)</label>
-                    <input class="form-input" @bind="_soRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Částka</label>
-                    <div class="input-with-suffix">
-                        <input class="form-input" type="number" @bind="_soAmount" placeholder="0" />
-                        <span class="input-suffix">Kč</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Popis</label>
-                    <input class="form-input" @bind="_soDescription" placeholder="Např. Nájem" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Interval</label>
-                    <select class="form-input" @bind="_soInterval">
-                        <option value="Daily">Denně</option>
-                        <option value="Weekly">Týdně</option>
-                        <option value="Monthly">Měsíčně</option>
-                        <option value="Quarterly">Čtvrtletně</option>
-                        <option value="Yearly">Ročně</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">První platba</label>
-                    <input class="form-input" type="date" @bind="_soFirstDate" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Konec (volitelné)</label>
-                    <input class="form-input" type="date" @bind="_soEndDate" />
-                </div>
-                <VbButton OnClick="CreateStandingOrder" Disabled="@(_soAmount <= 0 || string.IsNullOrWhiteSpace(_soRecipient) || _isLoading)">
-                    @if (_isLoading) { <span>Vytvářím...</span> } else { <span>Vytvořit trvalý příkaz</span> }
-                </VbButton>
-                @if (!string.IsNullOrWhiteSpace(_errorMessage))
-                {
-                    <div class="error-banner">@_errorMessage</div>
-                }
-                @if (_paymentSuccess)
-                {
-                    <div class="success-banner">✓ Trvalý příkaz vytvořen</div>
-                }
-            </ChildContent>
-        </ContentCard>
-
-        <ContentCard Title="Aktivní trvalé příkazy">
-            <ChildContent>
-                @foreach (var so in _standingOrders.Where(s => s.IsActive))
-                {
-                    <div class="standing-order-item">
-                        <div class="so-details">
-                            <span class="so-recipient">→ @so.RecipientAccountNumber</span>
-                            <span class="so-info">@so.Amount.ToString("N0") @so.Currency · @FormatInterval(so.Interval) · další: @so.NextExecutionDate.ToString("dd.MM.yyyy")</span>
-                            @if (!string.IsNullOrWhiteSpace(so.Description))
+                    <div class="form-group">
+                        <label class="form-label">Na účet</label>
+                        <select class="form-input" @bind="_transferToAccountNumber">
+                            <option value="">— vyberte cílový účet —</option>
+                            @foreach (var acc in _accounts.Where(a => a.Id.ToString() != _transferFromAccountId))
                             {
-                                <span class="so-desc">@so.Description</span>
+                                <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
-                        </div>
-                        <button class="btn-cancel" @onclick="() => CancelStandingOrder(so.Id)">Zrušit</button>
+                        </select>
                     </div>
-                }
-                @if (!_standingOrders.Any(s => s.IsActive))
-                {
-                    <p class="empty-state">Žádné aktivní trvalé příkazy</p>
-                }
-            </ChildContent>
-        </ContentCard>
+                    <div class="form-group">
+                        <label class="form-label">Částka</label>
+                        <div class="input-with-suffix">
+                            <input class="form-input" type="number" @bind="_transferAmount" placeholder="0" />
+                            <span class="input-suffix">Kč</span>
+                        </div>
+                    </div>
+                    <VbButton OnClick="SendTransfer" FullWidth="true" Disabled="@(_transferAmount <= 0 || string.IsNullOrWhiteSpace(_transferFromAccountId) || string.IsNullOrWhiteSpace(_transferToAccountNumber) || _isLoading)">
+                        @if (_isLoading) { <span>Převádím...</span> } else { <span>Převést</span> }
+                    </VbButton>
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="error-banner">@_errorMessage</div>
+                    }
+                    @if (_paymentSuccess)
+                    {
+                        <div class="success-banner"><VbIcon Name="shield" Size="xs" /> Převod úspěšně proveden</div>
+                    }
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── STANDING ORDER ─────────────────────── *@
+        @if (_activeTab == "standing")
+        {
+            <ContentCard Title="Nový trvalý příkaz">
+                <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-red)" /></Icon>
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Příjemce (číslo účtu)</label>
+                        <input class="form-input" @bind="_soRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Částka</label>
+                        <div class="input-with-suffix">
+                            <input class="form-input" type="number" @bind="_soAmount" placeholder="0" />
+                            <span class="input-suffix">Kč</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Popis</label>
+                        <input class="form-input" @bind="_soDescription" placeholder="Např. Nájem" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interval</label>
+                        <select class="form-input" @bind="_soInterval">
+                            <option value="Daily">Denně</option>
+                            <option value="Weekly">Týdně</option>
+                            <option value="Monthly">Měsíčně</option>
+                            <option value="Quarterly">Čtvrtletně</option>
+                            <option value="Yearly">Ročně</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">První platba</label>
+                        <input class="form-input" type="date" @bind="_soFirstDate" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Konec (volitelné)</label>
+                        <input class="form-input" type="date" @bind="_soEndDate" />
+                    </div>
+                    <VbButton OnClick="CreateStandingOrder" FullWidth="true" Disabled="@(_soAmount <= 0 || string.IsNullOrWhiteSpace(_soRecipient) || _isLoading)">
+                        @if (_isLoading) { <span>Vytvářím...</span> } else { <span>Vytvořit trvalý příkaz</span> }
+                    </VbButton>
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="error-banner">@_errorMessage</div>
+                    }
+                    @if (_paymentSuccess)
+                    {
+                        <div class="success-banner"><VbIcon Name="shield" Size="xs" /> Trvalý příkaz vytvořen</div>
+                    }
+                </ChildContent>
+            </ContentCard>
+
+            <ContentCard Title="Aktivní trvalé příkazy">
+                <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    @foreach (var so in _standingOrders.Where(s => s.IsActive))
+                    {
+                        <div class="standing-order-item">
+                            <div class="so-details">
+                                <span class="so-recipient">→ @so.RecipientAccountNumber</span>
+                                <span class="so-info">@so.Amount.ToString("N0") @so.Currency · @FormatInterval(so.Interval) · další: @so.NextExecutionDate.ToString("dd.MM.yyyy")</span>
+                                @if (!string.IsNullOrWhiteSpace(so.Description))
+                                {
+                                    <span class="so-desc">@so.Description</span>
+                                }
+                            </div>
+                            <VbButton Variant="danger" Size="sm" OnClick="() => CancelStandingOrder(so.Id)">Zrušit</VbButton>
+                        </div>
+                    }
+                    @if (!_standingOrders.Any(s => s.IsActive))
+                    {
+                        <p class="empty-state">Žádné aktivní trvalé příkazy</p>
+                    }
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── TEMPLATES ──────────────────────────── *@
+        @if (_activeTab == "templates")
+        {
+            <ContentCard Title="Nová šablona">
+                <Icon><VbIcon Name="star" Size="sm" Color="var(--vb-red)" /></Icon>
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Název šablony</label>
+                        <input class="form-input" @bind="_tplName" placeholder="Např. Nájem" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Příjemce (číslo účtu)</label>
+                        <input class="form-input" @bind="_tplRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jméno příjemce (volitelné)</label>
+                        <input class="form-input" @bind="_tplRecipientName" placeholder="Jan Novák" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Výchozí částka (volitelné)</label>
+                        <div class="input-with-suffix">
+                            <input class="form-input" type="number" @bind="_tplAmount" placeholder="0" />
+                            <span class="input-suffix">Kč</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Výchozí popis (volitelné)</label>
+                        <input class="form-input" @bind="_tplDescription" placeholder="Popis platby" />
+                    </div>
+                    <VbButton OnClick="CreateTemplate" FullWidth="true" Disabled="@(string.IsNullOrWhiteSpace(_tplName) || string.IsNullOrWhiteSpace(_tplRecipient) || _isLoading)">
+                        @if (_isLoading) { <span>Ukládám...</span> } else { <span>Uložit šablonu</span> }
+                    </VbButton>
+                    @if (_paymentSuccess)
+                    {
+                        <div class="success-banner"><VbIcon Name="shield" Size="xs" /> Šablona uložena</div>
+                    }
+                </ChildContent>
+            </ContentCard>
+
+            <ContentCard Title="Uložené šablony">
+                <Icon><VbIcon Name="star" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    @foreach (var tpl in _templates)
+                    {
+                        <div class="template-item">
+                            <div class="tpl-details">
+                                <span class="tpl-name">@tpl.Name</span>
+                                <span class="tpl-info">→ @tpl.RecipientAccountNumber @(tpl.RecipientName is not null ? $"({tpl.RecipientName})" : "")</span>
+                                @if (tpl.DefaultAmount.HasValue)
+                                {
+                                    <span class="tpl-amount">@tpl.DefaultAmount.Value.ToString("N0") @tpl.Currency</span>
+                                }
+                            </div>
+                            <div class="tpl-actions">
+                                <VbButton Variant="outline" Size="sm" OnClick="() => UseTemplate(tpl)">Použít</VbButton>
+                                <VbButton Variant="danger" Size="sm" OnClick="() => DeleteTemplate(tpl.Id)">Smazat</VbButton>
+                            </div>
+                        </div>
+                    }
+                    @if (!_templates.Any())
+                    {
+                        <p class="empty-state">Žádné uložené šablony</p>
+                    }
+                </ChildContent>
+            </ContentCard>
+        }
     }
 
-    @* ── TEMPLATES ──────────────────────────────── *@
-    @if (_activeTab == "templates")
-    {
-        <ContentCard Title="Nová šablona">
-            <ChildContent>
-                <div class="form-group">
-                    <label class="form-label">Název šablony</label>
-                    <input class="form-input" @bind="_tplName" placeholder="Např. Nájem" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Příjemce (číslo účtu)</label>
-                    <input class="form-input" @bind="_tplRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Jméno příjemce (volitelné)</label>
-                    <input class="form-input" @bind="_tplRecipientName" placeholder="Jan Novák" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Výchozí částka (volitelné)</label>
-                    <div class="input-with-suffix">
-                        <input class="form-input" type="number" @bind="_tplAmount" placeholder="0" />
-                        <span class="input-suffix">Kč</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Výchozí popis (volitelné)</label>
-                    <input class="form-input" @bind="_tplDescription" placeholder="Popis platby" />
-                </div>
-                <VbButton OnClick="CreateTemplate" Disabled="@(string.IsNullOrWhiteSpace(_tplName) || string.IsNullOrWhiteSpace(_tplRecipient) || _isLoading)">
-                    @if (_isLoading) { <span>Ukládám...</span> } else { <span>Uložit šablonu</span> }
-                </VbButton>
-                @if (_paymentSuccess)
-                {
-                    <div class="success-banner">✓ Šablona uložena</div>
-                }
-            </ChildContent>
-        </ContentCard>
-
-        <ContentCard Title="Uložené šablony">
-            <ChildContent>
-                @foreach (var tpl in _templates)
-                {
-                    <div class="template-item">
-                        <div class="tpl-details">
-                            <span class="tpl-name">@tpl.Name</span>
-                            <span class="tpl-info">→ @tpl.RecipientAccountNumber @(tpl.RecipientName is not null ? $"({tpl.RecipientName})" : "")</span>
-                            @if (tpl.DefaultAmount.HasValue)
-                            {
-                                <span class="tpl-amount">@tpl.DefaultAmount.Value.ToString("N0") @tpl.Currency</span>
-                            }
-                        </div>
-                        <div class="tpl-actions">
-                            <button class="btn-use" @onclick="() => UseTemplate(tpl)">Použít</button>
-                            <button class="btn-cancel" @onclick="() => DeleteTemplate(tpl.Id)">Smazat</button>
-                        </div>
-                    </div>
-                }
-                @if (!_templates.Any())
-                {
-                    <p class="empty-state">Žádné uložené šablony</p>
-                }
-            </ChildContent>
-        </ContentCard>
-    }
-
-    @* ── PAYMENT HISTORY ────────────────────────── *@
-    <ContentCard Title="Historie plateb">
-        <ChildContent>
-            @foreach (var tx in _history)
-            {
-                var isSent = tx.SenderAccountId == _selectedAccountId;
-                <TransactionItem
-                    Description="@($"{(isSent ? "→" : "←")} {tx.RecipientAccountNumber}: {tx.Description ?? ""}")"
-                    Date="@tx.CreatedAt"
-                    Amount="@(isSent ? -tx.Amount : tx.Amount)"
-                    Currency="Kč"
-                    Type="@(isSent ? "withdrawal" : "deposit")" />
-            }
-            @if (!_history.Any())
-            {
-                <p class="empty-state">Zatím žádné platby</p>
-            }
-        </ChildContent>
-    </ContentCard>
 </div>
 
 @code {
+    private string _pageView = "platby";
     private string _activeTab = "payment";
     private bool _isLoading;
     private string _errorMessage = "";
     private bool _paymentSuccess;
 
+    // Calendar
+    private DateTime _calendarDate = DateTime.Today;
+    private HashSet<int> _upcomingPaymentDays = [];
+
     // Account data
     private List<AccountResponse> _accounts = [];
     private Guid? _selectedAccountId;
     private string _selectedAccountCurrency = "CZK";
+    private decimal _accountBalance;
 
     // Standard/instant payment
     private string _recipient = "";
@@ -317,6 +456,7 @@
     private List<PaymentDto> _history = [];
     private List<StandingOrderDto> _standingOrders = [];
     private List<PaymentTemplateDto> _templates = [];
+    private List<ContactVm> _contacts = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -330,12 +470,43 @@
             {
                 _selectedAccountId = _accounts[0].Id;
                 _selectedAccountCurrency = _accounts[0].Currency;
+                _accountBalance = _accounts[0].Balance;
                 await LoadData();
             }
         }
         catch
         {
             // Silently handle – data will be empty
+        }
+
+        // Build contacts from templates
+        _contacts = _templates.Select(t => new ContactVm(
+            t.RecipientName ?? t.Name,
+            GetInitials(t.RecipientName ?? t.Name),
+            t.RecipientAccountNumber
+        )).Take(6).ToList();
+
+        // Add demo contacts if none exist
+        if (!_contacts.Any())
+        {
+            _contacts =
+            [
+                new("Jan N.", "JN", "FAIR-0001-0001-0001"),
+                new("Marie K.", "MK", "FAIR-0001-0002-0003"),
+                new("Petr V.", "PV", "FAIR-0002-0001-0001"),
+                new("Anna S.", "AS", "FAIR-0003-0001-0001"),
+            ];
+        }
+
+        // Populate calendar payment days from standing orders
+        foreach (var so in _standingOrders.Where(s => s.IsActive))
+        {
+            _upcomingPaymentDays.Add(so.NextExecutionDate.Day);
+        }
+        // Add some demo days if empty
+        if (!_upcomingPaymentDays.Any())
+        {
+            _upcomingPaymentDays = [1, 5, 15, 20, 25];
         }
     }
 
@@ -361,8 +532,52 @@
     private void SetTab(string tab)
     {
         _activeTab = tab;
+        _pageView = "menu";
         _errorMessage = "";
         _paymentSuccess = false;
+    }
+
+    // Calendar helpers
+    private void PrevMonth() => _calendarDate = _calendarDate.AddMonths(-1);
+    private void NextMonth() => _calendarDate = _calendarDate.AddMonths(1);
+
+    private List<DateTime> GetCalendarDays()
+    {
+        var first = new DateTime(_calendarDate.Year, _calendarDate.Month, 1);
+        var startDay = (int)first.DayOfWeek;
+        if (startDay == 0) startDay = 7; // Sunday = 7 in Czech calendar
+        var start = first.AddDays(-(startDay - 1));
+        var days = new List<DateTime>();
+        for (var i = 0; i < 42; i++)
+            days.Add(start.AddDays(i));
+        return days;
+    }
+
+    private void UseContact(ContactVm contact)
+    {
+        _recipient = contact.AccountNumber;
+        _activeTab = "payment";
+        _pageView = "menu";
+    }
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static string GetCategory(string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description)) return "";
+        var d = description.ToLowerInvariant();
+        if (d.Contains("nákup") || d.Contains("shop")) return "shopping";
+        if (d.Contains("restaur") || d.Contains("jídlo")) return "food";
+        if (d.Contains("benzín") || d.Contains("auto")) return "car";
+        if (d.Contains("dovolená") || d.Contains("hotel")) return "travel";
+        if (d.Contains("elektřin") || d.Contains("plyn")) return "utilities";
+        return "";
     }
 
     private async Task SendPayment()
@@ -510,6 +725,7 @@
     private void UseTemplate(PaymentTemplateDto tpl)
     {
         _activeTab = "payment";
+        _pageView = "menu";
         _recipient = tpl.RecipientAccountNumber;
         _description = tpl.DefaultDescription ?? "";
         _amount = tpl.DefaultAmount ?? 0;
@@ -537,4 +753,6 @@
         "Yearly" => "ročně",
         _ => interval
     };
+
+    private sealed record ContactVm(string Name, string Initials, string AccountNumber);
 }

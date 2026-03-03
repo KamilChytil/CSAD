@@ -4,19 +4,19 @@
 
 <nav class="bottom-nav">
     <NavLink class="nav-item" href="prehled" Match="NavLinkMatch.All">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon"><VbIcon Name="home" Size="sm" /></span>
         <span class="nav-label">Přehled</span>
     </NavLink>
     <NavLink class="nav-item" href="platby">
-        <span class="nav-icon">💳</span>
+        <span class="nav-icon"><VbIcon Name="payments" Size="sm" /></span>
         <span class="nav-label">Platby</span>
     </NavLink>
     <NavLink class="nav-item" href="sporeni">
-        <span class="nav-icon">🎯</span>
+        <span class="nav-icon"><VbIcon Name="target" Size="sm" /></span>
         <span class="nav-label">Spoření</span>
     </NavLink>
     <NavLink class="nav-item" href="investice">
-        <span class="nav-icon">📈</span>
+        <span class="nav-icon"><VbIcon Name="investments" Size="sm" /></span>
         <span class="nav-label">Investice</span>
     </NavLink>
     <NavLink class="nav-item" href="kurzy">
@@ -26,30 +26,30 @@
     @if (Auth.CurrentSession?.Role != "Child")
     {
         <NavLink class="nav-item" href="produkty">
-            <span class="nav-icon">🏦</span>
+            <span class="nav-icon"><VbIcon Name="bank" Size="sm" /></span>
             <span class="nav-label">Produkty</span>
         </NavLink>
     }
     <NavLink class="nav-item" href="zpravy">
-        <span class="nav-icon">💬</span>
+        <span class="nav-icon"><VbIcon Name="chat" Size="sm" /></span>
         <span class="nav-label">Zprávy</span>
     </NavLink>
     @if (Auth.CurrentSession?.Role == "Banker")
     {
         <NavLink class="nav-item" href="sprava">
-            <span class="nav-icon">📋</span>
+            <span class="nav-icon"><VbIcon Name="clipboard" Size="sm" /></span>
             <span class="nav-label">Správa</span>
         </NavLink>
     }
     @if (Auth.CurrentSession?.Role == "Admin")
     {
         <NavLink class="nav-item" href="admin">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon"><VbIcon Name="settings" Size="sm" /></span>
             <span class="nav-label">Admin</span>
         </NavLink>
     }
     <NavLink class="nav-item" href="profil">
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon"><VbIcon Name="user" Size="sm" /></span>
         <span class="nav-label">Profil</span>
     </NavLink>
 </nav>

@@ -2,16 +2,54 @@
 @page "/prehled"
 @namespace FairBank.Web.Overview.Pages
 @inject IFairBankApi Api
+@inject IAuthService Auth
 
-<PageHeader Title="PŘEHLED ÚČTU" />
+<PageHeader Title="PŘEHLED ÚČTU" ShowChip="false">
+    <Actions>
+        <button class="btn-icon" title="Notifikace"><VbIcon Name="bell" Size="sm" /></button>
+    </Actions>
+</PageHeader>
 
-<div class="page-content">
-    <BalanceCard Amount="@_balance" Currency="Kč" />
+<div class="page-content overview-page">
 
-    <ContentCard Title="Transakce">
-        <HeaderAction>
-            <a class="link-action" href="#">Odkrýt</a>
-        </HeaderAction>
+    @* ── HERO BALANCE CARD ────────────────────── *@
+    <BalanceCard Amount="@_balance" Currency="Kč" Variant="hero" Label="ZŮSTATEK" SubText="@_accountNumber">
+        <div class="hero-quick-actions">
+            <VbButton Variant="outline" Size="sm" IconName="send" OnClick="@(() => Nav("platby"))">Poslat</VbButton>
+            <VbButton Variant="outline" Size="sm" IconName="qr" OnClick="@(() => Nav("platby"))">QR</VbButton>
+            <VbButton Variant="outline" Size="sm" IconName="arrow-down" OnClick="@(() => Nav("platby"))">Přijmout</VbButton>
+        </div>
+    </BalanceCard>
+
+    @* ── CHALLENGES / VÝZVY ───────────────────── *@
+    <ContentCard Title="MOJE VÝZVY" CssClass="section-challenges">
+        <Icon><VbIcon Name="rocket" Size="sm" Color="var(--vb-red)" /></Icon>
+        <HeaderAction><a class="link-action" href="sporeni">Vše</a></HeaderAction>
+        <ChildContent>
+            @foreach (var challenge in _challenges)
+            {
+                <div class="challenge-card">
+                    <div class="challenge-info">
+                        <div class="challenge-icon-wrap">
+                            <VbIcon Name="@challenge.Icon" Size="sm" Color="var(--vb-gold)" />
+                        </div>
+                        <div class="challenge-text">
+                            <span class="challenge-name">@challenge.Name</span>
+                            <span class="challenge-progress-text">@challenge.ProgressPercent% hotovo</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" style="width: @challenge.ProgressPercent%"></div>
+                    </div>
+                </div>
+            }
+        </ChildContent>
+    </ContentCard>
+
+    @* ── RECENT TRANSACTIONS ──────────────────── *@
+    <ContentCard Title="NEDÁVNÉ TRANSAKCE">
+        <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-red)" /></Icon>
+        <HeaderAction><a class="link-action" href="platby">Vše</a></HeaderAction>
         <ChildContent>
             @foreach (var tx in _transactions)
             {
@@ -20,7 +58,8 @@
                     Date="@tx.Date"
                     Amount="@tx.Amount"
                     Currency="Kč"
-                    Type="@tx.Type" />
+                    Type="@tx.Type"
+                    Category="@tx.Category" />
             }
 
             @if (!_transactions.Any())
@@ -29,21 +68,115 @@
             }
         </ChildContent>
     </ContentCard>
+
+    @* ── AUTO SAVINGS ROULETTE ────────────────── *@
+    <ContentCard Title="AUTOMATICKÉ SPOŘENÍ" CssClass="section-savings">
+        <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-red)" /></Icon>
+        <ChildContent>
+            <div class="auto-savings-visual">
+                <div class="savings-roulette">
+                    @foreach (var milestone in _savingsMilestones)
+                    {
+                        <div class="savings-milestone @(milestone.IsReached ? "reached" : "")">
+                            <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
+                            <span class="milestone-amount">@milestone.Amount.ToString("N0") Kč</span>
+                        </div>
+                    }
+                </div>
+                <div class="savings-summary">
+                    <div class="stat-row">
+                        <span class="stat-label">Naspořeno tento měsíc</span>
+                        <span class="stat-value positive">+2 340 Kč</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Celkové spoření</span>
+                        <span class="stat-value">155 700 Kč</span>
+                    </div>
+                </div>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    @* ── FINANCIAL TIP ────────────────────────── *@
+    <div class="tip-card">
+        <div class="tip-icon"><VbIcon Name="fire" Size="sm" /></div>
+        <div class="tip-content">
+            <span class="tip-title">Finanční Tip</span>
+            <span class="tip-text">Pravidelné spoření i malých částek vám díky složenému úročení může přinést významné výnosy.</span>
+        </div>
+    </div>
+
 </div>
 
 @code {
-    private decimal _balance = 2_393.07m;
-    private List<TransactionDto> _transactions = [];
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
-    protected override void OnInitialized()
+    private decimal _balance = 2_393_070m;
+    private string _accountNumber = "";
+    private List<TransactionVm> _transactions = [];
+    private List<ChallengeVm> _challenges = [];
+    private List<MilestoneVm> _savingsMilestones = [];
+
+    protected override async Task OnInitializedAsync()
     {
-        // Demo data matching the mockup
-        _transactions =
+        // Load real account data if available
+        try
+        {
+            if (Auth.CurrentSession is { } session)
+            {
+                var accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
+                if (accounts.Any())
+                {
+                    _balance = accounts.Sum(a => a.Balance);
+                    _accountNumber = accounts[0].AccountNumber;
+
+                    // Load real transactions
+                    var payments = await Api.GetPaymentsByAccountAsync(accounts[0].Id);
+                    _transactions = payments.Select(p => new TransactionVm(
+                        p.Description ?? p.RecipientAccountNumber,
+                        p.CreatedAt,
+                        p.SenderAccountId == accounts[0].Id ? -p.Amount : p.Amount,
+                        p.SenderAccountId == accounts[0].Id ? "withdrawal" : "deposit",
+                        ""
+                    )).Take(5).ToList();
+                }
+            }
+        }
+        catch { /* Use demo data below */ }
+
+        // Fill with demo data if empty
+        if (!_transactions.Any())
+        {
+            _transactions =
+            [
+                new("Nákupy", DateTime.Now.AddDays(-1), -2_500m, "withdrawal", "shopping"),
+                new("Převod od Jana", DateTime.Now.AddDays(-1), 15_000m, "deposit", "transfer"),
+                new("Restaurace", DateTime.Now.AddDays(-2), -890m, "withdrawal", "food"),
+                new("Benzín", DateTime.Now.AddDays(-3), -1_200m, "withdrawal", "car"),
+                new("Dovolená", DateTime.Now.AddDays(-4), -8_500m, "withdrawal", "travel"),
+            ];
+        }
+
+        _challenges =
         [
-            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 15), -2_500m, "withdrawal"),
-            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 19), -100m, "withdrawal"),
-            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 18), 250m, "deposit"),
-            new(Guid.NewGuid(), "Transakce", new DateTime(2022, 2, 18), -50m, "payment"),
+            new("Dovolená", 70, "travel"),
+            new("Nouzový fond", 45, "shield"),
+            new("Investuj měsíčně", 90, "chart"),
+        ];
+
+        _savingsMilestones =
+        [
+            new("10k", 10_000m, true),
+            new("15k", 15_000m, true),
+            new("50k", 50_000m, false),
+            new("30k", 30_000m, false),
+            new("100k", 100_000m, false),
         ];
     }
+
+    private void Nav(string page) => Navigation.NavigateTo(page);
+
+    private sealed record TransactionVm(string Description, DateTime Date, decimal Amount, string Type, string Category);
+    private sealed record ChallengeVm(string Name, int ProgressPercent, string Icon);
+    private sealed record MilestoneVm(string Label, decimal Amount, bool IsReached);
 }
