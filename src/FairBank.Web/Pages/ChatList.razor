@@ -8,7 +8,7 @@
 
 <div class="chat-list-container">
     <div class="chat-list-header">
-        <h2>💬 Zprávy</h2>
+        <h2><VbIcon Name="chat" Size="sm" /> Zprávy</h2>
     </div>
 
     @if (_loading)
@@ -25,7 +25,7 @@
             @foreach (var conv in _conversations)
             {
                 <div class="chat-list-item" @onclick="() => OpenConversation(conv.Id)">
-                    <div class="chat-list-icon">@GetIcon(conv.Type)</div>
+                    <div class="chat-list-icon"><VbIcon Name="@GetIconName(conv.Type)" Size="sm" /></div>
                     <div class="chat-list-info">
                         <div class="chat-list-label">@conv.Label</div>
                         <div class="chat-list-last">@(conv.LastMessage ?? "Žádné zprávy")</div>
@@ -129,10 +129,10 @@
 
     private void OpenConversation(Guid id) => Navigation.NavigateTo($"/zpravy/{id}");
 
-    private static string GetIcon(string type) => type switch
+    private static string GetIconName(string type) => type switch
     {
-        "Support" => "🏦",
-        "Family"  => "👨‍👩‍👧",
-        _         => "💬"
+        "Support" => "bank",
+        "Family"  => "user",
+        _         => "chat"
     };
 }
