@@ -37,4 +37,9 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
     {
         return await db.Users.Where(u => u.ParentId == parentId).ToListAsync(ct);
     }
+
+    public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await db.Users.ToListAsync(ct);
+    }
 }

@@ -17,9 +17,9 @@
     }
     else
     {
-        @if (_isBanker)
-        {
-            <div class="chat-tabs">
+        <div class="chat-tabs">
+            @if (_isBanker)
+            {
                 <button class="chat-tab @(_currentTab == "mine" ? "active" : "")" @onclick="@(() => _currentTab = "mine")">
                     Moje chaty
                     @if (MyActiveChats.Any()) { <span class="badge">@MyActiveChats.Count()</span> }
@@ -28,45 +28,39 @@
                     Nepřiřazené
                     @if (UnassignedChats.Any()) { <span class="badge unassigned-badge">@UnassignedChats.Count()</span> }
                 </button>
-                <button class="chat-tab @(_currentTab == "closed" ? "active" : "")" @onclick="@(() => _currentTab = "closed")">
-                    Uzavřené
-                </button>
-            </div>
-
-            <div class="chat-list">
-                @if (_currentTab == "mine")
-                {
-                    @if (!MyActiveChats.Any()) { <div class="chat-list-empty">Nemáte žádné aktivní chaty.</div> }
-                    @foreach (var conv in MyActiveChats) { @RenderConv(conv) }
-                }
-                else if (_currentTab == "unassigned")
-                {
-                    @if (!UnassignedChats.Any()) { <div class="chat-list-empty">Všechny chaty jsou rozebrané.</div> }
-                    @foreach (var conv in UnassignedChats) { @RenderConv(conv) }
-                }
-                else
-                {
-                    @if (!ClosedChats.Any()) { <div class="chat-list-empty">Žádné uzavřené chaty.</div> }
-                    @foreach (var conv in ClosedChats) { @RenderConv(conv) }
-                }
-            </div>
-        }
-        else
-        {
-            <h3 class="section-title">Aktivní konverzace</h3>
-            <div class="chat-list">
-                @if (!ClientActiveChats.Any()) { <div class="chat-list-empty">Žádné aktivní konverzace.</div> }
-                @foreach (var conv in ClientActiveChats) { @RenderConv(conv) }
-            </div>
-            
-            @if (ClientClosedChats.Any())
-            {
-                <h3 class="section-title closed">Uzavřené konverzace</h3>
-                <div class="chat-list">
-                    @foreach (var conv in ClientClosedChats) { @RenderConv(conv) }
-                </div>
             }
-        }
+            else
+            {
+                <button class="chat-tab @(_currentTab == "mine" ? "active" : "")" @onclick="@(() => _currentTab = "mine")">
+                    Aktivní
+                    @if (ClientActiveChats.Any()) { <span class="badge">@ClientActiveChats.Count()</span> }
+                </button>
+            }
+            <button class="chat-tab @(_currentTab == "closed" ? "active" : "")" @onclick="@(() => _currentTab = "closed")">
+                Uzavřené
+                @if (!_isBanker && ClientClosedChats.Any()) { <span class="badge">@ClientClosedChats.Count()</span> }
+            </button>
+        </div>
+
+        <div class="chat-list">
+            @if (_currentTab == "mine")
+            {
+                var active = _isBanker ? MyActiveChats : ClientActiveChats;
+                @if (!active.Any()) { <div class="chat-list-empty">Žádné aktivní chaty.</div> }
+                @foreach (var conv in active) { @RenderConv(conv) }
+            }
+            else if (_currentTab == "unassigned" && _isBanker)
+            {
+                @if (!UnassignedChats.Any()) { <div class="chat-list-empty">Všechny chaty jsou rozebrané.</div> }
+                @foreach (var conv in UnassignedChats) { @RenderConv(conv) }
+            }
+            else if (_currentTab == "closed")
+            {
+                var closed = _isBanker ? ClosedChats : ClientClosedChats;
+                @if (!closed.Any()) { <div class="chat-list-empty">Žádné uzavřené chaty.</div> }
+                @foreach (var conv in closed) { @RenderConv(conv) }
+            }
+        </div>
     }
 </div>
 

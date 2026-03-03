@@ -15,4 +15,5 @@ public interface IConversationRepository
     Task<IEnumerable<Conversation>> GetFamilyByParentAsync(Guid parentId, CancellationToken ct = default);
     Task<Conversation?> GetFamilyByChildAsync(Guid childId, CancellationToken ct = default);
     Task<Conversation?> GetSupportByClientAsync(Guid clientId, CancellationToken ct = default);
+    Task<IEnumerable<Conversation>> GetAllSupportForClientAsync(Guid clientId, CancellationToken ct = default);
 }

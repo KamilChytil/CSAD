@@ -19,6 +19,7 @@ public interface IChatService
     Task UpdateConversationNotesAsync(Guid conversationId, string notes);
     Task CloseConversationAsync(Guid conversationId);
     Task ReopenConversationAsync(Guid conversationId);
+    Task<IEnumerable<BankerDto>> GetBankersAsync();
 }
 
 public sealed class ChatService : IChatService, IAsyncDisposable
@@ -26,6 +27,8 @@ public sealed class ChatService : IChatService, IAsyncDisposable
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
     private HubConnection? _hubConnection;
+
+    private string? _token;
 
     public event Action<ChatMessageDto>? OnMessageReceived;
 
@@ -44,48 +47,81 @@ public sealed class ChatService : IChatService, IAsyncDisposable
         if (parentId.HasValue)
             url += $"&parentId={parentId.Value}";
 
-        var response = await _httpClient.GetFromJsonAsync<IEnumerable<ConversationDto>>(url);
-        return response ?? Array.Empty<ConversationDto>();
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return Array.Empty<ConversationDto>();
+        
+        return await response.Content.ReadFromJsonAsync<IEnumerable<ConversationDto>>() ?? Array.Empty<ConversationDto>();
     }
 
     // ── Message history ────────────────────────────────────────────────────
 
     public async Task<IEnumerable<ChatMessageDto>> GetConversationMessagesAsync(Guid conversationId)
     {
-        var response = await _httpClient.GetFromJsonAsync<IEnumerable<ChatMessageDto>>($"/api/v1/chat/conversations/{conversationId}/messages");
-        return response ?? Array.Empty<ChatMessageDto>();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/chat/conversations/{conversationId}/messages");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return Array.Empty<ChatMessageDto>();
+        
+        return await response.Content.ReadFromJsonAsync<IEnumerable<ChatMessageDto>>() ?? Array.Empty<ChatMessageDto>();
     }
 
     // Banker tool methods implementations
     public async Task AssignConversationAsync(Guid conversationId, Guid bankerId)
     {
-        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/assign?bankerId={bankerId}", null);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/assign?bankerId={bankerId}");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        await _httpClient.SendAsync(request);
     }
 
     public async Task UpdateConversationNotesAsync(Guid conversationId, string notes)
     {
-        await _httpClient.PatchAsJsonAsync($"/api/v1/chat/conversations/{conversationId}/notes", notes);
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/chat/conversations/{conversationId}/notes");
+        request.Content = JsonContent.Create(notes);
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        await _httpClient.SendAsync(request);
     }
 
     public async Task TransferChatAsync(Guid conversationId, Guid targetBankerId)
     {
-        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/transfer?bankerId={targetBankerId}", null);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/transfer?bankerId={targetBankerId}");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        await _httpClient.SendAsync(request);
     }
 
     public async Task CloseConversationAsync(Guid conversationId)
     {
-        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/close", null);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/close");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        await _httpClient.SendAsync(request);
     }
 
     public async Task ReopenConversationAsync(Guid conversationId)
     {
-        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/reopen", null);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/reopen");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        await _httpClient.SendAsync(request);
+    }
+
+    public async Task<IEnumerable<BankerDto>> GetBankersAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/users/bankers");
+        if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
+        
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return Array.Empty<BankerDto>();
+        
+        return await response.Content.ReadFromJsonAsync<IEnumerable<BankerDto>>() ?? Array.Empty<BankerDto>();
     }
 
     // ── SignalR ────────────────────────────────────────────────────────────
 
     public async Task InitializeAsync(string token)
     {
+        _token = token;
         if (_hubConnection is not null) return;
 
         _hubConnection = new HubConnectionBuilder()

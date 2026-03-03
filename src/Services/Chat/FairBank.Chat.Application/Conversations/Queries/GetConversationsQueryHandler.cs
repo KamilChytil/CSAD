@@ -65,14 +65,19 @@ public sealed class GetConversationsQueryHandler(
         }
         else
         {
-            // Clients always have (or get) a Support conversation
-            var support = await convRepo.GetOrCreateSupportAsync(request.UserId, request.UserLabel, ct);
-            var lastSupport = (await msgRepo.GetMessagesByConversationAsync(support.Id, ct)).LastOrDefault();
-            results.Add(new ConversationSummaryDto(
-                support.Id, "Support", "Banker support",
-                lastSupport?.Content, lastSupport?.SentAt,
-                support.Status.ToString(), support.ClosedAt,
-                support.BankerOrParentId, support.InternalNotes));
+            // Clients always have (or get) at least one Support conversation
+            await convRepo.GetOrCreateSupportAsync(request.UserId, request.UserLabel, ct);
+            
+            var allSupport = await convRepo.GetAllSupportForClientAsync(request.UserId, ct);
+            foreach (var s in allSupport)
+            {
+                var lastSupport = (await msgRepo.GetMessagesByConversationAsync(s.Id, ct)).LastOrDefault();
+                results.Add(new ConversationSummaryDto(
+                    s.Id, "Support", "Banker support",
+                    lastSupport?.Content, lastSupport?.SentAt,
+                    s.Status.ToString(), s.ClosedAt,
+                    s.BankerOrParentId, s.InternalNotes));
+            }
 
             // If the user is a child, also return their family conversation
             if (request.ParentId.HasValue)

@@ -69,4 +69,10 @@ public sealed class ConversationRepository(ChatDbContext db) : IConversationRepo
         => await db.Conversations
             .OrderByDescending(c => c.CreatedAt)
             .FirstOrDefaultAsync(c => c.Type == ConversationType.Support && c.ClientOrChildId == clientId, ct);
+
+    public async Task<IEnumerable<Conversation>> GetAllSupportForClientAsync(Guid clientId, CancellationToken ct = default)
+        => await db.Conversations
+            .Where(c => c.Type == ConversationType.Support && c.ClientOrChildId == clientId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(ct);
 }

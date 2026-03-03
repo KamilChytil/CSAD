@@ -32,6 +32,25 @@
                     }
                     else if (_conversation?.Status == "Active")
                     {
+                        <div class="transfer-wrapper">
+                            <button class="btn btn-outline" @onclick="ToggleTransfer">Předat chat</button>
+                            @if (_showTransfer)
+                            {
+                                <div class="transfer-dropdown">
+                                    <div class="transfer-header">Předat bankéři:</div>
+                                    @foreach (var b in _bankers.Where(b => b.Id != _currentUserId))
+                                    {
+                                        <div class="transfer-item" @onclick="() => TransferTo(b.Id)">
+                                            @b.FirstName @b.LastName
+                                        </div>
+                                    }
+                                    @if (!_bankers.Any(b => b.Id != _currentUserId))
+                                    {
+                                        <div class="transfer-empty">Žádní jiní bankéři.</div>
+                                    }
+                                </div>
+                            }
+                        </div>
                         <button class="btn btn-outline" @onclick="CloseChat">Uzavřít chat</button>
                     }
                 }
@@ -154,6 +173,18 @@
     
     .chat-closed-banner { padding: 1rem; text-align: center; background: var(--vb-gray-50); color: var(--vb-text-muted); font-style: italic; border-top: 1px solid var(--vb-divider); }
     .chat-closed-banner.action-required { background: #fff5f5; color: #d11; font-style: normal; font-weight: 600; }
+
+    .transfer-wrapper { position: relative; }
+    .transfer-dropdown { 
+        position: absolute; top: 100%; right: 0; min-width: 200px;
+        background: var(--vb-bg-elevated); border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm); box-shadow: var(--vb-shadow-lg);
+        z-index: 100; margin-top: 5px; padding: 0.5rem 0;
+    }
+    .transfer-header { padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 700; color: var(--vb-text-muted); text-transform: uppercase; border-bottom: 1px solid var(--vb-divider); margin-bottom: 0.25rem; }
+    .transfer-item { padding: 0.5rem 1rem; cursor: pointer; transition: var(--vb-transition); font-size: 0.9rem; color: var(--vb-text-primary); }
+    .transfer-item:hover { background: var(--vb-gray-100); color: var(--vb-red); }
+    .transfer-empty { padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--vb-text-muted); font-style: italic; }
 </style>
 
 @code {
@@ -168,6 +199,8 @@
     private Guid _currentUserId;
     private string _senderName = "";
     private bool _isBanker = false;
+    private bool _showTransfer = false;
+    private List<BankerDto> _bankers = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,6 +212,11 @@
         _senderName = $"{session.FirstName} {session.LastName}";
         _isBanker = session.Role == "Banker" || session.Role == "Admin";
 
+        if (_isBanker)
+        {
+            _bankers = (await ChatService.GetBankersAsync()).ToList();
+        }
+
         await ChatService.InitializeAsync(session.Token);
         await ChatService.JoinConversationAsync(ConversationId);
 
@@ -186,6 +224,18 @@
         ChatService.OnMessageReceived += HandleMessageReceived;
 
         await LoadConversationDetails(session.UserId, session.Role, _senderName);
+    }
+
+    private void ToggleTransfer() => _showTransfer = !_showTransfer;
+
+    private async Task TransferTo(Guid bankerId)
+    {
+        _showTransfer = false;
+        await ChatService.TransferChatAsync(ConversationId, bankerId);
+        
+        // After transfer, the current banker is no longer assigned.
+        // Navigate back to the list as it's no longer 'mine'
+        Navigation.NavigateTo("/zpravy");
     }
 
     private async Task LoadConversationDetails(Guid userId, string role, string label)

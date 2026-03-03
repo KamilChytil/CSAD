@@ -117,23 +117,17 @@
         @* ── BALANCE HERO IN POHYBY VIEW ─────────── *@
         <BalanceCard Amount="@_accountBalance" Currency="Kč" Variant="hero" Label="ZŮSTATEK" />
 
-        @* ── SUMMARY STATS ───────────────────────── *@
-        @{
-            var completedHistory = _history.Where(h => h.Status == "Completed").ToList();
-            var totalSent = completedHistory.Where(h => h.SenderAccountId == _selectedAccountId).Sum(h => h.Amount);
-            var totalReceived = completedHistory.Where(h => h.SenderAccountId != _selectedAccountId).Sum(h => h.Amount);
-        }
         <div class="stat-row" style="margin-bottom:12px;">
             <div class="stat-item">
-                <div class="stat-value" style="color:var(--vb-red);">-@totalSent.ToString("N0")</div>
+                <div class="stat-value" style="color:var(--vb-red);">-@TotalSent.ToString("N0")</div>
                 <div class="stat-label">Odesláno</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" style="color:var(--vb-green);">+@totalReceived.ToString("N0")</div>
+                <div class="stat-value" style="color:var(--vb-green);">+@TotalReceived.ToString("N0")</div>
                 <div class="stat-label">Přijato</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value">@completedHistory.Count</div>
+                <div class="stat-value">@CompletedHistory.Count</div>
                 <div class="stat-label">Transakcí</div>
             </div>
         </div>
@@ -149,15 +143,7 @@
         <ContentCard Title="TRANSAKCE">
             <Icon><VbIcon Name="transfer" Size="sm" Color="var(--vb-red)" /></Icon>
             <ChildContent>
-                @{
-                    var filteredHistory = _historyFilter switch
-                    {
-                        "sent" => _history.Where(h => h.SenderAccountId == _selectedAccountId).ToList(),
-                        "received" => _history.Where(h => h.SenderAccountId != _selectedAccountId).ToList(),
-                        _ => _history
-                    };
-                }
-                @foreach (var tx in filteredHistory)
+                @foreach (var tx in GetFilteredHistory())
                 {
                     var isSent = tx.SenderAccountId == _selectedAccountId;
                     var counterparty = isSent ? tx.RecipientAccountNumber : tx.SenderAccountNumber;
@@ -619,6 +605,18 @@
     private string _intlChargeType = "SHA";
     private string _intlIbanError = "";
     private string _intlSwiftError = "";
+
+    // Helpers for summary and filtering
+    private List<PaymentDto> CompletedHistory => _history.Where(h => h.Status == "Completed").ToList();
+    private decimal TotalSent => CompletedHistory.Where(h => h.SenderAccountId == _selectedAccountId).Sum(h => h.Amount);
+    private decimal TotalReceived => CompletedHistory.Where(h => h.SenderAccountId != _selectedAccountId).Sum(h => h.Amount);
+
+    private List<PaymentDto> GetFilteredHistory() => _historyFilter switch
+    {
+        "sent" => _history.Where(h => h.SenderAccountId == _selectedAccountId).ToList(),
+        "received" => _history.Where(h => h.SenderAccountId != _selectedAccountId).ToList(),
+        _ => _history
+    };
 
     // Data
     private List<PaymentDto> _history = [];
