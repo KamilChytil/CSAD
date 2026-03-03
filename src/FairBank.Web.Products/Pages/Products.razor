@@ -1,7 +1,7 @@
 @page "/produkty"
 @namespace FairBank.Web.Products.Pages
 @using FairBank.Web.Products.Services
-@inject AuthStateService Auth
+@inject IAuthService Auth
 
 <PageHeader Title="PRODUKTY" />
 
@@ -20,7 +20,7 @@
                 @onclick='() => _activeTab = "insurance"'>
             <span class="tab-icon">🛡️</span> Pojištění
         </button>
-        @if (!Auth.IsStaff)
+        @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
         {
             <button class="product-tab @(_activeTab == "my" ? "active" : "")"
                     @onclick='() => _activeTab = "my"'>

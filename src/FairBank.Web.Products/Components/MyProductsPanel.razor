@@ -1,6 +1,6 @@
 @namespace FairBank.Web.Products.Pages
 @inject IFairBankApi Api
-@inject AuthStateService Auth
+@inject IAuthService Auth
 
 @if (_isLoading)
 {
@@ -81,7 +81,7 @@ else
         _isLoading = true;
         try
         {
-            _applications = await Api.GetUserApplicationsAsync(Auth.CurrentUser!.Id);
+            _applications = await Api.GetUserApplicationsAsync(Auth.CurrentSession!.UserId);
         }
         catch
         {
@@ -98,7 +98,7 @@ else
         _isCancelling = true;
         try
         {
-            await Api.CancelApplicationAsync(applicationId, Auth.CurrentUser!.Id);
+            await Api.CancelApplicationAsync(applicationId, Auth.CurrentSession!.UserId);
             await LoadApplications();
         }
         catch

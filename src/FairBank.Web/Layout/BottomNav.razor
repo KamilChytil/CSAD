@@ -1,5 +1,5 @@
 @using Microsoft.AspNetCore.Components.Routing
-@inject AuthStateService Auth
+@inject IAuthService Auth
 @implements IDisposable
 
 <nav class="bottom-nav">
@@ -23,7 +23,7 @@
         <span class="nav-icon">💱</span>
         <span class="nav-label">Kurzy</span>
     </NavLink>
-    @if (!Auth.IsChild)
+    @if (Auth.CurrentSession?.Role != "Child")
     {
         <NavLink class="nav-item" href="produkty">
             <span class="nav-icon">🏦</span>
@@ -34,14 +34,14 @@
         <span class="nav-icon">💬</span>
         <span class="nav-label">Zprávy</span>
     </NavLink>
-    @if (Auth.IsBanker)
+    @if (Auth.CurrentSession?.Role == "Banker")
     {
         <NavLink class="nav-item" href="sprava">
             <span class="nav-icon">📋</span>
             <span class="nav-label">Správa</span>
         </NavLink>
     }
-    @if (Auth.IsAdmin)
+    @if (Auth.CurrentSession?.Role == "Admin")
     {
         <NavLink class="nav-item" href="admin">
             <span class="nav-icon">⚙️</span>
@@ -57,13 +57,13 @@
 @code {
     protected override void OnInitialized()
     {
-        Auth.OnChanged += HandleAuthChanged;
+        Auth.AuthStateChanged += HandleAuthChanged;
     }
 
     private void HandleAuthChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
-        Auth.OnChanged -= HandleAuthChanged;
+        Auth.AuthStateChanged -= HandleAuthChanged;
     }
 }

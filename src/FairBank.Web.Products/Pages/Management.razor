@@ -1,7 +1,7 @@
 @page "/sprava"
 @namespace FairBank.Web.Products.Pages
 @inject IFairBankApi Api
-@inject AuthStateService Auth
+@inject IAuthService Auth
 @inject NavigationManager Nav
 
 <PageHeader Title="SPRÁVA ŽÁDOSTÍ" />
@@ -140,7 +140,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Auth.IsStaff)
+        if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
         {
             Nav.NavigateTo("/prehled");
             return;
@@ -190,7 +190,7 @@
         try
         {
             var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
-            await Api.ApproveApplicationAsync(_selectedApp.Id, Auth.CurrentUser!.Id, note);
+            await Api.ApproveApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
             _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla schválena.";
             CloseDetail();
             await LoadApplications();
@@ -214,7 +214,7 @@
         try
         {
             var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
-            await Api.RejectApplicationAsync(_selectedApp.Id, Auth.CurrentUser!.Id, note);
+            await Api.RejectApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
             _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla zamítnuta.";
             CloseDetail();
             await LoadApplications();

@@ -1,7 +1,7 @@
 @namespace FairBank.Web.Products.Pages
 @using FairBank.Web.Products.Services
 @inject IFairBankApi Api
-@inject AuthStateService Auth
+@inject IAuthService Auth
 
 <div class="insurance-subtabs">
     <button class="insurance-subtab @(_subTab == "travel" ? "active" : "")"
@@ -71,7 +71,7 @@
                         }
                     </ul>
                 </div>
-                @if (!Auth.IsStaff)
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
                 {
                     <VbButton OnClick='() => ShowModal("TravelInsurance")'>Sjednat online</VbButton>
                 }
@@ -134,7 +134,7 @@
                         }
                     </ul>
                 </div>
-                @if (!Auth.IsStaff)
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
                 {
                     <VbButton OnClick='() => ShowModal("PropertyInsurance")'>Sjednat online</VbButton>
                 }
@@ -188,7 +188,7 @@
                         }
                     </ul>
                 </div>
-                @if (!Auth.IsStaff)
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
                 {
                     <VbButton OnClick='() => ShowModal("LifeInsurance")'>Sjednat online</VbButton>
                 }
@@ -239,7 +239,7 @@
                         </ul>
                     }
                 </div>
-                @if (!Auth.IsStaff)
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
                 {
                     <VbButton OnClick='() => ShowModal("PaymentProtection")'>Sjednat online</VbButton>
                 }
@@ -375,7 +375,7 @@
         try
         {
             var (parameters, monthlyPayment) = GetApplicationData();
-            await Api.SubmitProductApplicationAsync(Auth.CurrentUser!.Id, _modalProductType, parameters, monthlyPayment);
+            await Api.SubmitProductApplicationAsync(Auth.CurrentSession!.UserId, _modalProductType, parameters, monthlyPayment);
             _submitSuccess = true;
         }
         catch

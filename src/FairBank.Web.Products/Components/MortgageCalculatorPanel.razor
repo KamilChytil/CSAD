@@ -1,7 +1,7 @@
 @namespace FairBank.Web.Products.Pages
 @using FairBank.Web.Products.Services
 @inject IFairBankApi Api
-@inject AuthStateService Auth
+@inject IAuthService Auth
 
 <ContentCard Title="Hypoteční kalkulačka">
     <ChildContent>
@@ -66,7 +66,7 @@
             </div>
         </div>
 
-        @if (!Auth.IsStaff)
+        @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
         {
             <VbButton OnClick="ShowModal">Požádat o hypotéku</VbButton>
         }
@@ -172,7 +172,7 @@
                 ltv = _result.Ltv,
                 monthlyPayment = _result.MonthlyPayment
             });
-            await Api.SubmitProductApplicationAsync(Auth.CurrentUser!.Id, "Mortgage", parameters, _result.MonthlyPayment);
+            await Api.SubmitProductApplicationAsync(Auth.CurrentSession!.UserId, "Mortgage", parameters, _result.MonthlyPayment);
             _submitSuccess = true;
         }
         catch

@@ -1,7 +1,7 @@
 @namespace FairBank.Web.Products.Pages
 @using FairBank.Web.Products.Services
 @inject IFairBankApi Api
-@inject AuthStateService Auth
+@inject IAuthService Auth
 
 <ContentCard Title="Kalkulačka osobního úvěru">
     <ChildContent>
@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        @if (!Auth.IsStaff)
+        @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
         {
             <VbButton OnClick="ShowModal">Požádat o úvěr</VbButton>
         }
@@ -131,7 +131,7 @@
                 rpsn = _result.Rpsn,
                 totalCost = _result.TotalCost
             });
-            await Api.SubmitProductApplicationAsync(Auth.CurrentUser!.Id, "PersonalLoan", parameters, _result.MonthlyPayment);
+            await Api.SubmitProductApplicationAsync(Auth.CurrentSession!.UserId, "PersonalLoan", parameters, _result.MonthlyPayment);
             _submitSuccess = true;
         }
         catch
