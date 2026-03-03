@@ -10,6 +10,12 @@ namespace FairBank.Identity.Api.Seeders;
 
 public static class AdminSeeder
 {
+    // Fixed deterministic GUIDs so the Accounts service seeder can reference
+    // the same users across service restarts without cross-schema queries.
+    public static readonly Guid AdminSeedId  = new("a1000000-0000-0000-0000-000000000001");
+    public static readonly Guid ClientSeedId = new("c1000000-0000-0000-0000-000000000002");
+    public static readonly Guid BankerSeedId = new("b1000000-0000-0000-0000-000000000003");
+
     /// <summary>
     /// Seeds all demo accounts on startup. Skips any that already exist (idempotent).
     /// </summary>
@@ -25,16 +31,17 @@ public static class AdminSeeder
             .GetRequiredService<IUnitOfWork>();
 
         // All demo accounts to seed — admin from config, rest hardcoded for hackathon
+        // Fixed GUIDs ensure the Accounts seeder can reference the same user IDs.
         var demoAccounts = new[]
         {
-            (settings.Email, settings.Password, settings.FirstName, settings.LastName, UserRole.Admin),
-            ("client@fairbank.cz", "Client123!", "Jan", "Novák", UserRole.Client),
-            ("banker@fairbank.cz", "Banker123!", "Marie", "Svobodová", UserRole.Banker),
+            (settings.Email, settings.Password, settings.FirstName, settings.LastName, UserRole.Admin,  AdminSeedId),
+            ("client@fairbank.cz", "Client123!", "Jan", "Novák",       UserRole.Client, ClientSeedId),
+            ("banker@fairbank.cz", "Banker123!", "Marie", "Svobodová",  UserRole.Banker, BankerSeedId),
         };
 
         var anyAdded = false;
 
-        foreach (var (emailStr, password, firstName, lastName, role) in demoAccounts)
+        foreach (var (emailStr, password, firstName, lastName, role, seedId) in demoAccounts)
         {
             var email = Email.Create(emailStr);
 
@@ -43,7 +50,7 @@ public static class AdminSeeder
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
 
-            var user = User.Create(firstName, lastName, email, passwordHash, role);
+            var user = User.Create(firstName, lastName, email, passwordHash, role, seedId);
 
             await userRepository.AddAsync(user);
             anyAdded = true;

@@ -41,7 +41,8 @@ public sealed class User : AggregateRoot<Guid>
         string lastName,
         Email email,
         string passwordHash,
-        UserRole role)
+        UserRole role,
+        Guid? id = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName, nameof(firstName));
         ArgumentException.ThrowIfNullOrWhiteSpace(lastName, nameof(lastName));
@@ -50,7 +51,7 @@ public sealed class User : AggregateRoot<Guid>
 
         return new User
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Email = email,

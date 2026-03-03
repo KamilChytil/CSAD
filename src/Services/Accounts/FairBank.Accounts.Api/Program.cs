@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using FairBank.Accounts.Api.Endpoints;
+using FairBank.Accounts.Api.Seeders;
 using FairBank.Accounts.Application;
 using FairBank.Accounts.Infrastructure;
 using FairBank.SharedKernel;
@@ -6,6 +8,10 @@ using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Serialize enums as strings (e.g. "CZK" instead of 0)
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration)
@@ -37,6 +43,9 @@ app.MapAccountEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Accounts" }))
     .WithTags("Health");
+
+// Seed demo accounts (idempotent — skips if already exist)
+await AccountSeeder.SeedAsync(app.Services);
 
 app.Run();
 

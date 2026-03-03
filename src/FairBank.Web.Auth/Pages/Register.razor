@@ -21,7 +21,7 @@
         @if (_registrationSuccess)
         {
             <div class="auth-alert auth-alert-success">
-                <span class="alert-icon">✅</span>
+                <span class="alert-icon"><VbIcon Name="check" Size="sm" /></span>
                 <div>
                     <strong>Registrace úspěšná!</strong>
                     <p>Nyní se můžete přihlásit.</p>
@@ -36,7 +36,7 @@
             @if (!string.IsNullOrEmpty(_errorMessage))
             {
                 <div class="auth-alert auth-alert-danger">
-                    <span class="alert-icon">⚠️</span>
+                    <span class="alert-icon"><VbIcon Name="danger" Size="sm" /></span>
                     <span>@_errorMessage</span>
                 </div>
             }
@@ -193,7 +193,7 @@
                                placeholder="Minimálně 8 znaků"
                                disabled="@_isLoading" />
                         <button type="button" class="password-toggle" @onclick="() => _showPassword = !_showPassword">
-                            @(_showPassword ? "🙈" : "👁️")
+                            <VbIcon Name="@(_showPassword ? "eye-off" : "eye")" Size="sm" />
                         </button>
                     </div>
                     @if (GetError(nameof(_password)) is { } pwErr)
@@ -218,7 +218,7 @@
                                placeholder="Zopakujte heslo"
                                disabled="@_isLoading" />
                         <button type="button" class="password-toggle" @onclick="() => _showPasswordConfirm = !_showPasswordConfirm">
-                            @(_showPasswordConfirm ? "🙈" : "👁️")
+                            <VbIcon Name="@(_showPasswordConfirm ? "eye-off" : "eye")" Size="sm" />
                         </button>
                     </div>
                     @if (GetError(nameof(_passwordConfirm)) is { } pcErr)

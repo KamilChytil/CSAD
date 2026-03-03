@@ -73,7 +73,8 @@ else
     {
         if (!IsPublicRoute())
         {
-            Nav.NavigateTo("/login?expired=1", forceLoad: false);
+            var url = Auth.WasSessionExpired ? "/login?expired=1" : "/login";
+            Nav.NavigateTo(url, forceLoad: false);
         }
     }
 

@@ -10,7 +10,7 @@ public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore)
 {
     public async Task<AccountResponse> Handle(CreateAccountCommand request, CancellationToken ct)
     {
-        var account = Account.Create(request.OwnerId, request.Currency);
+        var account = Account.Create(request.OwnerId, request.Currency, request.AccountNumber);
 
         await eventStore.StartStreamAsync(account, ct);
 
