@@ -25,11 +25,27 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Auto-create database schema on startup
+// Auto-create database tables on startup.
+// EnsureCreatedAsync() does NOT create tables when the database already exists (shared DB).
+// We check whether our tables exist and create them from the EF model if missing.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-    await db.Database.EnsureCreatedAsync();
+    var conn = db.Database.GetDbConnection();
+    await conn.OpenAsync();
+    await using (var checkCmd = conn.CreateCommand())
+    {
+        checkCmd.CommandText =
+            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'payments_service' AND table_name = 'payments')";
+        var exists = (bool)(await checkCmd.ExecuteScalarAsync())!;
+        if (!exists)
+        {
+            var script = db.Database.GenerateCreateScript();
+            await using var createCmd = conn.CreateCommand();
+            createCmd.CommandText = script;
+            await createCmd.ExecuteNonQueryAsync();
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())

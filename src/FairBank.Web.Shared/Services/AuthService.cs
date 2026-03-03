@@ -28,6 +28,9 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
 
     public event Action? AuthStateChanged;
 
+    /// <inheritdoc />
+    public bool WasSessionExpired { get; private set; }
+
     public async Task InitializeAsync()
     {
         await LoadSessionAsync();
@@ -36,6 +39,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         {
             if (_currentSession.ExpiresAt <= DateTime.UtcNow)
             {
+                WasSessionExpired = true;
                 await ClearSessionAsync();
             }
             else
@@ -45,6 +49,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
                 var valid = await ValidateSessionAsync();
                 if (!valid)
                 {
+                    WasSessionExpired = true;
                     await ClearSessionAsync();
                 }
                 else
@@ -91,6 +96,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
 
             // Success — clear any in-memory lockout cache.
             _lockedUntil = null;
+            WasSessionExpired = false;
 
             _currentSession = new AuthSession(
                 loginResponse.SessionId,
@@ -211,6 +217,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     private async Task OnInactivityTimeoutAsync()
     {
         StopInactivityTimer();
+        WasSessionExpired = true;
         await ClearSessionAsync();
         AuthStateChanged?.Invoke();
     }

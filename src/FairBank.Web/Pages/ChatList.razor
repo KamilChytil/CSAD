@@ -15,30 +15,74 @@
     {
         <div class="chat-list-empty">Načítání konverzací...</div>
     }
-    else if (!_conversations.Any())
-    {
-        <div class="chat-list-empty">Žádné konverzace</div>
-    }
     else
     {
-        <div class="chat-list">
-            @foreach (var conv in _conversations)
+        <div class="chat-tabs">
+            @if (_isBanker)
             {
-                <div class="chat-list-item" @onclick="() => OpenConversation(conv.Id)">
-                    <div class="chat-list-icon">@GetIcon(conv.Type)</div>
-                    <div class="chat-list-info">
-                        <div class="chat-list-label">@conv.Label</div>
-                        <div class="chat-list-last">@(conv.LastMessage ?? "Žádné zprávy")</div>
-                    </div>
-                    @if (conv.LastMessageAt.HasValue)
-                    {
-                        <div class="chat-list-time">@conv.LastMessageAt.Value.ToShortTimeString()</div>
-                    }
-                </div>
+                <button class="chat-tab @(_currentTab == "mine" ? "active" : "")" @onclick="@(() => _currentTab = "mine")">
+                    Moje chaty
+                    @if (MyActiveChats.Any()) { <span class="badge">@MyActiveChats.Count()</span> }
+                </button>
+                <button class="chat-tab @(_currentTab == "unassigned" ? "active" : "")" @onclick="@(() => _currentTab = "unassigned")">
+                    Nepřiřazené
+                    @if (UnassignedChats.Any()) { <span class="badge unassigned-badge">@UnassignedChats.Count()</span> }
+                </button>
+            }
+            else
+            {
+                <button class="chat-tab @(_currentTab == "mine" ? "active" : "")" @onclick="@(() => _currentTab = "mine")">
+                    Aktivní
+                    @if (ClientActiveChats.Any()) { <span class="badge">@ClientActiveChats.Count()</span> }
+                </button>
+            }
+            <button class="chat-tab @(_currentTab == "closed" ? "active" : "")" @onclick="@(() => _currentTab = "closed")">
+                Uzavřené
+                @if (!_isBanker && ClientClosedChats.Any()) { <span class="badge">@ClientClosedChats.Count()</span> }
+            </button>
+        </div>
+
+        <div class="chat-list">
+            @if (_currentTab == "mine")
+            {
+                var active = _isBanker ? MyActiveChats : ClientActiveChats;
+                @if (!active.Any()) { <div class="chat-list-empty">Žádné aktivní chaty.</div> }
+                @foreach (var conv in active) { @RenderConv(conv) }
+            }
+            else if (_currentTab == "unassigned" && _isBanker)
+            {
+                @if (!UnassignedChats.Any()) { <div class="chat-list-empty">Všechny chaty jsou rozebrané.</div> }
+                @foreach (var conv in UnassignedChats) { @RenderConv(conv) }
+            }
+            else if (_currentTab == "closed")
+            {
+                var closed = _isBanker ? ClosedChats : ClientClosedChats;
+                @if (!closed.Any()) { <div class="chat-list-empty">Žádné uzavřené chaty.</div> }
+                @foreach (var conv in closed) { @RenderConv(conv) }
             }
         </div>
     }
 </div>
+
+@code {
+    private RenderFragment RenderConv(ConversationDto conv) => __builder =>
+    {
+        <div class="chat-list-item @(conv.Status == "Closed" ? "closed-item" : "")" @onclick="() => OpenConversation(conv.Id)">
+            <div class="chat-list-icon">@GetIcon(conv.Type)</div>
+            <div class="chat-list-info">
+                <div class="chat-list-label">
+                    @conv.Label
+                    @if (conv.Status == "Closed") { <span class="closed-badge">Uzavřeno</span> }
+                </div>
+                <div class="chat-list-last">@(conv.LastMessage ?? "Žádné zprávy")</div>
+            </div>
+            @if (conv.LastMessageAt.HasValue)
+            {
+                <div class="chat-list-time">@conv.LastMessageAt.Value.ToShortTimeString()</div>
+            }
+        </div>
+    };
+}
 
 <style>
     .chat-list-container {
@@ -47,11 +91,68 @@
         padding: 1rem;
     }
     .chat-list-header {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     .chat-list-header h2 {
         font-size: 1.5rem;
         font-weight: 600;
+        margin: 0;
+        color: var(--vb-text-primary);
+    }
+    .chat-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+    .chat-tab {
+        background: none;
+        border: none;
+        padding: 0.75rem 0.5rem;
+        font-weight: 600;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--vb-transition);
+        white-space: nowrap;
+    }
+    .chat-tab:hover {
+        color: var(--vb-text-secondary);
+    }
+    .chat-tab.active {
+        color: var(--vb-red);
+        border-bottom-color: var(--vb-red);
+    }
+    .badge {
+        background: var(--vb-gray-200);
+        color: var(--vb-text-secondary);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: var(--vb-radius-full);
+        font-weight: 700;
+    }
+    .chat-tab.active .badge {
+        background: var(--vb-red);
+        color: white;
+    }
+    .unassigned-badge {
+        background: #fdf0f0;
+        color: #d11;
+    }
+    .section-title {
+        font-size: 1rem;
+        margin: 1.5rem 0 0.75rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .section-title.closed {
+        color: var(--vb-text-muted);
     }
     .chat-list {
         display: flex;
@@ -63,15 +164,21 @@
         align-items: center;
         gap: 1rem;
         padding: 1rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
         cursor: pointer;
-        transition: box-shadow 0.15s, transform 0.15s;
+        transition: var(--vb-transition);
     }
     .chat-list-item:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        box-shadow: var(--vb-shadow);
         transform: translateY(-1px);
+        border-color: var(--vb-red-glow);
+    }
+    .chat-list-item.closed-item {
+        opacity: 0.6;
+        background: var(--vb-bg);
     }
     .chat-list-icon {
         font-size: 1.8rem;
@@ -84,29 +191,55 @@
     .chat-list-label {
         font-weight: 600;
         font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--vb-text-primary);
+    }
+    .closed-badge {
+        font-size: 0.65rem;
+        background: var(--vb-gray-200);
+        color: var(--vb-text-secondary);
+        padding: 2px 6px;
+        border-radius: var(--vb-radius-xs);
+        font-weight: 600;
     }
     .chat-list-last {
         font-size: 0.85rem;
-        color: #888;
+        color: var(--vb-text-secondary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        margin-top: 2px;
     }
     .chat-list-time {
         font-size: 0.75rem;
-        color: #aaa;
+        color: var(--vb-text-muted);
         flex-shrink: 0;
     }
     .chat-list-empty {
         text-align: center;
-        color: #aaa;
+        color: var(--vb-text-muted);
         margin-top: 3rem;
+        font-style: italic;
     }
 </style>
 
 @code {
     private List<ConversationDto> _conversations = new();
     private bool _loading = true;
+    private bool _isBanker = false;
+    private Guid _userId;
+    private string _currentTab = "mine";
+
+    // Banker Filters
+    private IEnumerable<ConversationDto> MyActiveChats => _conversations.Where(c => c.Status == "Active" && c.AssignedBankerId == _userId);
+    private IEnumerable<ConversationDto> UnassignedChats => _conversations.Where(c => c.Status == "Active" && c.AssignedBankerId == null);
+    private IEnumerable<ConversationDto> ClosedChats => _conversations.Where(c => c.Status == "Closed");
+
+    // Client Filters
+    private IEnumerable<ConversationDto> ClientActiveChats => _conversations.Where(c => c.Status == "Active");
+    private IEnumerable<ConversationDto> ClientClosedChats => _conversations.Where(c => c.Status == "Closed");
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,16 +247,17 @@
         if (session == null) { await Task.Delay(100); session = AuthService.CurrentSession; }
         if (session == null) { Navigation.NavigateTo("/login"); return; }
 
-        // Initialize SignalR connection early
+        _userId = session.UserId;
+        _isBanker = session.Role == "Banker" || session.Role == "Admin";
+
         await ChatService.InitializeAsync(session.Token);
 
         var label = $"{session.FirstName} {session.LastName}";
-
-        // For parents: GetConversationsAsync handles Support + family rooms
-        // parentId is null unless this user is a child (we don't know that here without extra API call)
-        // The chat API determines this from the query params
         var convs = await ChatService.GetConversationsAsync(session.UserId, session.Role, label, parentId: null);
-        _conversations = convs.ToList();
+        
+        // Bankers don't have family chats in GetConversationsAsync, only Support.
+        // Sort by most recent activity
+        _conversations = convs.OrderByDescending(c => c.LastMessageAt ?? DateTime.MinValue).ToList();
         _loading = false;
     }
 

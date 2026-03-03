@@ -16,6 +16,14 @@ public sealed class MartenAccountEventStore(IDocumentSession session) : IAccount
         return await session.Query<Account>().FirstOrDefaultAsync(a => a.AccountNumber.Value == accountNumber, ct);
     }
 
+    public async Task<IReadOnlyList<Account>> LoadByOwnerAsync(Guid ownerId, CancellationToken ct = default)
+    {
+        var results = await session.Query<Account>()
+            .Where(a => a.OwnerId == ownerId)
+            .ToListAsync(ct);
+        return results;
+    }
+
     public async Task StartStreamAsync(Account account, CancellationToken ct = default)
     {
         var events = account.GetUncommittedEvents();

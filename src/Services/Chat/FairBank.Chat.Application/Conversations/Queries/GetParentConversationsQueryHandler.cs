@@ -20,7 +20,11 @@ public sealed class GetParentConversationsQueryHandler(
         foreach (var conv in convs)
         {
             var last = (await msgRepo.GetMessagesByConversationAsync(conv.Id, ct)).LastOrDefault();
-            results.Add(new ConversationSummaryDto(conv.Id, "Family", conv.Label, last?.Content, last?.SentAt));
+            results.Add(new ConversationSummaryDto(
+                conv.Id, "Family", conv.Label,
+                last?.Content, last?.SentAt,
+                conv.Status.ToString(), conv.ClosedAt,
+                conv.BankerOrParentId, conv.InternalNotes));
         }
 
         return results;

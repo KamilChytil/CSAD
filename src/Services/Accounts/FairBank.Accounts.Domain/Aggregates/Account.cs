@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FairBank.Accounts.Domain.Enums;
 using FairBank.Accounts.Domain.Events;
 using FairBank.Accounts.Domain.ValueObjects;
@@ -6,27 +7,28 @@ namespace FairBank.Accounts.Domain.Aggregates;
 
 public sealed class Account
 {
-    public Guid Id { get; private set; }
-    public Guid OwnerId { get; private set; }
-    public AccountNumber AccountNumber { get; private set; } = null!;
-    public Money Balance { get; private set; } = null!;
-    public bool IsActive { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public Money? SpendingLimit { get; private set; }
-    public bool RequiresApproval { get; private set; }
-    public Money? ApprovalThreshold { get; private set; }
+    [JsonInclude] public Guid Id { get; private set; }
+    [JsonInclude] public Guid OwnerId { get; private set; }
+    [JsonInclude] public AccountNumber AccountNumber { get; private set; } = null!;
+    [JsonInclude] public Money Balance { get; private set; } = null!;
+    [JsonInclude] public bool IsActive { get; private set; }
+    [JsonInclude] public DateTime CreatedAt { get; private set; }
+    [JsonInclude] public Money? SpendingLimit { get; private set; }
+    [JsonInclude] public bool RequiresApproval { get; private set; }
+    [JsonInclude] public Money? ApprovalThreshold { get; private set; }
 
     private readonly List<object> _uncommittedEvents = [];
 
+    [JsonConstructor]
     private Account() { } // Marten rehydration
 
-    public static Account Create(Guid ownerId, Currency currency)
+    public static Account Create(Guid ownerId, Currency currency, string? accountNumber = null)
     {
         var account = new Account
         {
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
-            AccountNumber = AccountNumber.Create(),
+            AccountNumber = AccountNumber.Create(accountNumber),
             Balance = Money.Zero(currency),
             IsActive = true,
             CreatedAt = DateTime.UtcNow

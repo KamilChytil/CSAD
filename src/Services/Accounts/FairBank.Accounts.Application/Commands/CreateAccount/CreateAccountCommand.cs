@@ -6,4 +6,5 @@ namespace FairBank.Accounts.Application.Commands.CreateAccount;
 
 public sealed record CreateAccountCommand(
     Guid OwnerId,
-    Currency Currency = Currency.CZK) : IRequest<AccountResponse>;
+    Currency Currency = Currency.CZK,
+    string? AccountNumber = null) : IRequest<AccountResponse>;
