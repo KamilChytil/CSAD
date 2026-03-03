@@ -35,9 +35,16 @@ FROM nginx:alpine AS final
 RUN rm /etc/nginx/conf.d/default.conf
 
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
-COPY src/FairBank.Web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY src/FairBank.Web/nginx.conf.template /etc/nginx/conf.d/default.conf.template
+COPY src/FairBank.Web/docker-entrypoint.sh /docker-entrypoint-vabank.sh
+RUN chmod +x /docker-entrypoint-vabank.sh
+
+# Default: caching ON (set ENABLE_CACHE=false to disable)
+ENV ENABLE_CACHE=true
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1
+
+ENTRYPOINT ["/docker-entrypoint-vabank.sh"]

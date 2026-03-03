@@ -8,6 +8,8 @@ services:
     container_name: fairbank-web
     ports:
       - "80:80"
+    environment:
+      ENABLE_CACHE: "true"    # set to "false" to disable FE caching (for testing)
     depends_on:
       - api-gateway
     networks:
