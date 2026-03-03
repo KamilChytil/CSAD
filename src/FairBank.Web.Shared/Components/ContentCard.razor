@@ -1,0 +1,20 @@
+@namespace FairBank.Web.Shared.Components
+
+<div class="content-card">
+    <div class="card-header">
+        <h2>@Title</h2>
+        @if (HeaderAction is not null)
+        {
+            @HeaderAction
+        }
+    </div>
+    <div class="card-body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? HeaderAction { get; set; }
+}

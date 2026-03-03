@@ -1,0 +1,23 @@
+<Router AppAssembly="typeof(Program).Assembly"
+        AdditionalAssemblies="new[]
+        {
+            typeof(FairBank.Web.Overview.Pages.Overview).Assembly,
+            typeof(FairBank.Web.Payments.Pages.Payments).Assembly,
+            typeof(FairBank.Web.Savings.Pages.Savings).Assembly,
+            typeof(FairBank.Web.Investments.Pages.Investments).Assembly,
+            typeof(FairBank.Web.Profile.Pages.Profile).Assembly
+        }">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(MainLayout)">
+            <div class="page-content">
+                <div class="empty-state-card">
+                    <PokerChip Value="404" Size="lg" />
+                    <p class="empty-state">Stránka nenalezena</p>
+                </div>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

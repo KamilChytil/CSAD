@@ -1,0 +1,14 @@
+@namespace FairBank.Web.Shared.Components
+
+<header class="page-header">
+    <div class="header-chip">
+        <div class="chip-outer">
+            <div class="chip-inner">V</div>
+        </div>
+    </div>
+    <h1 class="header-title">@Title</h1>
+</header>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+}

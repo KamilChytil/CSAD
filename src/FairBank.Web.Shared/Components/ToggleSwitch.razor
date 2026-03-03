@@ -1,0 +1,20 @@
+@namespace FairBank.Web.Shared.Components
+
+<label class="toggle-switch">
+    <span class="toggle-label">@Label</span>
+    <div class="toggle-track @(IsOn ? "on" : "")" @onclick="Toggle">
+        <div class="toggle-thumb"></div>
+    </div>
+</label>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool IsOn { get; set; }
+    [Parameter] public EventCallback<bool> IsOnChanged { get; set; }
+
+    private async Task Toggle()
+    {
+        IsOn = !IsOn;
+        await IsOnChanged.InvokeAsync(IsOn);
+    }
+}

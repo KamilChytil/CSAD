@@ -1,4 +1,64 @@
 services:
+
+  # ─── Web App (Blazor WASM) — ONLY EXPOSED SERVICE ────────
+  web-app:
+    build:
+      context: .
+      dockerfile: src/FairBank.Web/Dockerfile
+    container_name: fairbank-web
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - backend
+
+  # ─── Internal services (closed Docker network) ───────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/FairBank.ApiGateway/Dockerfile
+    container_name: fairbank-api-gateway
+    expose:
+      - "8080"
+    depends_on:
+      - identity-api
+      - accounts-api
+    networks:
+      - backend
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/Services/Identity/FairBank.Identity.Api/Dockerfile
+    container_name: fairbank-identity-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  accounts-api:
+    build:
+      context: .
+      dockerfile: src/Services/Accounts/FairBank.Accounts.Api/Dockerfile
+    container_name: fairbank-accounts-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
   postgres:
     image: postgres:16-alpine
     container_name: fairbank-postgres
@@ -7,8 +67,8 @@ services:
       POSTGRES_USER: fairbank_admin
       POSTGRES_PASSWORD: fairbank_secret_2026
       POSTGRES_INITDB_ARGS: "--data-checksums"
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -28,54 +88,10 @@ services:
     networks:
       - backend
 
-  identity-api:
-    build:
-      context: .
-      dockerfile: src/Services/Identity/FairBank.Identity.Api/Dockerfile
-    container_name: fairbank-identity-api
-    ports:
-      - "8001:8080"
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - backend
-
-  accounts-api:
-    build:
-      context: .
-      dockerfile: src/Services/Accounts/FairBank.Accounts.Api/Dockerfile
-    container_name: fairbank-accounts-api
-    ports:
-      - "8002:8080"
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - backend
-
-  api-gateway:
-    build:
-      context: .
-      dockerfile: src/FairBank.ApiGateway/Dockerfile
-    container_name: fairbank-api-gateway
-    ports:
-      - "5000:8080"
-    depends_on:
-      - identity-api
-      - accounts-api
-    networks:
-      - backend
-
 networks:
   backend:
     driver: bridge
+    internal: false
 
 volumes:
   pgdata:

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
+    <ProjectReference Include="../FairBank.Web.Overview/FairBank.Web.Overview.csproj" />
+    <ProjectReference Include="../FairBank.Web.Payments/FairBank.Web.Payments.csproj" />
+    <ProjectReference Include="../FairBank.Web.Savings/FairBank.Web.Savings.csproj" />
+    <ProjectReference Include="../FairBank.Web.Investments/FairBank.Web.Investments.csproj" />
+    <ProjectReference Include="../FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
+  </ItemGroup>
+
+</Project>

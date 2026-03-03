@@ -1,0 +1,22 @@
+@namespace FairBank.Web.Shared.Components
+
+<div class="progress-chips">
+    <span class="progress-label">@Label</span>
+    <div class="chips-row">
+        @foreach (var chip in Chips)
+        {
+            <PokerChip Value="@chip.Label" IsActive="@chip.IsReached" Size="sm" />
+        }
+    </div>
+    <div class="progress-bar-track">
+        <div class="progress-bar-fill" style="width: @(Percent)%"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public int Percent { get; set; }
+    [Parameter] public List<ChipMilestone> Chips { get; set; } = [];
+
+    public sealed record ChipMilestone(string Label, bool IsReached);
+}

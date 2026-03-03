@@ -1,0 +1,13 @@
+@namespace FairBank.Web.Shared.Components
+
+<div class="balance-card">
+    <span class="balance-label">Zůstatek</span>
+    <span class="balance-amount @(Amount >= 0 ? "positive" : "negative")">
+        @Amount.ToString("N0") @Currency
+    </span>
+</div>
+
+@code {
+    [Parameter] public decimal Amount { get; set; }
+    [Parameter] public string Currency { get; set; } = "Kč";
+}

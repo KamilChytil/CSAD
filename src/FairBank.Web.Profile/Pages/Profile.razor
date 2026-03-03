@@ -1,0 +1,79 @@
+@page "/profil"
+@namespace FairBank.Web.Profile.Pages
+@inject IFairBankApi Api
+
+<PageHeader Title="PROFIL" />
+
+<div class="page-content">
+    <div class="profile-avatar">
+        <div class="avatar-chip">
+            <PokerChip Value="@_initials" Size="lg" IsActive="true" />
+        </div>
+        <h2 class="profile-name">@_fullName</h2>
+        <span class="profile-email">@_email</span>
+    </div>
+
+    <ContentCard Title="Osobní údaje">
+        <ChildContent>
+            <div class="info-row">
+                <span class="info-label">Jméno</span>
+                <span class="info-value">@_firstName</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Příjmení</span>
+                <span class="info-value">@_lastName</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">@_email</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Role</span>
+                <span class="info-value">@_role</span>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Nastavení">
+        <ChildContent>
+            <ToggleSwitch Label="Push notifikace" @bind-IsOn="_pushEnabled" />
+            <ToggleSwitch Label="Tmavý režim" @bind-IsOn="_darkMode" />
+            <ToggleSwitch Label="Biometrické přihlášení" @bind-IsOn="_biometricEnabled" />
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Účet">
+        <ChildContent>
+            <div class="info-row">
+                <span class="info-label">Číslo účtu</span>
+                <span class="info-value">@_accountNumber</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Stav</span>
+                <span class="info-value status-active">Aktivní</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Vytvořeno</span>
+                <span class="info-value">@_createdAt.ToString("dd.MM.yyyy")</span>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    <VbButton Variant="danger" OnClick="@(() => { })">Odhlásit se</VbButton>
+</div>
+
+@code {
+    private string _firstName = "Jan";
+    private string _lastName = "Novák";
+    private string _email = "jan.novak@email.cz";
+    private string _role = "Klient";
+    private string _accountNumber = "FAIR-1234-5678-9012";
+    private DateTime _createdAt = new(2022, 1, 15);
+
+    private bool _pushEnabled = true;
+    private bool _darkMode;
+    private bool _biometricEnabled;
+
+    private string _fullName => $"{_firstName} {_lastName}";
+    private string _initials => $"{_firstName[0]}{_lastName[0]}";
+}

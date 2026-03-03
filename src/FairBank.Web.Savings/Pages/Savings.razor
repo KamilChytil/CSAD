@@ -1,0 +1,114 @@
+@page "/sporeni"
+@namespace FairBank.Web.Savings.Pages
+
+<PageHeader Title="FINANČNÍ VÝZVY A CÍLE" />
+
+<div class="page-content">
+
+    @* ── Savings Goals with poker-chip milestones ── *@
+    @foreach (var goal in _goals)
+    {
+        <ContentCard Title="@goal.Name">
+            <ChildContent>
+                <p class="goal-progress-label">Progress: @goal.Description</p>
+                <div class="chips-row">
+                    @foreach (var milestone in goal.Milestones)
+                    {
+                        <div class="milestone">
+                            <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
+                        </div>
+                    }
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" style="width: @(goal.ProgressPercent)%"></div>
+                </div>
+                <span class="goal-amount">@goal.CurrentAmount.ToString("N0") / @goal.TargetAmount.ToString("N0") Kč</span>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    <VbButton OnClick="@(() => { })">Vyzvat se</VbButton>
+
+    @* ── Automatic Savings ── *@
+    <ContentCard Title="Automatické spoření">
+        <ChildContent>
+            <ToggleSwitch Label="Zaokrouhlování plateb" @bind-IsOn="_roundUpEnabled" />
+            <p class="rule-description">
+                Zaokrouhlování plateb na celé koruny. Rozdíl jde na spoření.
+            </p>
+
+            @foreach (var entry in _savingsHistory)
+            {
+                <TransactionItem
+                    Description="@entry.Description"
+                    Date="@entry.Date"
+                    Amount="@entry.Amount"
+                    Currency="Kč"
+                    Type="@entry.Type" />
+            }
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Pravidla spoření">
+        <ChildContent>
+            <p class="rule-description">
+                Customize pravidla spoření. Nastav si vlastní pravidla spoření.
+            </p>
+            @foreach (var rule in _rules)
+            {
+                <ToggleSwitch Label="@rule.Name" @bind-IsOn="rule.IsEnabled" />
+            }
+        </ChildContent>
+    </ContentCard>
+</div>
+
+@code {
+    private bool _roundUpEnabled = true;
+
+    private List<SavingsGoalViewModel> _goals = [];
+    private List<TransactionDto> _savingsHistory = [];
+    private List<SavingsRuleViewModel> _rules = [];
+
+    protected override void OnInitialized()
+    {
+        _goals =
+        [
+            new("Nové auto", "nové auto", 450_000m, 120_000m, 27,
+            [
+                new("200 Mil", true),
+                new("100 Mil", false),
+                new("Va-bank", false),
+            ]),
+            new("Dovolená", "dovolená", 60_000m, 35_000m, 58,
+            [
+                new("20 Mil", true),
+                new("30 Mil", true),
+                new("Va-bank", false),
+            ]),
+        ];
+
+        _savingsHistory =
+        [
+            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-1), -2_000m, "withdrawal"),
+            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-3), 500m, "deposit"),
+            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-5), 200m, "deposit"),
+        ];
+
+        _rules =
+        [
+            new("Pourvíci", true),
+        ];
+    }
+
+    private sealed record SavingsGoalViewModel(
+        string Name, string Description, decimal TargetAmount, decimal CurrentAmount,
+        int ProgressPercent, List<MilestoneVm> Milestones);
+
+    private sealed record MilestoneVm(string Label, bool IsReached);
+
+    private sealed class SavingsRuleViewModel(string name, bool isEnabled)
+    {
+        public string Name { get; set; } = name;
+        public bool IsEnabled { get; set; } = isEnabled;
+    }
+}

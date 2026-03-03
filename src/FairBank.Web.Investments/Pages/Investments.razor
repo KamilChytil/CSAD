@@ -1,0 +1,55 @@
+@page "/investice"
+@namespace FairBank.Web.Investments.Pages
+
+<PageHeader Title="INVESTICE" />
+
+<div class="page-content">
+    <BalanceCard Amount="@_totalValue" Currency="Kč" />
+
+    @foreach (var inv in _investments)
+    {
+        <ContentCard Title="@inv.Name">
+            <ChildContent>
+                <div class="investment-row">
+                    <div class="investment-info">
+                        <span class="investment-type">@inv.Type</span>
+                        <span class="investment-value">@inv.CurrentValue.ToString("N0") Kč</span>
+                    </div>
+                    <div class="investment-change @(inv.ChangePercent >= 0 ? "positive" : "negative")">
+                        @(inv.ChangePercent >= 0 ? "+" : "")@inv.ChangePercent.ToString("F1") %
+                    </div>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill @(inv.ChangePercent >= 0 ? "fill-green" : "fill-red")"
+                         style="width: @(Math.Min(100, Math.Abs((double)inv.ChangePercent) * 2 + 50))%">
+                    </div>
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (!_investments.Any())
+    {
+        <div class="empty-state-card">
+            <PokerChip Value="?" Size="lg" />
+            <p class="empty-state">Prozkoumejte investiční příležitosti</p>
+            <VbButton OnClick="@(() => { })">Začít investovat</VbButton>
+        </div>
+    }
+</div>
+
+@code {
+    private decimal _totalValue = 48_500m;
+
+    private List<InvestmentDto> _investments = [];
+
+    protected override void OnInitialized()
+    {
+        _investments =
+        [
+            new(Guid.NewGuid(), "Akciový fond", "Fond", 25_000m, 20_000m, 12.5m, "CZK"),
+            new(Guid.NewGuid(), "Dluhopisový fond", "Fond", 15_000m, 14_500m, 3.4m, "CZK"),
+            new(Guid.NewGuid(), "Kryptoměny", "Crypto", 8_500m, 10_000m, -15.0m, "CZK"),
+        ];
+    }
+}

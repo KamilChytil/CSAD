@@ -1,0 +1,78 @@
+@page "/platby"
+@namespace FairBank.Web.Payments.Pages
+@inject IFairBankApi Api
+
+<PageHeader Title="PLATBY" />
+
+<div class="page-content">
+    <ContentCard Title="Nová platba">
+        <ChildContent>
+            <div class="form-group">
+                <label class="form-label">Příjemce</label>
+                <input class="form-input" @bind="_recipient" placeholder="Číslo účtu příjemce" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Částka</label>
+                <div class="input-with-suffix">
+                    <input class="form-input" type="number" @bind="_amount" placeholder="0" />
+                    <span class="input-suffix">Kč</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Popis</label>
+                <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
+            </div>
+            <VbButton OnClick="SendPayment" Disabled="@(_amount <= 0)">
+                Odeslat platbu
+            </VbButton>
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Historie plateb">
+        <ChildContent>
+            @foreach (var tx in _history)
+            {
+                <TransactionItem
+                    Description="@tx.Description"
+                    Date="@tx.Date"
+                    Amount="@tx.Amount"
+                    Currency="Kč"
+                    Type="@tx.Type" />
+            }
+
+            @if (!_history.Any())
+            {
+                <p class="empty-state">Zatím žádné platby</p>
+            }
+        </ChildContent>
+    </ContentCard>
+</div>
+
+@code {
+    private string _recipient = "";
+    private decimal _amount;
+    private string _description = "";
+    private List<TransactionDto> _history = [];
+
+    protected override void OnInitialized()
+    {
+        _history =
+        [
+            new(Guid.NewGuid(), "Platba – Nájem", new DateTime(2022, 2, 15), -12_500m, "withdrawal"),
+            new(Guid.NewGuid(), "Platba – Energie", new DateTime(2022, 2, 10), -3_200m, "withdrawal"),
+            new(Guid.NewGuid(), "Příchozí platba", new DateTime(2022, 2, 5), 25_000m, "deposit"),
+        ];
+    }
+
+    private async Task SendPayment()
+    {
+        if (_amount <= 0) return;
+        // TODO: Call API
+        _history.Insert(0, new TransactionDto(
+            Guid.NewGuid(), $"Platba – {_description}", DateTime.Now, -_amount, "withdrawal"));
+        _amount = 0;
+        _description = "";
+        _recipient = "";
+        await Task.CompletedTask;
+    }
+}

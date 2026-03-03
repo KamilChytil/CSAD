@@ -1,0 +1,22 @@
+@namespace FairBank.Web.Shared.Components
+
+<div class="poker-chip @SizeClass @(IsActive ? "active" : "")">
+    <div class="chip-border">
+        <div class="chip-face">
+            <span class="chip-value">@Value</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public string Size { get; set; } = "md";
+
+    private string SizeClass => Size switch
+    {
+        "sm" => "chip-sm",
+        "lg" => "chip-lg",
+        _ => "chip-md"
+    };
+}

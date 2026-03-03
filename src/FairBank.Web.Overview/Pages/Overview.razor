@@ -1,0 +1,49 @@
+@page "/"
+@page "/prehled"
+@namespace FairBank.Web.Overview.Pages
+@inject IFairBankApi Api
+
+<PageHeader Title="PŘEHLED ÚČTU" />
+
+<div class="page-content">
+    <BalanceCard Amount="@_balance" Currency="Kč" />
+
+    <ContentCard Title="Transakce">
+        <HeaderAction>
+            <a class="link-action" href="#">Odkrýt</a>
+        </HeaderAction>
+        <ChildContent>
+            @foreach (var tx in _transactions)
+            {
+                <TransactionItem
+                    Description="@tx.Description"
+                    Date="@tx.Date"
+                    Amount="@tx.Amount"
+                    Currency="Kč"
+                    Type="@tx.Type" />
+            }
+
+            @if (!_transactions.Any())
+            {
+                <p class="empty-state">Zatím žádné transakce</p>
+            }
+        </ChildContent>
+    </ContentCard>
+</div>
+
+@code {
+    private decimal _balance = 2_393.07m;
+    private List<TransactionDto> _transactions = [];
+
+    protected override void OnInitialized()
+    {
+        // Demo data matching the mockup
+        _transactions =
+        [
+            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 15), -2_500m, "withdrawal"),
+            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 19), -100m, "withdrawal"),
+            new(Guid.NewGuid(), "Platby", new DateTime(2022, 2, 18), 250m, "deposit"),
+            new(Guid.NewGuid(), "Transakce", new DateTime(2022, 2, 18), -50m, "payment"),
+        ];
+    }
+}

@@ -2,6 +2,15 @@
   <Folder Name="/src/">
     <Project Path="src/FairBank.ApiGateway/FairBank.ApiGateway.csproj" />
     <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
+    <Project Path="src/FairBank.Web/FairBank.Web.csproj" />
+    <Project Path="src/FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
+  </Folder>
+  <Folder Name="/src/Web/">
+    <Project Path="src/FairBank.Web.Overview/FairBank.Web.Overview.csproj" />
+    <Project Path="src/FairBank.Web.Payments/FairBank.Web.Payments.csproj" />
+    <Project Path="src/FairBank.Web.Savings/FairBank.Web.Savings.csproj" />
+    <Project Path="src/FairBank.Web.Investments/FairBank.Web.Investments.csproj" />
+    <Project Path="src/FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/">

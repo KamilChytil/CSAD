@@ -1,0 +1,36 @@
+@namespace FairBank.Web.Shared.Components
+
+<div class="transaction-item">
+    <div class="transaction-icon @IconClass">
+        <span>@IconSymbol</span>
+    </div>
+    <div class="transaction-details">
+        <span class="transaction-desc">@Description</span>
+        <span class="transaction-date">@Date.ToString("dd.MM.yyyy")</span>
+    </div>
+    <span class="transaction-amount @(Amount >= 0 ? "positive" : "negative")">
+        @(Amount >= 0 ? "+" : "")@Amount.ToString("N0") @Currency
+    </span>
+</div>
+
+@code {
+    [Parameter] public string Description { get; set; } = "";
+    [Parameter] public DateTime Date { get; set; }
+    [Parameter] public decimal Amount { get; set; }
+    [Parameter] public string Currency { get; set; } = "Kč";
+    [Parameter] public string Type { get; set; } = "payment";
+
+    private string IconClass => Type switch
+    {
+        "deposit" => "icon-deposit",
+        "withdrawal" => "icon-withdrawal",
+        _ => "icon-payment"
+    };
+
+    private string IconSymbol => Type switch
+    {
+        "deposit" => "↓",
+        "withdrawal" => "↑",
+        _ => "⇄"
+    };
+}
