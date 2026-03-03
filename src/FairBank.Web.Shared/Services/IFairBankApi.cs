@@ -46,4 +46,12 @@ public interface IFairBankApi
     Task<PaymentTemplateDto> CreatePaymentTemplateAsync(Guid ownerAccountId, string name, string recipientAccountNumber, string currency, string? recipientName = null, decimal? defaultAmount = null, string? defaultDescription = null);
     Task<List<PaymentTemplateDto>> GetPaymentTemplatesByAccountAsync(Guid accountId);
     Task DeletePaymentTemplateAsync(Guid templateId);
+
+    // Product applications
+    Task<ProductApplicationDto> SubmitProductApplicationAsync(Guid userId, string productType, string parameters, decimal monthlyPayment);
+    Task<List<ProductApplicationDto>> GetUserApplicationsAsync(Guid userId);
+    Task<List<ProductApplicationDto>> GetPendingApplicationsAsync();
+    Task<ProductApplicationDto> ApproveApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null);
+    Task<ProductApplicationDto> RejectApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null);
+    Task<ProductApplicationDto> CancelApplicationAsync(Guid applicationId, Guid userId);
 }

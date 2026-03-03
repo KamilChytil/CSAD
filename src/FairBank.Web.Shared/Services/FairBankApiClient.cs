@@ -207,4 +207,47 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         var response = await http.DeleteAsync($"api/v1/payment-templates/{templateId}");
         response.EnsureSuccessStatusCode();
     }
+
+    // ── Product applications ──────────────────────────────────
+    public async Task<ProductApplicationDto> SubmitProductApplicationAsync(Guid userId, string productType, string parameters, decimal monthlyPayment)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/products/applications",
+            new { UserId = userId, ProductType = productType, Parameters = parameters, MonthlyPayment = monthlyPayment });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
+    }
+
+    public async Task<List<ProductApplicationDto>> GetUserApplicationsAsync(Guid userId)
+    {
+        return await http.GetFromJsonAsync<List<ProductApplicationDto>>($"api/v1/products/applications/user/{userId}") ?? [];
+    }
+
+    public async Task<List<ProductApplicationDto>> GetPendingApplicationsAsync()
+    {
+        return await http.GetFromJsonAsync<List<ProductApplicationDto>>("api/v1/products/applications/pending") ?? [];
+    }
+
+    public async Task<ProductApplicationDto> ApproveApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null)
+    {
+        var response = await http.PutAsJsonAsync($"api/v1/products/applications/{applicationId}/approve",
+            new { ApplicationId = applicationId, ReviewerId = reviewerId, Note = note });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
+    }
+
+    public async Task<ProductApplicationDto> RejectApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null)
+    {
+        var response = await http.PutAsJsonAsync($"api/v1/products/applications/{applicationId}/reject",
+            new { ApplicationId = applicationId, ReviewerId = reviewerId, Note = note });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
+    }
+
+    public async Task<ProductApplicationDto> CancelApplicationAsync(Guid applicationId, Guid userId)
+    {
+        var response = await http.PutAsJsonAsync($"api/v1/products/applications/{applicationId}/cancel",
+            new { ApplicationId = applicationId, UserId = userId });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
+    }
 }
