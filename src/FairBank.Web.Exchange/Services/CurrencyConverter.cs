@@ -15,7 +15,7 @@ public class CurrencyConverter
         "czk", "eur", "usd", "gbp", "chf", "pln", "jpy", "sek", "nok", "dkk",
         "huf", "cad", "aud", "nzd", "try", "brl", "mxn", "ars", "zar", "inr",
         "cny", "krw", "thb", "php", "idr", "myr", "sgd", "hkd", "twd", "rub",
-        "uah", "ron", "bgn", "hrk", "rsd", "isk", "ils", "aed", "sar", "qar",
+        "uah", "ron", "bgn", "rsd", "isk", "ils", "aed", "sar", "qar",
         "kwd", "egp", "ngn", "kes", "clp", "cop", "pen", "vnd", "bdt", "pkr", "lkr"
     };
 
@@ -33,7 +33,7 @@ public class CurrencyConverter
         ["idr"] = "Indonéská rupie", ["myr"] = "Malajsijský ringgit", ["sgd"] = "Singapurský dolar",
         ["hkd"] = "Hongkongský dolar", ["twd"] = "Tchajwanský dolar", ["rub"] = "Ruský rubl",
         ["uah"] = "Ukrajinská hřivna", ["ron"] = "Rumunský leu", ["bgn"] = "Bulharský lev",
-        ["hrk"] = "Chorvatská kuna", ["rsd"] = "Srbský dinár", ["isk"] = "Islandská koruna",
+        ["rsd"] = "Srbský dinár", ["isk"] = "Islandská koruna",
         ["ils"] = "Izraelský šekel", ["aed"] = "Dirham SAE", ["sar"] = "Saúdský rijál",
         ["qar"] = "Katarský rijál", ["kwd"] = "Kuvajtský dinár", ["egp"] = "Egyptská libra",
         ["ngn"] = "Nigerijská naira", ["kes"] = "Keňský šilink", ["clp"] = "Chilské peso",
@@ -52,7 +52,7 @@ public class CurrencyConverter
         ["cny"] = "🇨🇳", ["krw"] = "🇰🇷", ["thb"] = "🇹🇭", ["php"] = "🇵🇭",
         ["idr"] = "🇮🇩", ["myr"] = "🇲🇾", ["sgd"] = "🇸🇬", ["hkd"] = "🇭🇰",
         ["twd"] = "🇹🇼", ["rub"] = "🇷🇺", ["uah"] = "🇺🇦", ["ron"] = "🇷🇴",
-        ["bgn"] = "🇧🇬", ["hrk"] = "🇭🇷", ["rsd"] = "🇷🇸", ["isk"] = "🇮🇸",
+        ["bgn"] = "🇧🇬", ["rsd"] = "🇷🇸", ["isk"] = "🇮🇸",
         ["ils"] = "🇮🇱", ["aed"] = "🇦🇪", ["sar"] = "🇸🇦", ["qar"] = "🇶🇦",
         ["kwd"] = "🇰🇼", ["egp"] = "🇪🇬", ["ngn"] = "🇳🇬", ["kes"] = "🇰🇪",
         ["clp"] = "🇨🇱", ["cop"] = "🇨🇴", ["pen"] = "🇵🇪", ["vnd"] = "🇻🇳",
@@ -61,6 +61,12 @@ public class CurrencyConverter
 
     public void LoadRates(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        _rates.Clear();
+        RateDate = null;
+
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
@@ -69,7 +75,6 @@ public class CurrencyConverter
 
         if (root.TryGetProperty("czk", out var rates))
         {
-            _rates.Clear();
             foreach (var prop in rates.EnumerateObject())
             {
                 if (prop.Value.TryGetDecimal(out var val) && val > 0)
