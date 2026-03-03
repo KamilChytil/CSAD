@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Marten" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.Accounts.Domain/FairBank.Accounts.Domain.csproj" />
+    <ProjectReference Include="../FairBank.Accounts.Application/FairBank.Accounts.Application.csproj" />
+  </ItemGroup>
+</Project>

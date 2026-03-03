@@ -4,7 +4,10 @@
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/">
+    <Project Path="src/Services/Accounts/FairBank.Accounts.Api/FairBank.Accounts.Api.csproj" />
+    <Project Path="src/Services/Accounts/FairBank.Accounts.Application/FairBank.Accounts.Application.csproj" />
     <Project Path="src/Services/Accounts/FairBank.Accounts.Domain/FairBank.Accounts.Domain.csproj" />
+    <Project Path="src/Services/Accounts/FairBank.Accounts.Infrastructure/FairBank.Accounts.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj" />
