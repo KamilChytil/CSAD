@@ -26,9 +26,7 @@ public static class AdminSeeder
         if (await userRepository.ExistsWithEmailAsync(email))
             return;
 
-        var passwordHash = Convert.ToBase64String(
-            System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(settings.Password)));
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(settings.Password, workFactor: 12);
 
         var admin = User.Create(
             settings.FirstName,

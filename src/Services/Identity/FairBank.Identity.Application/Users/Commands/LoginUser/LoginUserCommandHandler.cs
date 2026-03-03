@@ -1,11 +1,16 @@
+using FairBank.Identity.Application.Helpers;
 using FairBank.Identity.Application.Users.DTOs;
+using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
+using FairBank.SharedKernel.Application;
 using MediatR;
 
 namespace FairBank.Identity.Application.Users.Commands.LoginUser;
 
-public sealed class LoginUserCommandHandler(IUserRepository userRepository)
+public sealed class LoginUserCommandHandler(
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork)
     : IRequestHandler<LoginUserCommand, LoginResponse?>
 {
     public async Task<LoginResponse?> Handle(LoginUserCommand request, CancellationToken ct)
@@ -25,22 +30,39 @@ public sealed class LoginUserCommandHandler(IUserRepository userRepository)
         if (user is null || !user.IsActive)
             return null;
 
-        var passwordHash = Convert.ToBase64String(
-            System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(request.Password)));
+        // Server-side lockout check (throws so the endpoint can return 429)
+        if (user.IsLockedOut)
+            throw new UserLockedOutException(user.LockedUntil!.Value);
 
-        if (user.PasswordHash != passwordHash)
+        // BCrypt password verification
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            user.RecordFailedLogin();
+            await unitOfWork.SaveChangesAsync(ct);
+
+            // After recording, throw lockout if threshold just crossed
+            if (user.IsLockedOut)
+                throw new UserLockedOutException(user.LockedUntil!.Value);
+
             return null;
+        }
 
-        // Dummy token and session for now to satisfy the frontend
+        // Successful login — create new session (invalidates any previous session)
+        var sessionId = Guid.NewGuid();
+        user.RecordSuccessfulLogin(sessionId);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        var token = SessionTokenHelper.Encode(user.Id, sessionId);
+        var expiresAt = DateTime.UtcNow.AddHours(8);
+
         return new LoginResponse(
-            Token: "dummy-jwt-token-" + Guid.NewGuid().ToString("N"),
+            Token: token,
             UserId: user.Id,
             Email: user.Email.Value,
             FirstName: user.FirstName,
             LastName: user.LastName,
             Role: user.Role.ToString(),
-            SessionId: Guid.NewGuid(),
-            ExpiresAt: DateTime.UtcNow.AddHours(1));
+            SessionId: sessionId,
+            ExpiresAt: expiresAt);
     }
 }
