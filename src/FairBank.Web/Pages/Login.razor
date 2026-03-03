@@ -1,0 +1,94 @@
+@page "/login"
+@namespace FairBank.Web.Pages
+@layout LoginLayout
+@inject IFairBankApi Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <PokerChip Value="VB" Size="lg" IsActive="true" />
+            <h1 class="login-title">VA-BANK</h1>
+            <p class="login-subtitle">Přihlaste se ke svému účtu</p>
+        </div>
+
+        <div class="login-form">
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="login-error">@_error</div>
+            }
+
+            <div class="form-field">
+                <label class="form-label">Email</label>
+                <input class="form-input"
+                       type="email"
+                       placeholder="vas@email.cz"
+                       @bind="_email"
+                       @bind:event="oninput" />
+            </div>
+
+            <div class="form-field">
+                <label class="form-label">Heslo</label>
+                <input class="form-input"
+                       type="password"
+                       placeholder="••••••••"
+                       @bind="_password"
+                       @bind:event="oninput"
+                       @onkeyup="HandleKeyUp" />
+            </div>
+
+            <VbButton OnClick="HandleLogin" Disabled="@_isLoading">
+                @(_isLoading ? "Přihlašuji..." : "Přihlásit se")
+            </VbButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _error = "";
+    private bool _isLoading;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsAuthenticated)
+            Nav.NavigateTo("/prehled", replace: true);
+    }
+
+    private async Task HandleLogin()
+    {
+        _error = "";
+        _isLoading = true;
+
+        try
+        {
+            var user = await Api.LoginAsync(_email.Trim(), _password);
+
+            if (user is null)
+            {
+                _error = "Neplatný email nebo heslo.";
+                return;
+            }
+
+            await Auth.LoginAsync(user, JS);
+            Nav.NavigateTo(user.Role == "Admin" ? "/admin" : "/prehled", replace: true);
+        }
+        catch
+        {
+            _error = "Chyba připojení. Zkuste to znovu.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await HandleLogin();
+    }
+}
