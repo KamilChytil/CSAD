@@ -1019,7 +1019,7 @@ body {
 /* ── Responsive ──────────────────────────────────────────── */
 
 /* Tablet / small desktop */
-@media (min-width: 431px) and (max-width: 767px) {
+@media (min-width: 431px) and (max-width: 599px) {
     body {
         background: var(--vb-gray-900);
     }
@@ -1029,8 +1029,8 @@ body {
     }
 }
 
-/* Desktop: ≥ 768px — sidebar layout */
-@media screen and (min-width: 768px) {
+/* Desktop: ≥ 600px — sidebar layout */
+@media screen and (min-width: 600px) {
     body {
         background: var(--vb-gray-900);
     }
@@ -1198,8 +1198,8 @@ body {
     }
 }
 
-/* Large desktop: ≥ 1024px */
-@media screen and (min-width: 1024px) {
+/* Large desktop: ≥ 900px */
+@media screen and (min-width: 900px) {
     .side-nav {
         width: 280px;
     }

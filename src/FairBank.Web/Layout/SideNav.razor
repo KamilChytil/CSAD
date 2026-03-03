@@ -1,4 +1,6 @@
 @using Microsoft.AspNetCore.Components.Routing
+@inject AuthStateService Auth
+@implements IDisposable
 
 <nav class="side-nav">
     <div class="side-nav-brand">
@@ -27,13 +29,37 @@
             <span class="side-nav-icon">📈</span>
             <span class="side-nav-label">Investice</span>
         </NavLink>
-        <NavLink class="side-nav-item" href="profil">
-            <span class="side-nav-icon">👤</span>
-            <span class="side-nav-label">Profil</span>
-        </NavLink>
+        @if (Auth.IsAdmin)
+        {
+            <NavLink class="side-nav-item" href="admin">
+                <span class="side-nav-icon">⚙️</span>
+                <span class="side-nav-label">Admin</span>
+            </NavLink>
+        }
+        else
+        {
+            <NavLink class="side-nav-item" href="profil">
+                <span class="side-nav-icon">👤</span>
+                <span class="side-nav-label">Profil</span>
+            </NavLink>
+        }
     </div>
 
     <div class="side-nav-footer">
         <span class="side-nav-tagline">Tvůj život, tvé finance, tvá hra.</span>
     </div>
 </nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Auth.OnChanged += HandleAuthChanged;
+    }
+
+    private void HandleAuthChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Auth.OnChanged -= HandleAuthChanged;
+    }
+}

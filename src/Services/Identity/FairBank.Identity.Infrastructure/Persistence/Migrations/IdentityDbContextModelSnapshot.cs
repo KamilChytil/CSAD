@@ -51,6 +51,9 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -66,11 +69,18 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ParentId");
+
                     b.ToTable("users", "identity_service");
                 });
 
             modelBuilder.Entity("FairBank.Identity.Domain.Entities.User", b =>
                 {
+                    b.HasOne("FairBank.Identity.Domain.Entities.User", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.OwnsOne("FairBank.Identity.Domain.ValueObjects.Email", "Email", b1 =>
                         {
                             b1.Property<Guid>("UserId")
@@ -95,6 +105,13 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Email")
                         .IsRequired();
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("FairBank.Identity.Domain.Entities.User", b =>
+                {
+                    b.Navigation("Children");
                 });
 #pragma warning restore 612, 618
         }

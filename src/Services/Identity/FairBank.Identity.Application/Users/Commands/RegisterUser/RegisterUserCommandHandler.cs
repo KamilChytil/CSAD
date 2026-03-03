@@ -19,10 +19,7 @@ public sealed class RegisterUserCommandHandler(
         if (await userRepository.ExistsWithEmailAsync(email, ct))
             throw new InvalidOperationException($"User with email '{request.Email}' already exists.");
 
-        // NOTE: In production, hash with BCrypt/Argon2. Simplified for now.
-        var passwordHash = Convert.ToBase64String(
-            System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(request.Password)));
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
 
         var user = User.Create(
             request.FirstName,

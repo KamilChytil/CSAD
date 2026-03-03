@@ -12,7 +12,7 @@ public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore)
     {
         var account = Account.Create(request.OwnerId, request.Currency);
 
-        await eventStore.AppendEventsAsync(account, ct);
+        await eventStore.StartStreamAsync(account, ct);
 
         return new AccountResponse(
             account.Id,

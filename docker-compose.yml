@@ -49,9 +49,9 @@ services:
       - "8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
     depends_on:
-      postgres:
+      postgres-primary:
         condition: service_healthy
     networks:
       - backend
@@ -65,13 +65,14 @@ services:
       - "8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
     depends_on:
-      postgres:
+      postgres-primary:
         condition: service_healthy
     networks:
       - backend
 
+  # ─── Kafka ──────────────────────────────────────────────
   kafka:
     image: apache/kafka:latest
     container_name: fairbank-kafka
@@ -89,9 +90,10 @@ services:
     networks:
       - backend
 
-  postgres:
+  # ─── PostgreSQL Primary ──────────────────────────────────
+  postgres-primary:
     image: postgres:16-alpine
-    container_name: fairbank-postgres
+    container_name: fairbank-pg-primary
     environment:
       POSTGRES_DB: fairbank
       POSTGRES_USER: fairbank_admin
@@ -100,10 +102,15 @@ services:
     expose:
       - "5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata-primary:/var/lib/postgresql/data
+      - ./docker/postgres/primary-init.sh:/docker-entrypoint-initdb.d/00-primary.sh:ro
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     command: >
       postgres
+        -c wal_level=replica
+        -c max_wal_senders=3
+        -c wal_keep_size=64MB
+        -c hot_standby=on
         -c shared_buffers=128MB
         -c effective_cache_size=384MB
         -c work_mem=8MB
@@ -118,10 +125,35 @@ services:
     networks:
       - backend
 
+  # ─── PostgreSQL Replica ──────────────────────────────────
+  postgres-replica:
+    image: postgres:16-alpine
+    container_name: fairbank-pg-replica
+    environment:
+      POSTGRES_USER: fairbank_admin
+      POSTGRES_PASSWORD: fairbank_secret_2026
+    expose:
+      - "5432"
+    volumes:
+      - pgdata-replica:/var/lib/postgresql/data
+      - ./docker/postgres/replica-entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: /entrypoint.sh
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fairbank_admin -d fairbank" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
     internal: false
 
 volumes:
-  pgdata:
+  pgdata-primary:
+  pgdata-replica:

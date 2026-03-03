@@ -99,6 +99,49 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         }
     }
 
+    // ── Children ────────────────────────────────────────────────
+    public async Task<List<UserResponse>> GetChildrenAsync(Guid parentId)
+    {
+        return await http.GetFromJsonAsync<List<UserResponse>>($"api/v1/users/{parentId}/children") ?? [];
+    }
+
+    public async Task<UserResponse> CreateChildAsync(Guid parentId, string firstName, string lastName, string email, string password)
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/users/{parentId}/children",
+            new { FirstName = firstName, LastName = lastName, Email = email, Password = password });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<UserResponse>())!;
+    }
+
+    // ── Account queries ─────────────────────────────────────────
+    public async Task<List<AccountResponse>> GetAccountsByOwnerAsync(Guid ownerId)
+    {
+        return await http.GetFromJsonAsync<List<AccountResponse>>($"api/v1/accounts?ownerId={ownerId}") ?? [];
+    }
+
+    // ── Pending transactions ────────────────────────────────────
+    public async Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId)
+    {
+        return await http.GetFromJsonAsync<List<PendingTransactionDto>>($"api/v1/accounts/{accountId}/pending") ?? [];
+    }
+
+    public async Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId)
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/pending/{transactionId}/approve",
+            new { ApproverId = approverId });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PendingTransactionDto>())!;
+    }
+
+    public async Task<PendingTransactionDto> RejectTransactionAsync(Guid transactionId, Guid approverId, string reason)
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/pending/{transactionId}/reject",
+            new { ApproverId = approverId, Reason = reason });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PendingTransactionDto>())!;
+    }
+
+    // ── Login (from main) ───────────────────────────────────────
     public async Task<UserResponse?> LoginAsync(string email, string password)
     {
         var response = await http.PostAsJsonAsync("api/v1/users/login",
