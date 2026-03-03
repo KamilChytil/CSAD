@@ -1,6 +1,7 @@
 using FairBank.Web.Shared.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -13,4 +14,13 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<IFairBankApi, FairBankApiClient>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-await builder.Build().RunAsync();
+builder.Services.AddSingleton<AuthStateService>();
+
+var host = builder.Build();
+
+// Obnovit stav přihlášení z localStorage před prvním vykreslením
+var authState = host.Services.GetRequiredService<AuthStateService>();
+var js = host.Services.GetRequiredService<IJSRuntime>();
+await authState.InitializeAsync(js);
+
+await host.RunAsync();

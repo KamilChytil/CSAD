@@ -140,4 +140,17 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PendingTransactionDto>())!;
     }
+
+    // ── Login (from main) ───────────────────────────────────────
+    public async Task<UserResponse?> LoginAsync(string email, string password)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/users/login",
+            new { Email = email, Password = password });
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<UserResponse>();
+    }
 }
