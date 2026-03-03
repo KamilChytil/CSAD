@@ -55,6 +55,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Navigation(u => u.Children).HasField("_children");
 
+        // Security — login lockout & single-session
+        builder.Property(u => u.FailedLoginAttempts)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(u => u.LockedUntil);
+
+        builder.Property(u => u.ActiveSessionId);
+
         // Global query filter: soft delete
         builder.HasQueryFilter(u => !u.IsDeleted);
     }

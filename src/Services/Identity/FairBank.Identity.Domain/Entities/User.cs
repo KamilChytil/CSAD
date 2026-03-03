@@ -18,6 +18,17 @@ public sealed class User : AggregateRoot<Guid>
     public DateTime? DeletedAt { get; private set; }
     public Guid? ParentId { get; private set; }
     public User? Parent { get; private set; }
+
+    // ── Security ──────────────────────────────────────────
+    /// <summary>Number of consecutive failed login attempts since last success.</summary>
+    public int FailedLoginAttempts { get; private set; }
+    /// <summary>When set, the account is temporarily locked until this UTC time.</summary>
+    public DateTime? LockedUntil { get; private set; }
+    /// <summary>The session ID of the currently active login (single-session enforcement).</summary>
+    public Guid? ActiveSessionId { get; private set; }
+
+    public bool IsLockedOut => LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
+
     private readonly List<User> _children = [];
     public IReadOnlyCollection<User> Children => _children.AsReadOnly();
 
@@ -76,4 +87,52 @@ public sealed class User : AggregateRoot<Guid>
         DeletedAt = null;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    // ── Security domain methods ───────────────────────────
+
+    /// <summary>
+    /// Called after a failed login attempt. Applies escalating time-based lockout:
+    /// 5 failures → 10 min | 8 failures → 60 min | 12+ failures → 24 h.
+    /// </summary>
+    public void RecordFailedLogin()
+    {
+        FailedLoginAttempts++;
+        UpdatedAt = DateTime.UtcNow;
+
+        LockedUntil = FailedLoginAttempts switch
+        {
+            >= 12 => DateTime.UtcNow.AddHours(24),
+            >= 8  => DateTime.UtcNow.AddHours(1),
+            >= 5  => DateTime.UtcNow.AddMinutes(10),
+            _     => null
+        };
+    }
+
+    /// <summary>
+    /// Called after a successful login. Resets lockout counters and sets the
+    /// new active session, invaliding any previous session (single-session).
+    /// </summary>
+    public void RecordSuccessfulLogin(Guid sessionId)
+    {
+        FailedLoginAttempts = 0;
+        LockedUntil = null;
+        ActiveSessionId = sessionId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Invalidates the session. Only clears if the provided sessionId matches
+    /// the stored one (prevents one browser logging out another).
+    /// </summary>
+    public void InvalidateSession(Guid sessionId)
+    {
+        if (ActiveSessionId == sessionId)
+        {
+            ActiveSessionId = null;
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>Returns true if the given sessionId matches the currently active session.</summary>
+    public bool IsSessionValid(Guid sessionId) => ActiveSessionId.HasValue && ActiveSessionId.Value == sessionId;
 }

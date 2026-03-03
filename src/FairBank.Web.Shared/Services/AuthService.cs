@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FairBank.Web.Shared.Models;
@@ -8,21 +9,18 @@ namespace FairBank.Web.Shared.Services;
 public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, IDisposable
 {
     private const string SessionStorageKey = "fairbank_session";
-    private const string AttemptsStorageKey = "fairbank_login_attempts";
     private const string LockedUntilStorageKey = "fairbank_locked_until";
 
-    private const int MaxLoginAttempts = 5;
-    private const int LockoutMinutes = 5;
     private const int InactivityTimeoutMinutes = 5;
 
     private AuthSession? _currentSession;
-    private int _failedAttempts;
     private DateTime? _lockedUntil;
     private System.Threading.Timer? _inactivityTimer;
 
     public AuthSession? CurrentSession => _currentSession;
     public bool IsAuthenticated => _currentSession is not null && _currentSession.ExpiresAt > DateTime.UtcNow;
-    public int RemainingAttempts => Math.Max(0, MaxLoginAttempts - _failedAttempts);
+    /// <summary>Not tracked client-side — lockout is server-enforced. Kept for UI display only.</summary>
+    public int RemainingAttempts => 5; // server handles this
     public DateTime? LockedUntil => _lockedUntil;
     public bool IsLocked => _lockedUntil.HasValue && _lockedUntil.Value > DateTime.UtcNow;
 
@@ -41,7 +39,17 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
             }
             else
             {
-                StartInactivityTimer();
+                // Enforce single-session: check server to see if this session is still active.
+                // If another browser logged in, the server will return false here.
+                var valid = await ValidateSessionAsync();
+                if (!valid)
+                {
+                    await ClearSessionAsync();
+                }
+                else
+                {
+                    StartInactivityTimer();
+                }
             }
         }
 
@@ -52,6 +60,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     {
         await LoadLockoutStateAsync();
 
+        // Fast local check — avoids sending request while we know the lockout hasn't expired.
         if (IsLocked)
             return null;
 
@@ -59,19 +68,22 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         {
             var response = await http.PostAsJsonAsync("api/v1/auth/login", request);
 
+            // 429 = server-side lockout — read the unlock time from the response body.
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                var lockout = await response.Content.ReadFromJsonAsync<LoginLockoutResponse>();
+                if (lockout is not null)
+                {
+                    _lockedUntil = lockout.LockedUntil;
+                    await SaveLockoutStateAsync();
+                }
+                AuthStateChanged?.Invoke();
+                return null;
+            }
+
+            // 401 = wrong credentials only (no client-side counter — server handles attempts).
             if (!response.IsSuccessStatusCode)
             {
-                _failedAttempts++;
-                if (_failedAttempts >= MaxLoginAttempts)
-                {
-                    _lockedUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
-                    await SaveLockoutStateAsync();
-                }
-                else
-                {
-                    await SaveLockoutStateAsync();
-                }
-
                 AuthStateChanged?.Invoke();
                 return null;
             }
@@ -79,7 +91,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
             if (loginResponse is null) return null;
 
-            _failedAttempts = 0;
+            // Success — clear any cached lockout.
             _lockedUntil = null;
             await SaveLockoutStateAsync();
 
@@ -101,13 +113,6 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         }
         catch
         {
-            _failedAttempts++;
-            if (_failedAttempts >= MaxLoginAttempts)
-            {
-                _lockedUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
-            }
-
-            await SaveLockoutStateAsync();
             AuthStateChanged?.Invoke();
             return null;
         }
@@ -157,10 +162,22 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     public async Task<bool> ValidateSessionAsync()
     {
         if (_currentSession is null) return false;
+        if (_currentSession.ExpiresAt <= DateTime.UtcNow) return false;
 
-        // Backend doesn't have session validation yet, but we'll return true if we have a locally valid session
-        // to avoid constant redirection to login.
-        return await Task.FromResult(_currentSession.ExpiresAt > DateTime.UtcNow);
+        // Ask the server whether this session is still the active one.
+        // This enforces single-session: if another browser logged in, this returns false.
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "api/v1/users/session/validate");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _currentSession.Token);
+            var resp = await http.SendAsync(req);
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            // Network error — optimistically allow (avoids offline false-logout)
+            return true;
+        }
     }
 
     public void ResetInactivityTimer()
@@ -238,49 +255,30 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     {
         try
         {
-            await js.InvokeVoidAsync("localStorage.setItem", AttemptsStorageKey, _failedAttempts.ToString());
-
             if (_lockedUntil.HasValue)
-            {
-                await js.InvokeVoidAsync("localStorage.setItem", LockedUntilStorageKey,
-                    _lockedUntil.Value.ToString("O"));
-            }
+                await js.InvokeVoidAsync("localStorage.setItem", LockedUntilStorageKey, _lockedUntil.Value.ToString("O"));
             else
-            {
                 await js.InvokeVoidAsync("localStorage.removeItem", LockedUntilStorageKey);
-            }
         }
-        catch
-        {
-            // Ignorovat chyby při ukládání stavu
-        }
+        catch { }
     }
 
     private async Task LoadLockoutStateAsync()
     {
         try
         {
-            var attemptsStr = await js.InvokeAsync<string?>("localStorage.getItem", AttemptsStorageKey);
-            _failedAttempts = int.TryParse(attemptsStr, out var a) ? a : 0;
-
             var lockedStr = await js.InvokeAsync<string?>("localStorage.getItem", LockedUntilStorageKey);
             if (!string.IsNullOrEmpty(lockedStr) && DateTime.TryParse(lockedStr, out var locked))
-            {
                 _lockedUntil = locked > DateTime.UtcNow ? locked : null;
-                if (_lockedUntil is null)
-                {
-                    _failedAttempts = 0;
-                    await SaveLockoutStateAsync();
-                }
-            }
             else
-            {
                 _lockedUntil = null;
-            }
+
+            // Auto-clear expired lockout from localStorage
+            if (_lockedUntil is null && !string.IsNullOrEmpty(lockedStr))
+                await js.InvokeVoidAsync("localStorage.removeItem", LockedUntilStorageKey);
         }
         catch
         {
-            _failedAttempts = 0;
             _lockedUntil = null;
         }
     }
