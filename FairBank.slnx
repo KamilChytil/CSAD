@@ -13,6 +13,7 @@
     <Project Path="src/FairBank.Web.Savings/FairBank.Web.Savings.csproj" />
     <Project Path="src/FairBank.Web.Investments/FairBank.Web.Investments.csproj" />
     <Project Path="src/FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
+    <Project Path="src/FairBank.Web.Exchange/FairBank.Web.Exchange.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/">
@@ -30,5 +31,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />
+    <Project Path="tests/FairBank.Web.Exchange.Tests/FairBank.Web.Exchange.Tests.csproj" />
   </Folder>
 </Solution>
