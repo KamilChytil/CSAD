@@ -19,7 +19,7 @@
     {
         <ContentCard Title="Žádné čekající žádosti">
             <ChildContent>
-                <p class="empty-state">✅ Všechny žádosti byly zpracovány.</p>
+                <p class="empty-state"><VbIcon Name="check" Size="sm" /> Všechny žádosti byly zpracovány.</p>
             </ChildContent>
         </ContentCard>
     }
@@ -32,11 +32,11 @@
                     {
                         <div class="application-card" @onclick="() => SelectApplication(app)">
                             <div class="application-type">
-                                <span>@GetProductIcon(app.ProductType) @GetProductLabel(app.ProductType)</span>
+                                <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
                             </div>
                             <div class="application-details">
                                 <div>
-                                    <span class="status-badge status-pending">⏳ Čeká na schválení</span>
+                                    <span class="status-badge status-pending"><VbIcon Name="clock" Size="sm" /> Čeká na schválení</span>
                                 </div>
                                 <div>
                                     <strong>@app.MonthlyPayment.ToString("N0") Kč/měsíc</strong>
@@ -72,7 +72,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Typ produktu</label>
-                    <p>@GetProductIcon(_selectedApp.ProductType) @GetProductLabel(_selectedApp.ProductType)</p>
+                    <p><VbIcon Name="@GetProductIconName(_selectedApp.ProductType)" Size="sm" /> @GetProductLabel(_selectedApp.ProductType)</p>
                 </div>
 
                 <div class="form-group">
@@ -115,10 +115,10 @@
 
                 <div class="management-actions">
                     <VbButton OnClick="ApproveSelected" Disabled="@_isProcessing">
-                        ✅ Schválit
+                        <VbIcon Name="check" Size="sm" /> Schválit
                     </VbButton>
                     <VbButton OnClick="RejectSelected" Variant="danger" Disabled="@_isProcessing">
-                        ❌ Zamítnout
+                        <VbIcon Name="x-circle" Size="sm" /> Zamítnout
                     </VbButton>
                     <VbButton OnClick="CloseDetail" Variant="outline">
                         Zavřít
@@ -283,15 +283,15 @@
         _ => key
     };
 
-    private static string GetProductIcon(string productType) => productType switch
+    private static string GetProductIconName(string productType) => productType switch
     {
-        "PersonalLoan" => "💰",
-        "Mortgage" => "🏠",
-        "TravelInsurance" => "✈️",
-        "PropertyInsurance" => "🏡",
-        "LifeInsurance" => "❤️",
-        "PaymentProtection" => "🛡️",
-        _ => "📄"
+        "PersonalLoan" => "wallet",
+        "Mortgage" => "home",
+        "TravelInsurance" => "travel",
+        "PropertyInsurance" => "home",
+        "LifeInsurance" => "heart",
+        "PaymentProtection" => "shield",
+        _ => "clipboard"
     };
 
     private static string GetProductLabel(string productType) => productType switch

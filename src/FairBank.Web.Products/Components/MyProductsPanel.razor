@@ -30,12 +30,12 @@ else
                 {
                     <div class="application-card">
                         <div class="application-type">
-                            <span>@GetProductIcon(app.ProductType) @GetProductLabel(app.ProductType)</span>
+                            <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
                         </div>
                         <div class="application-details">
                             <div>
                                 <span class="status-badge @GetStatusCssClass(app.Status)">
-                                    @GetStatusLabel(app.Status)
+                                    <VbIcon Name="@GetStatusIconName(app.Status)" Size="sm" /> @GetStatusLabel(app.Status)
                                 </span>
                             </div>
                             <div>
@@ -111,15 +111,15 @@ else
         }
     }
 
-    private static string GetProductIcon(string productType) => productType switch
+    private static string GetProductIconName(string productType) => productType switch
     {
-        "PersonalLoan" => "💰",
-        "Mortgage" => "🏠",
-        "TravelInsurance" => "✈️",
-        "PropertyInsurance" => "🏡",
-        "LifeInsurance" => "❤️",
-        "PaymentProtection" => "🛡️",
-        _ => "📄"
+        "PersonalLoan" => "wallet",
+        "Mortgage" => "home",
+        "TravelInsurance" => "travel",
+        "PropertyInsurance" => "home",
+        "LifeInsurance" => "heart",
+        "PaymentProtection" => "shield",
+        _ => "clipboard"
     };
 
     private static string GetProductLabel(string productType) => productType switch
@@ -135,11 +135,20 @@ else
 
     private static string GetStatusLabel(string status) => status switch
     {
-        "Pending" => "⏳ Čeká na schválení",
-        "Active" => "✅ Aktivní",
-        "Rejected" => "❌ Zamítnuto",
-        "Cancelled" => "🚫 Zrušeno",
+        "Pending" => "Čeká na schválení",
+        "Active" => "Aktivní",
+        "Rejected" => "Zamítnuto",
+        "Cancelled" => "Zrušeno",
         _ => status
+    };
+
+    private static string GetStatusIconName(string status) => status switch
+    {
+        "Pending" => "clock",
+        "Active" => "check",
+        "Rejected" => "x-circle",
+        "Cancelled" => "ban",
+        _ => "clipboard"
     };
 
     private static string GetStatusCssClass(string status) => status switch
