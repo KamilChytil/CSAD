@@ -1,9 +1,27 @@
 @inherits LayoutComponentBase
+@inject ThemeService Theme
+@implements IDisposable
 
 <AuthGuard>
     <div class="vb-app">
         <SideNav />
         <div class="vb-content-area">
+            <header class="vb-topbar">
+                <div class="topbar-brand">
+                    <div class="topbar-chip">
+                        <div class="chip-outer"><div class="chip-inner">V</div></div>
+                    </div>
+                    <span class="topbar-title">Va-bank</span>
+                </div>
+                <div class="topbar-actions">
+                    <button class="topbar-btn" title="Notifikace">
+                        <VbIcon Name="bell" Size="sm" />
+                    </button>
+                    <button class="topbar-btn theme-toggle" @onclick="ToggleTheme" title="@(Theme.IsDarkMode ? "Světlý režim" : "Tmavý režim")">
+                        <VbIcon Name="@(Theme.IsDarkMode ? "sun" : "moon")" Size="sm" />
+                    </button>
+                </div>
+            </header>
             <main class="vb-main">
                 @Body
             </main>
@@ -11,3 +29,22 @@
         </div>
     </div>
 </AuthGuard>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Theme.OnThemeChanged += HandleThemeChanged;
+    }
+
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleAsync();
+    }
+
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Theme.OnThemeChanged -= HandleThemeChanged;
+    }
+}

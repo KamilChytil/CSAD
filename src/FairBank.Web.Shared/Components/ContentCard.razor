@@ -1,14 +1,21 @@
 @namespace FairBank.Web.Shared.Components
 
-<div class="content-card">
-    <div class="card-header">
-        <h2>@Title</h2>
-        @if (HeaderAction is not null)
-        {
-            @HeaderAction
-        }
-    </div>
-    <div class="card-body">
+<div class="content-card @CssClass">
+    @if (!string.IsNullOrWhiteSpace(Title) || HeaderAction is not null || Icon is not null)
+    {
+        <div class="card-header">
+            @if (Icon is not null)
+            {
+                <span class="card-header-icon">@Icon</span>
+            }
+            <h2>@Title</h2>
+            @if (HeaderAction is not null)
+            {
+                <div class="card-header-action">@HeaderAction</div>
+            }
+        </div>
+    }
+    <div class="card-body @(NoPadding ? "no-padding" : "")">
         @ChildContent
     </div>
 </div>
@@ -17,4 +24,7 @@
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? HeaderAction { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public bool NoPadding { get; set; }
 }

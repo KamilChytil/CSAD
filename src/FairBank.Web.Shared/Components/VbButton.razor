@@ -1,6 +1,10 @@
 @namespace FairBank.Web.Shared.Components
 
-<button class="vb-button @CssClass" @onclick="OnClick" disabled="@Disabled">
+<button class="vb-button @CssClass @SizeClass @(FullWidth ? "btn-full" : "")" @onclick="OnClick" disabled="@Disabled">
+    @if (!string.IsNullOrWhiteSpace(IconName))
+    {
+        <VbIcon Name="@IconName" Size="xs" />
+    }
     @ChildContent
 </button>
 
@@ -9,12 +13,24 @@
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string Variant { get; set; } = "primary";
+    [Parameter] public string Size { get; set; } = "md";
+    [Parameter] public string? IconName { get; set; }
+    [Parameter] public bool FullWidth { get; set; }
 
     private string CssClass => Variant switch
     {
         "secondary" => "btn-secondary",
         "outline" => "btn-outline",
         "danger" => "btn-danger",
+        "ghost" => "btn-ghost",
+        "gold" => "btn-gold",
         _ => "btn-primary"
+    };
+
+    private string SizeClass => Size switch
+    {
+        "sm" => "btn-sm",
+        "lg" => "btn-lg",
+        _ => ""
     };
 }

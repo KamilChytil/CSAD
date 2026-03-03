@@ -2,7 +2,7 @@
 
 <div class="transaction-item">
     <div class="transaction-icon @IconClass">
-        <span>@IconSymbol</span>
+        <VbIcon Name="@IconName" Size="sm" />
     </div>
     <div class="transaction-details">
         <span class="transaction-desc">@Description</span>
@@ -19,6 +19,7 @@
     [Parameter] public decimal Amount { get; set; }
     [Parameter] public string Currency { get; set; } = "Kč";
     [Parameter] public string Type { get; set; } = "payment";
+    [Parameter] public string Category { get; set; } = "";
 
     private string IconClass => Type switch
     {
@@ -27,10 +28,21 @@
         _ => "icon-payment"
     };
 
-    private string IconSymbol => Type switch
+    private string IconName => Category switch
     {
-        "deposit" => "↓",
-        "withdrawal" => "↑",
-        _ => "⇄"
+        "shopping" => "shopping",
+        "food" => "food",
+        "car" or "transport" => "car",
+        "travel" => "travel",
+        "utilities" => "utilities",
+        "savings" => "piggy",
+        "transfer" => "transfer",
+        "gift" => "gift",
+        _ => Type switch
+        {
+            "deposit" => "arrow-down",
+            "withdrawal" => "arrow-up",
+            _ => "transfer"
+        }
     };
 }

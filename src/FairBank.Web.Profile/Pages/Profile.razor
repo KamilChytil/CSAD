@@ -3,19 +3,31 @@
 @inject IFairBankApi Api
 @inject IAuthService Auth
 @inject NavigationManager Nav
+@inject ThemeService Theme
+@implements IDisposable
 
-<PageHeader Title="PROFIL" />
+<PageHeader Title="PROFIL" ShowChip="false" />
 
-<div class="page-content">
-    <div class="profile-avatar">
-        <div class="avatar-chip">
-            <PokerChip Value="@_initials" Size="lg" IsActive="true" />
+<div class="page-content profile-page">
+
+    @* ── PROFILE HERO ─────────────────────────── *@
+    <div class="profile-hero">
+        <div class="profile-avatar">
+            <div class="avatar-chip">
+                <PokerChip Value="@_initials" Size="lg" IsActive="true" />
+            </div>
         </div>
         <h2 class="profile-name">@_fullName</h2>
         <span class="profile-email">@_email</span>
+        <div class="profile-badges">
+            <span class="badge badge-blue">@_role</span>
+            <span class="badge badge-green">Aktivní</span>
+        </div>
     </div>
 
+    @* ── PERSONAL INFO ────────────────────────── *@
     <ContentCard Title="Osobní údaje">
+        <Icon><VbIcon Name="user" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
             <div class="info-row">
                 <span class="info-label">Jméno</span>
@@ -36,23 +48,35 @@
         </ChildContent>
     </ContentCard>
 
+    @* ── SETTINGS ─────────────────────────────── *@
     <ContentCard Title="Nastavení">
+        <Icon><VbIcon Name="settings" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
             <ToggleSwitch Label="Push notifikace" @bind-IsOn="_pushEnabled" />
-            <ToggleSwitch Label="Tmavý režim" @bind-IsOn="_darkMode" />
+            <div class="settings-divider"></div>
+            <div class="theme-setting">
+                <ToggleSwitch Label="Tmavý režim" IsOn="@Theme.IsDarkMode" IsOnChanged="OnDarkModeToggled" />
+                <span class="settings-hint">
+                    <VbIcon Name="@(Theme.IsDarkMode ? "moon" : "sun")" Size="xs" />
+                    @(Theme.IsDarkMode ? "Tmavý" : "Světlý") režim aktivní
+                </span>
+            </div>
+            <div class="settings-divider"></div>
             <ToggleSwitch Label="Biometrické přihlášení" @bind-IsOn="_biometricEnabled" />
         </ChildContent>
     </ContentCard>
 
+    @* ── ACCOUNT INFO ─────────────────────────── *@
     <ContentCard Title="Účet">
+        <Icon><VbIcon Name="wallet" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
             <div class="info-row">
                 <span class="info-label">Číslo účtu</span>
-                <span class="info-value">@_accountNumber</span>
+                <span class="info-value account-number">@_accountNumber</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Stav</span>
-                <span class="info-value status-active">Aktivní</span>
+                <span class="info-value"><span class="badge badge-green">Aktivní</span></span>
             </div>
             <div class="info-row">
                 <span class="info-label">Vytvořeno</span>
@@ -61,7 +85,29 @@
         </ChildContent>
     </ContentCard>
 
-    <VbButton Variant="danger" OnClick="HandleLogout">Odhlásit se</VbButton>
+    @* ── SECURITY ─────────────────────────────── *@
+    <ContentCard Title="Zabezpečení">
+        <Icon><VbIcon Name="shield" Size="sm" Color="var(--vb-red)" /></Icon>
+        <ChildContent>
+            <div class="security-item">
+                <div class="security-info">
+                    <VbIcon Name="shield" Size="sm" Color="var(--vb-green)" />
+                    <span>Dvoufaktorové ověření</span>
+                </div>
+                <span class="badge badge-green">Aktivní</span>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <VbIcon Name="clock" Size="sm" />
+                    <span>Poslední přihlášení</span>
+                </div>
+                <span class="info-value">Dnes</span>
+            </div>
+        </ChildContent>
+    </ContentCard>
+
+    @* ── LOGOUT ───────────────────────────────── *@
+    <VbButton Variant="danger" FullWidth="true" IconName="logout" OnClick="HandleLogout">Odhlásit se</VbButton>
 </div>
 
 @code {
@@ -73,14 +119,17 @@
     private DateTime _createdAt = DateTime.UtcNow;
 
     private bool _pushEnabled = true;
-    private bool _darkMode;
     private bool _biometricEnabled;
 
     private string _fullName => $"{_firstName} {_lastName}";
-    private string _initials => $"{_firstName[0]}{_lastName[0]}";
+    private string _initials => string.IsNullOrEmpty(_firstName) || string.IsNullOrEmpty(_lastName)
+        ? "VB"
+        : $"{_firstName[0]}{_lastName[0]}";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        Theme.OnThemeChanged += HandleThemeChanged;
+
         if (Auth.CurrentSession is { } session)
         {
             _firstName = session.FirstName;
@@ -88,11 +137,38 @@
             _email = session.Email;
             _role = session.Role;
         }
+
+        // Load account number
+        try
+        {
+            if (Auth.CurrentSession is { } s)
+            {
+                var accounts = await Api.GetAccountsByOwnerAsync(s.UserId);
+                if (accounts.Any())
+                {
+                    _accountNumber = accounts[0].AccountNumber;
+                    _createdAt = accounts[0].CreatedAt;
+                }
+            }
+        }
+        catch { /* Use default */ }
     }
+
+    private async Task OnDarkModeToggled(bool isDark)
+    {
+        await Theme.SetDarkModeAsync(isDark);
+    }
+
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
 
     private async Task HandleLogout()
     {
         await Auth.LogoutAsync();
         Nav.NavigateTo("/login", forceLoad: false);
+    }
+
+    public void Dispose()
+    {
+        Theme.OnThemeChanged -= HandleThemeChanged;
     }
 }

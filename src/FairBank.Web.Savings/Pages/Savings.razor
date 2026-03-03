@@ -1,65 +1,116 @@
 @page "/sporeni"
 @namespace FairBank.Web.Savings.Pages
 
-<PageHeader Title="FINANČNÍ VÝZVY A CÍLE" />
+<PageHeader Title="FINANČNÍ VÝZVY A CÍLE" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="plus" OnClick="@(() => { })">Nová výzva</VbButton>
+    </Actions>
+</PageHeader>
 
-<div class="page-content">
+<div class="page-content savings-page">
 
     @* ── Savings Goals with poker-chip milestones ── *@
     @foreach (var goal in _goals)
     {
-        <ContentCard Title="@goal.Name">
+        <ContentCard Title="@goal.Name" CssClass="section-goal">
+            <Icon><VbIcon Name="@goal.Icon" Size="sm" Color="var(--vb-gold)" /></Icon>
             <ChildContent>
-                <p class="goal-progress-label">Progress: @goal.Description</p>
-                <div class="chips-row">
-                    @foreach (var milestone in goal.Milestones)
-                    {
-                        <div class="milestone">
-                            <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
-                        </div>
-                    }
+                <div class="goal-card-content">
+                    <div class="goal-header-row">
+                        <span class="goal-progress-label">@goal.Description</span>
+                        <span class="goal-percentage @(goal.ProgressPercent >= 75 ? "positive" : "")">@goal.ProgressPercent%</span>
+                    </div>
+                    <div class="chips-row">
+                        @foreach (var milestone in goal.Milestones)
+                        {
+                            <div class="milestone">
+                                <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
+                            </div>
+                        }
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" style="width: @(goal.ProgressPercent)%"></div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Naspořeno</span>
+                        <span class="stat-value">@goal.CurrentAmount.ToString("N0") Kč</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Cíl</span>
+                        <span class="stat-value">@goal.TargetAmount.ToString("N0") Kč</span>
+                    </div>
                 </div>
-                <div class="progress-bar-track">
-                    <div class="progress-bar-fill" style="width: @(goal.ProgressPercent)%"></div>
-                </div>
-                <span class="goal-amount">@goal.CurrentAmount.ToString("N0") / @goal.TargetAmount.ToString("N0") Kč</span>
             </ChildContent>
         </ContentCard>
     }
 
-    <VbButton OnClick="@(() => { })">Vyzvat se</VbButton>
-
-    @* ── Automatic Savings ── *@
-    <ContentCard Title="Automatické spoření">
+    @* ── Automatic Savings with Roulette Visual ── *@
+    <ContentCard Title="Automatické spoření" CssClass="section-auto-savings">
+        <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
-            <ToggleSwitch Label="Zaokrouhlování plateb" @bind-IsOn="_roundUpEnabled" />
-            <p class="rule-description">
-                Zaokrouhlování plateb na celé koruny. Rozdíl jde na spoření.
-            </p>
+            <div class="auto-savings-content">
+                <div class="auto-savings-toggle">
+                    <ToggleSwitch Label="Zaokrouhlování plateb" @bind-IsOn="_roundUpEnabled" />
+                    <p class="rule-description">
+                        Zaokrouhlování plateb na celé koruny. Rozdíl jde na spoření.
+                    </p>
+                </div>
 
-            @foreach (var entry in _savingsHistory)
-            {
-                <TransactionItem
-                    Description="@entry.Description"
-                    Date="@entry.Date"
-                    Amount="@entry.Amount"
-                    Currency="Kč"
-                    Type="@entry.Type" />
-            }
+                <div class="auto-savings-visual">
+                    <div class="savings-roulette">
+                        @foreach (var entry in _savingsHistory.Take(3))
+                        {
+                            <div class="savings-entry">
+                                <TransactionItem
+                                    Description="@entry.Description"
+                                    Date="@entry.Date"
+                                    Amount="@entry.Amount"
+                                    Currency="Kč"
+                                    Type="@entry.Type"
+                                    Category="savings" />
+                            </div>
+                        }
+                    </div>
+                    <div class="savings-summary">
+                        <div class="stat-row">
+                            <span class="stat-label">Tento měsíc</span>
+                            <span class="stat-value positive">+2 700 Kč</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Celkem naspořeno</span>
+                            <span class="stat-value">155 700 Kč</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </ChildContent>
     </ContentCard>
 
+    @* ── Savings Rules ── *@
     <ContentCard Title="Pravidla spoření">
+        <Icon><VbIcon Name="settings" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
             <p class="rule-description">
-                Customize pravidla spoření. Nastav si vlastní pravidla spoření.
+                Nastavte si vlastní pravidla automatického spoření.
             </p>
             @foreach (var rule in _rules)
             {
-                <ToggleSwitch Label="@rule.Name" @bind-IsOn="rule.IsEnabled" />
+                <div class="savings-rule">
+                    <ToggleSwitch Label="@rule.Name" @bind-IsOn="rule.IsEnabled" />
+                    <span class="rule-desc">@rule.Description</span>
+                </div>
             }
         </ChildContent>
     </ContentCard>
+
+    @* ── Tip Card ── *@
+    <div class="tip-card">
+        <div class="tip-icon"><VbIcon Name="fire" Size="sm" /></div>
+        <div class="tip-content">
+            <span class="tip-title">Tip pro spoření</span>
+            <span class="tip-text">Pravidlo 50/30/20: 50% příjmů na potřeby, 30% na přání, 20% na spoření a investice.</span>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -73,42 +124,54 @@
     {
         _goals =
         [
-            new("Nové auto", "nové auto", 450_000m, 120_000m, 27,
+            new("Dovolená", "Středomořská dovolená", 60_000m, 42_000m, 70,
             [
-                new("200 Mil", true),
-                new("100 Mil", false),
+                new("10k", true),
+                new("20k", true),
+                new("30k", true),
                 new("Va-bank", false),
-            ]),
-            new("Dovolená", "dovolená", 60_000m, 35_000m, 58,
+            ], "travel"),
+            new("Nové auto", "Fond na nové auto", 450_000m, 120_000m, 27,
             [
-                new("20 Mil", true),
-                new("30 Mil", true),
+                new("50k", true),
+                new("100k", true),
+                new("200k", false),
                 new("Va-bank", false),
-            ]),
+            ], "car"),
+            new("Nouzový fond", "6 měsíčních výdajů", 180_000m, 95_000m, 53,
+            [
+                new("30k", true),
+                new("60k", true),
+                new("90k", true),
+                new("Va-bank", false),
+            ], "shield"),
         ];
 
         _savingsHistory =
         [
-            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-1), -2_000m, "withdrawal"),
-            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-3), 500m, "deposit"),
-            new(Guid.NewGuid(), "Spoření spoření", DateTime.Now.AddDays(-5), 200m, "deposit"),
+            new(Guid.NewGuid(), "Zaokrouhlení nákupu", DateTime.Now.AddDays(-1), 12m, "deposit"),
+            new(Guid.NewGuid(), "Týdenní spoření", DateTime.Now.AddDays(-3), 500m, "deposit"),
+            new(Guid.NewGuid(), "Bonus za výzvu", DateTime.Now.AddDays(-5), 200m, "deposit"),
         ];
 
         _rules =
         [
-            new("Pourvíci", true),
+            new("Zaokrouhlování nákupů", true, "Každý nákup zaokrouhlen nahoru, rozdíl jde do spoření"),
+            new("Týdenní spoření", true, "Každý týden automaticky odeslat 500 Kč na spoření"),
+            new("Výzvové bonusy", false, "Dostávejte bonusy za splnění výzev"),
         ];
     }
 
     private sealed record SavingsGoalViewModel(
         string Name, string Description, decimal TargetAmount, decimal CurrentAmount,
-        int ProgressPercent, List<MilestoneVm> Milestones);
+        int ProgressPercent, List<MilestoneVm> Milestones, string Icon);
 
     private sealed record MilestoneVm(string Label, bool IsReached);
 
-    private sealed class SavingsRuleViewModel(string name, bool isEnabled)
+    private sealed class SavingsRuleViewModel(string name, bool isEnabled, string description)
     {
         public string Name { get; set; } = name;
         public bool IsEnabled { get; set; } = isEnabled;
+        public string Description { get; set; } = description;
     }
 }

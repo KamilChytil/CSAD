@@ -1,55 +1,233 @@
 @page "/investice"
 @namespace FairBank.Web.Investments.Pages
 
-<PageHeader Title="INVESTICE" />
+<PageHeader Title="INVESTICE" ShowChip="false">
+    <Actions>
+        <div class="page-tabs">
+            <button class="page-tab @(_view == "arena" ? "active" : "")" @onclick='() => _view = "arena"'>INVESTICE</button>
+            <button class="page-tab @(_view == "game" ? "active" : "")" @onclick='() => _view = "game"'>Hra</button>
+            <button class="page-tab @(_view == "menu" ? "active" : "")" @onclick='() => _view = "menu"'>Menu</button>
+        </div>
+    </Actions>
+</PageHeader>
 
-<div class="page-content">
-    <BalanceCard Amount="@_totalValue" Currency="Kč" />
+<div class="page-content investments-page">
 
-    @foreach (var inv in _investments)
+    @if (_view == "arena")
     {
-        <ContentCard Title="@inv.Name">
+        @* ── INVESTMENT ARENA HEADER ─────────────── *@
+        <div class="arena-header">
+            <div class="arena-chip-deco">
+                <PokerChip Value="$" IsActive="true" Size="sm" />
+            </div>
+            <div class="arena-info">
+                <h2 class="arena-title">INVESTIČNÍ ARÉNA</h2>
+                <p class="arena-subtitle">Vaše portfolio roste</p>
+            </div>
+            <div class="arena-total">
+                <span class="arena-total-label">Celková hodnota</span>
+                <span class="arena-total-value">@_totalValue.ToString("N0") Kč</span>
+                <span class="arena-total-change @(_totalChange >= 0 ? "positive" : "negative")">
+                    @(_totalChange >= 0 ? "+" : "")@_totalChange.ToString("F1")%
+                </span>
+            </div>
+        </div>
+
+        @* ── ASSETS GRID ─────────────────────────── *@
+        <ContentCard Title="ASSETS" CssClass="section-assets">
+            <Icon><VbIcon Name="chart" Size="sm" Color="var(--vb-gold)" /></Icon>
             <ChildContent>
-                <div class="investment-row">
-                    <div class="investment-info">
-                        <span class="investment-type">@inv.Type</span>
-                        <span class="investment-value">@inv.CurrentValue.ToString("N0") Kč</span>
-                    </div>
-                    <div class="investment-change @(inv.ChangePercent >= 0 ? "positive" : "negative")">
-                        @(inv.ChangePercent >= 0 ? "+" : "")@inv.ChangePercent.ToString("F1") %
+                <div class="assets-grid">
+                    @foreach (var inv in _investments)
+                    {
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <span class="asset-name">@inv.Name</span>
+                                <span class="asset-type badge @(inv.Type == "Crypto" ? "badge-purple" : "badge-blue")">@inv.Type</span>
+                            </div>
+                            <div class="asset-value">@inv.CurrentValue.ToString("N0") Kč</div>
+                            <div class="asset-chart">
+                                @* Simple sparkline visualization *@
+                                <div class="sparkline">
+                                    @foreach (var point in inv.ChartData)
+                                    {
+                                        <div class="spark-bar @(inv.ChangePercent >= 0 ? "spark-green" : "spark-red")" style="height: @point%"></div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="asset-footer">
+                                <span class="asset-invested">Investováno: @inv.InvestedValue.ToString("N0") Kč</span>
+                                <span class="asset-change @(inv.ChangePercent >= 0 ? "positive" : "negative")">
+                                    @(inv.ChangePercent >= 0 ? "+" : "")@inv.ChangePercent.ToString("F1")%
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </ContentCard>
+
+        @* ── FINANCIAL TIP ────────────────────────── *@
+        <div class="tip-card">
+            <div class="tip-icon"><VbIcon Name="fire" Size="sm" /></div>
+            <div class="tip-content">
+                <span class="tip-title">Finanční Tip: Co je složené úročení?</span>
+                <span class="tip-text">Složené úročení znamená, že úroky se počítají nejen z původní částky, ale i z předchozích úroků. Čím dříve začnete investovat, tím více profitujete.</span>
+            </div>
+        </div>
+    }
+
+    @if (_view is "arena" or "game")
+    {
+        @* ── CHALLENGES & LEADERBOARD ─────────────── *@
+        <ContentCard Title="VÝZVY A ŽEBŘÍČEK" CssClass="section-leaderboard">
+            <Icon><VbIcon Name="trophy" Size="sm" Color="var(--vb-gold)" /></Icon>
+            <ChildContent>
+                @* Financial Adventure Card *@
+                <div class="challenge-card adventure-card">
+                    <div class="challenge-info">
+                        <div class="challenge-icon-wrap adventure-icon">
+                            <VbIcon Name="dice" Size="md" Color="var(--vb-gold)" />
+                        </div>
+                        <div class="challenge-text">
+                            <span class="challenge-name">Finanční Dobrodružství</span>
+                            <span class="challenge-progress-text">Splňte výzvy a sbírejte body</span>
+                        </div>
                     </div>
                 </div>
-                <div class="progress-bar-track">
-                    <div class="progress-bar-fill @(inv.ChangePercent >= 0 ? "fill-green" : "fill-red")"
-                         style="width: @(Math.Min(100, Math.Abs((double)inv.ChangePercent) * 2 + 50))%">
-                    </div>
+
+                @* Leaderboard *@
+                <div class="leaderboard">
+                    @{ var rank = 1; }
+                    @foreach (var entry in _leaderboard)
+                    {
+                        <div class="leaderboard-item @(entry.IsCurrentUser ? "current-user" : "")">
+                            <span class="leaderboard-rank">
+                                @if (rank == 1) { <VbIcon Name="crown" Size="xs" Color="var(--vb-gold)" /> }
+                                else { @rank }
+                            </span>
+                            <div class="leaderboard-avatar">@entry.Initials</div>
+                            <div class="leaderboard-info">
+                                <span class="leaderboard-name">@entry.Name</span>
+                                <span class="leaderboard-title">@entry.Title</span>
+                            </div>
+                            <div class="leaderboard-score">
+                                <span class="leaderboard-points">@entry.Points</span>
+                                <span class="leaderboard-pts-label">bodů</span>
+                            </div>
+                        </div>
+                        rank++;
+                    }
+                </div>
+            </ChildContent>
+        </ContentCard>
+
+        @* ── REWARDS ──────────────────────────────── *@
+        <ContentCard Title="Vaše odměny">
+            <Icon><VbIcon Name="gift" Size="sm" Color="var(--vb-gold)" /></Icon>
+            <ChildContent>
+                <div class="badges-row">
+                    @foreach (var badge in _badges)
+                    {
+                        <div class="badge @(badge.Earned ? "badge-earned" : "badge-locked")">
+                            <VbIcon Name="@badge.Icon" Size="md" Color="@(badge.Earned ? "var(--vb-gold)" : "var(--vb-text-muted)")" />
+                            <span class="badge-label">@badge.Name</span>
+                        </div>
+                    }
                 </div>
             </ChildContent>
         </ContentCard>
     }
 
-    @if (!_investments.Any())
+    @if (_view == "menu")
     {
-        <div class="empty-state-card">
-            <PokerChip Value="?" Size="lg" />
-            <p class="empty-state">Prozkoumejte investiční příležitosti</p>
-            <VbButton OnClick="@(() => { })">Začít investovat</VbButton>
-        </div>
+        @* ── DETAILED INVESTMENT VIEW ─────────────── *@
+        <BalanceCard Amount="@_totalValue" Currency="Kč" Variant="hero" Label="PORTFOLIO" SubText="Celková hodnota investic" />
+
+        @foreach (var inv in _investments)
+        {
+            <ContentCard Title="@inv.Name">
+                <Icon><VbIcon Name="chart" Size="sm" Color="@(inv.ChangePercent >= 0 ? "var(--vb-green)" : "var(--vb-red)")" /></Icon>
+                <ChildContent>
+                    <div class="investment-detail">
+                        <div class="investment-row">
+                            <div class="investment-info">
+                                <span class="investment-type badge @(inv.Type == "Crypto" ? "badge-purple" : "badge-blue")">@inv.Type</span>
+                                <span class="investment-value">@inv.CurrentValue.ToString("N0") Kč</span>
+                            </div>
+                            <div class="investment-change @(inv.ChangePercent >= 0 ? "positive" : "negative")">
+                                @(inv.ChangePercent >= 0 ? "+" : "")@inv.ChangePercent.ToString("F1") %
+                            </div>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill @(inv.ChangePercent >= 0 ? "fill-green" : "fill-red")"
+                                 style="width: @(Math.Min(100, Math.Abs((double)inv.ChangePercent) * 2 + 50))%">
+                            </div>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Investováno</span>
+                            <span class="stat-value">@inv.InvestedValue.ToString("N0") Kč</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Zisk/Ztráta</span>
+                            <span class="stat-value @(inv.ChangePercent >= 0 ? "positive" : "negative")">
+                                @((inv.CurrentValue - inv.InvestedValue).ToString("N0")) Kč
+                            </span>
+                        </div>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @if (!_investments.Any())
+        {
+            <div class="empty-state-card">
+                <PokerChip Value="?" Size="lg" />
+                <p class="empty-state">Prozkoumejte investiční příležitosti</p>
+                <VbButton OnClick="@(() => _view = "arena")" IconName="chart">Začít investovat</VbButton>
+            </div>
+        }
     }
 </div>
 
 @code {
+    private string _view = "arena";
     private decimal _totalValue = 48_500m;
+    private decimal _totalChange = 5.8m;
 
-    private List<InvestmentDto> _investments = [];
+    private List<InvestmentVm> _investments = [];
+    private List<LeaderboardEntry> _leaderboard = [];
+    private List<BadgeVm> _badges = [];
 
     protected override void OnInitialized()
     {
         _investments =
         [
-            new(Guid.NewGuid(), "Akciový fond", "Fond", 25_000m, 20_000m, 12.5m, "CZK"),
-            new(Guid.NewGuid(), "Dluhopisový fond", "Fond", 15_000m, 14_500m, 3.4m, "CZK"),
-            new(Guid.NewGuid(), "Kryptoměny", "Crypto", 8_500m, 10_000m, -15.0m, "CZK"),
+            new("Akciový fond", "Fond", 25_000m, 20_000m, 12.5m, "CZK", [30, 45, 55, 40, 65, 70, 80, 75, 85]),
+            new("Dluhopisový fond", "Fond", 15_000m, 14_500m, 3.4m, "CZK", [50, 52, 48, 55, 53, 58, 56, 60, 62]),
+            new("Kryptoměny", "Crypto", 8_500m, 10_000m, -15.0m, "CZK", [80, 70, 60, 45, 30, 35, 25, 30, 20]),
+        ];
+
+        _leaderboard =
+        [
+            new("Marie K.", "MK", "Investiční královna", 2_450, false),
+            new("Petr V.", "PV", "Býčí jezdec", 2_120, false),
+            new("Vy", "VY", "Začínající investor", 1_850, true),
+            new("Anna S.", "AS", "Spořivá duše", 1_620, false),
+            new("Jan N.", "JN", "Riskový hráč", 1_480, false),
+        ];
+
+        _badges =
+        [
+            new("První investice", "star", true),
+            new("Měsíční investor", "rocket", true),
+            new("Diverzifikátor", "shield", false),
+            new("Va-bank hráč", "dice", false),
+            new("Top 10", "crown", false),
         ];
     }
+
+    private sealed record InvestmentVm(string Name, string Type, decimal CurrentValue, decimal InvestedValue, decimal ChangePercent, string Currency, int[] ChartData);
+    private sealed record LeaderboardEntry(string Name, string Initials, string Title, int Points, bool IsCurrentUser);
+    private sealed record BadgeVm(string Name, string Icon, bool Earned);
 }

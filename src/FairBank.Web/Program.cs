@@ -18,6 +18,7 @@ builder.Services.AddScoped(sp => new FairBank.Web.Shared.Services.Chat.ChatServi
     builder.HostEnvironment.BaseAddress));
 
 builder.Services.AddSingleton<AuthStateService>();
+builder.Services.AddScoped<ThemeService>();
 
 var host = builder.Build();
 
@@ -25,5 +26,9 @@ var host = builder.Build();
 var authState = host.Services.GetRequiredService<AuthStateService>();
 var js = host.Services.GetRequiredService<IJSRuntime>();
 await authState.InitializeAsync(js);
+
+// Inicializovat theme service
+var themeService = host.Services.GetRequiredService<ThemeService>();
+await themeService.InitializeAsync();
 
 await host.RunAsync();

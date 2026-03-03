@@ -1,13 +1,43 @@
 @namespace FairBank.Web.Shared.Components
 
-<div class="balance-card">
-    <span class="balance-label">Zůstatek</span>
-    <span class="balance-amount @(Amount >= 0 ? "positive" : "negative")">
-        @Amount.ToString("N0") @Currency
-    </span>
-</div>
+@if (Variant == "hero")
+{
+    <div class="balance-card balance-card-hero">
+        <div class="hero-bg">
+            <div class="hero-chip-deco"></div>
+            <div class="hero-chip-deco hero-chip-deco-2"></div>
+        </div>
+        <span class="balance-label">@Label</span>
+        <span class="balance-amount">
+            @Amount.ToString("N0") <small>@Currency</small>
+        </span>
+        @if (SubText is not null)
+        {
+            <span class="balance-sub">@SubText</span>
+        }
+        @if (ChildContent is not null)
+        {
+            <div class="balance-actions">
+                @ChildContent
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="balance-card">
+        <span class="balance-label">@Label</span>
+        <span class="balance-amount @(Amount >= 0 ? "positive" : "negative")">
+            @Amount.ToString("N0") @Currency
+        </span>
+    </div>
+}
 
 @code {
     [Parameter] public decimal Amount { get; set; }
     [Parameter] public string Currency { get; set; } = "Kč";
+    [Parameter] public string Variant { get; set; } = "default";
+    [Parameter] public string Label { get; set; } = "Zůstatek";
+    [Parameter] public string? SubText { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
 }
