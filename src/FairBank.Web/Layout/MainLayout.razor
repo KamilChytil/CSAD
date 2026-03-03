@@ -1,8 +1,10 @@
 @inherits LayoutComponentBase
 
-<div class="vb-app">
-    <main class="vb-main">
-        @Body
-    </main>
-    <BottomNav />
-</div>
+<AuthGuard>
+    <div class="vb-app">
+        <main class="vb-main">
+            @Body
+        </main>
+        <BottomNav />
+    </div>
+</AuthGuard>

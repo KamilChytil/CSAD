@@ -6,6 +6,7 @@
     <Project Path="src/FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
   </Folder>
   <Folder Name="/src/Web/">
+    <Project Path="src/FairBank.Web.Auth/FairBank.Web.Auth.csproj" />
     <Project Path="src/FairBank.Web.Overview/FairBank.Web.Overview.csproj" />
     <Project Path="src/FairBank.Web.Payments/FairBank.Web.Payments.csproj" />
     <Project Path="src/FairBank.Web.Savings/FairBank.Web.Savings.csproj" />

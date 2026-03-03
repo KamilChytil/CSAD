@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
+    <ProjectReference Include="../FairBank.Web.Auth/FairBank.Web.Auth.csproj" />
     <ProjectReference Include="../FairBank.Web.Overview/FairBank.Web.Overview.csproj" />
     <ProjectReference Include="../FairBank.Web.Payments/FairBank.Web.Payments.csproj" />
     <ProjectReference Include="../FairBank.Web.Savings/FairBank.Web.Savings.csproj" />

@@ -1,0 +1,81 @@
+@namespace FairBank.Web.Shared.Components
+@inject IAuthService Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+@if (_initialized && Auth.IsAuthenticated)
+{
+    <div @onmousemove="ResetTimer" @onkeydown="ResetTimer" @onclick="ResetTimer">
+        @ChildContent
+    </div>
+}
+else if (_initialized)
+{
+    @* Nepřihlášen — přesměrování probíhá v OnInitializedAsync *@
+}
+else
+{
+    <div class="auth-gate-overlay">
+        <div class="loading-chip">
+            <div class="chip-spin"></div>
+        </div>
+        <p>Ověřování relace...</p>
+    </div>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _initialized;
+
+    private static readonly HashSet<string> PublicRoutes =
+        ["/prihlaseni", "/registrace"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.AuthStateChanged += OnAuthStateChanged;
+
+        await Auth.InitializeAsync();
+        _initialized = true;
+
+        if (!Auth.IsAuthenticated)
+        {
+            RedirectToLoginIfNeeded();
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnAuthStateChanged()
+    {
+        InvokeAsync(() =>
+        {
+            if (!Auth.IsAuthenticated)
+            {
+                RedirectToLoginIfNeeded();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private void RedirectToLoginIfNeeded()
+    {
+        var relativePath = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+
+        if (!PublicRoutes.Contains(relativePath.ToLowerInvariant()))
+        {
+            Nav.NavigateTo("/prihlaseni?expired=1", forceLoad: false);
+        }
+    }
+
+    private void ResetTimer()
+    {
+        Auth.ResetInactivityTimer();
+    }
+
+    public void Dispose()
+    {
+        Auth.AuthStateChanged -= OnAuthStateChanged;
+    }
+}

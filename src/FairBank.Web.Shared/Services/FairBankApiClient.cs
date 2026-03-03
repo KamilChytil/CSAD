@@ -51,4 +51,51 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<UserResponse>())!;
     }
+
+    public async Task<LoginResponse?> LoginAsync(LoginRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/auth/login", request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<LoginResponse>();
+    }
+
+    public async Task LogoutAsync(string token)
+    {
+        http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        try
+        {
+            await http.PostAsync("api/v1/auth/logout", null);
+        }
+        finally
+        {
+            http.DefaultRequestHeaders.Authorization = null;
+        }
+    }
+
+    public async Task<UserResponse?> RegisterExtendedAsync(RegisterRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/auth/register", request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<UserResponse>();
+    }
+
+    public async Task<bool> ValidateSessionAsync(Guid sessionId, string token)
+    {
+        http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        try
+        {
+            var response = await http.GetAsync($"api/v1/auth/session/{sessionId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            http.DefaultRequestHeaders.Authorization = null;
+        }
+    }
 }

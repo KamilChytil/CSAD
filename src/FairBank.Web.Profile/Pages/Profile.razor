@@ -1,6 +1,8 @@
 @page "/profil"
 @namespace FairBank.Web.Profile.Pages
 @inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Nav
 
 <PageHeader Title="PROFIL" />
 
@@ -59,7 +61,7 @@
         </ChildContent>
     </ContentCard>
 
-    <VbButton Variant="danger" OnClick="@(() => { })">Odhlásit se</VbButton>
+    <VbButton Variant="danger" OnClick="HandleLogout">Odhlásit se</VbButton>
 </div>
 
 @code {
@@ -76,4 +78,21 @@
 
     private string _fullName => $"{_firstName} {_lastName}";
     private string _initials => $"{_firstName[0]}{_lastName[0]}";
+
+    protected override void OnInitialized()
+    {
+        if (Auth.CurrentSession is { } session)
+        {
+            _firstName = session.FirstName;
+            _lastName = session.LastName;
+            _email = session.Email;
+            _role = session.Role;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/prihlaseni", forceLoad: false);
+    }
 }

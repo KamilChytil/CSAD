@@ -1,0 +1,418 @@
+@page "/registrace"
+@namespace FairBank.Web.Auth.Pages
+@inject IAuthService Auth
+@inject NavigationManager Nav
+
+<div class="auth-page">
+    <div class="auth-header">
+        <div class="header-chip">
+            <div class="chip-outer">
+                <div class="chip-inner">V</div>
+            </div>
+        </div>
+        <h1 class="auth-title">VA-BANK</h1>
+        <p class="auth-subtitle">Nový účet — začněte svou hru</p>
+    </div>
+
+    <div class="auth-card">
+        <h2 class="auth-card-title">Registrace</h2>
+
+        @if (_registrationSuccess)
+        {
+            <div class="auth-alert auth-alert-success">
+                <span class="alert-icon">✅</span>
+                <div>
+                    <strong>Registrace úspěšná!</strong>
+                    <p>Nyní se můžete přihlásit.</p>
+                </div>
+            </div>
+            <VbButton OnClick="@(() => Nav.NavigateTo("/prihlaseni"))">
+                Přejít na přihlášení
+            </VbButton>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="auth-alert auth-alert-danger">
+                    <span class="alert-icon">⚠️</span>
+                    <span>@_errorMessage</span>
+                </div>
+            }
+
+            <div class="form-section">
+                <h3 class="form-section-title">Osobní údaje</h3>
+
+                <div class="form-row">
+                    <div class="form-group form-half">
+                        <label class="form-label">Jméno *</label>
+                        <input class="form-input @(GetError(nameof(_firstName)) != null ? "input-error" : "")"
+                               @bind="_firstName"
+                               @bind:event="oninput"
+                               placeholder="Jan"
+                               disabled="@_isLoading" />
+                        @if (GetError(nameof(_firstName)) is { } fErr)
+                        {
+                            <span class="field-error">@fErr</span>
+                        }
+                    </div>
+                    <div class="form-group form-half">
+                        <label class="form-label">Příjmení *</label>
+                        <input class="form-input @(GetError(nameof(_lastName)) != null ? "input-error" : "")"
+                               @bind="_lastName"
+                               @bind:event="oninput"
+                               placeholder="Novák"
+                               disabled="@_isLoading" />
+                        @if (GetError(nameof(_lastName)) is { } lErr)
+                        {
+                            <span class="field-error">@lErr</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Rodné číslo *</label>
+                    <input class="form-input @(GetError(nameof(_personalIdNumber)) != null ? "input-error" : "")"
+                           @bind="_personalIdNumber"
+                           @bind:event="oninput"
+                           placeholder="900101/1234"
+                           disabled="@_isLoading" />
+                    @if (GetError(nameof(_personalIdNumber)) is { } pErr)
+                    {
+                        <span class="field-error">@pErr</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Datum narození *</label>
+                    <input class="form-input @(GetError(nameof(_dateOfBirth)) != null ? "input-error" : "")"
+                           type="date"
+                           @bind="_dateOfBirth"
+                           disabled="@_isLoading" />
+                    @if (GetError(nameof(_dateOfBirth)) is { } dErr)
+                    {
+                        <span class="field-error">@dErr</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Telefon *</label>
+                    <input class="form-input @(GetError(nameof(_phone)) != null ? "input-error" : "")"
+                           type="tel"
+                           @bind="_phone"
+                           @bind:event="oninput"
+                           placeholder="+420 123 456 789"
+                           disabled="@_isLoading" />
+                    @if (GetError(nameof(_phone)) is { } phErr)
+                    {
+                        <span class="field-error">@phErr</span>
+                    }
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="form-section-title">Adresa</h3>
+
+                <div class="form-group">
+                    <label class="form-label">Ulice a číslo *</label>
+                    <input class="form-input @(GetError(nameof(_street)) != null ? "input-error" : "")"
+                           @bind="_street"
+                           @bind:event="oninput"
+                           placeholder="Hlavní 123"
+                           disabled="@_isLoading" />
+                    @if (GetError(nameof(_street)) is { } sErr)
+                    {
+                        <span class="field-error">@sErr</span>
+                    }
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group form-half">
+                        <label class="form-label">Město *</label>
+                        <input class="form-input @(GetError(nameof(_city)) != null ? "input-error" : "")"
+                               @bind="_city"
+                               @bind:event="oninput"
+                               placeholder="Praha"
+                               disabled="@_isLoading" />
+                        @if (GetError(nameof(_city)) is { } cErr)
+                        {
+                            <span class="field-error">@cErr</span>
+                        }
+                    </div>
+                    <div class="form-group form-half">
+                        <label class="form-label">PSČ *</label>
+                        <input class="form-input @(GetError(nameof(_zipCode)) != null ? "input-error" : "")"
+                               @bind="_zipCode"
+                               @bind:event="oninput"
+                               placeholder="110 00"
+                               disabled="@_isLoading" />
+                        @if (GetError(nameof(_zipCode)) is { } zErr)
+                        {
+                            <span class="field-error">@zErr</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Země *</label>
+                    <select class="form-input" @bind="_country" disabled="@_isLoading">
+                        <option value="CZ">Česká republika</option>
+                        <option value="SK">Slovensko</option>
+                        <option value="DE">Německo</option>
+                        <option value="AT">Rakousko</option>
+                        <option value="PL">Polsko</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="form-section-title">Přihlašovací údaje</h3>
+
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input class="form-input @(GetError(nameof(_email)) != null ? "input-error" : "")"
+                           type="email"
+                           @bind="_email"
+                           @bind:event="oninput"
+                           placeholder="vas@email.cz"
+                           disabled="@_isLoading" />
+                    @if (GetError(nameof(_email)) is { } eErr)
+                    {
+                        <span class="field-error">@eErr</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Heslo *</label>
+                    <div class="password-wrapper">
+                        <input class="form-input @(GetError(nameof(_password)) != null ? "input-error" : "")"
+                               type="@(_showPassword ? "text" : "password")"
+                               @bind="_password"
+                               @bind:event="oninput"
+                               placeholder="Minimálně 8 znaků"
+                               disabled="@_isLoading" />
+                        <button type="button" class="password-toggle" @onclick="() => _showPassword = !_showPassword">
+                            @(_showPassword ? "🙈" : "👁️")
+                        </button>
+                    </div>
+                    @if (GetError(nameof(_password)) is { } pwErr)
+                    {
+                        <span class="field-error">@pwErr</span>
+                    }
+                    <div class="password-strength">
+                        <div class="strength-bar">
+                            <div class="strength-fill @PasswordStrengthClass" style="width: @(PasswordStrengthPercent)%"></div>
+                        </div>
+                        <span class="strength-label">@PasswordStrengthText</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Potvrzení hesla *</label>
+                    <div class="password-wrapper">
+                        <input class="form-input @(GetError(nameof(_passwordConfirm)) != null ? "input-error" : "")"
+                               type="@(_showPasswordConfirm ? "text" : "password")"
+                               @bind="_passwordConfirm"
+                               @bind:event="oninput"
+                               placeholder="Zopakujte heslo"
+                               disabled="@_isLoading" />
+                        <button type="button" class="password-toggle" @onclick="() => _showPasswordConfirm = !_showPasswordConfirm">
+                            @(_showPasswordConfirm ? "🙈" : "👁️")
+                        </button>
+                    </div>
+                    @if (GetError(nameof(_passwordConfirm)) is { } pcErr)
+                    {
+                        <span class="field-error">@pcErr</span>
+                    }
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" @bind="_agreedToTerms" disabled="@_isLoading" />
+                    <span class="checkbox-label">Souhlasím s <a class="link-action" href="#">obchodními podmínkami</a> a <a class="link-action" href="#">zpracováním osobních údajů</a> *</span>
+                </label>
+                @if (GetError(nameof(_agreedToTerms)) is { } tErr)
+                {
+                    <span class="field-error">@tErr</span>
+                }
+            </div>
+
+            <VbButton OnClick="HandleRegister" Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="btn-loading">Registrace...</span>
+                }
+                else
+                {
+                    <span>Zaregistrovat se</span>
+                }
+            </VbButton>
+
+            <div class="auth-footer">
+                <span>Již máte účet?</span>
+                <a class="link-action" href="prihlaseni">Přihlásit se</a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _personalIdNumber = "";
+    private DateTime _dateOfBirth = DateTime.Today.AddYears(-18);
+    private string _phone = "";
+    private string _street = "";
+    private string _city = "";
+    private string _zipCode = "";
+    private string _country = "CZ";
+    private string _email = "";
+    private string _password = "";
+    private string _passwordConfirm = "";
+    private bool _agreedToTerms;
+    private bool _showPassword;
+    private bool _showPasswordConfirm;
+    private bool _isLoading;
+    private bool _registrationSuccess;
+    private string _errorMessage = "";
+    private Dictionary<string, string> _errors = new();
+
+    private string? GetError(string field) => _errors.GetValueOrDefault(field);
+
+    private int PasswordStrengthPercent
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_password)) return 0;
+            var score = 0;
+            if (_password.Length >= 8) score += 25;
+            if (_password.Any(char.IsUpper)) score += 25;
+            if (_password.Any(char.IsDigit)) score += 25;
+            if (_password.Any(c => !char.IsLetterOrDigit(c))) score += 25;
+            return score;
+        }
+    }
+
+    private string PasswordStrengthClass => PasswordStrengthPercent switch
+    {
+        <= 25 => "strength-weak",
+        <= 50 => "strength-fair",
+        <= 75 => "strength-good",
+        _ => "strength-strong"
+    };
+
+    private string PasswordStrengthText => PasswordStrengthPercent switch
+    {
+        0 => "",
+        <= 25 => "Slabé",
+        <= 50 => "Průměrné",
+        <= 75 => "Dobré",
+        _ => "Silné"
+    };
+
+    private bool Validate()
+    {
+        _errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(_firstName))
+            _errors[nameof(_firstName)] = "Jméno je povinné";
+
+        if (string.IsNullOrWhiteSpace(_lastName))
+            _errors[nameof(_lastName)] = "Příjmení je povinné";
+
+        if (string.IsNullOrWhiteSpace(_personalIdNumber))
+            _errors[nameof(_personalIdNumber)] = "Rodné číslo je povinné";
+        else if (_personalIdNumber.Replace("/", "").Length < 9)
+            _errors[nameof(_personalIdNumber)] = "Neplatné rodné číslo";
+
+        if (_dateOfBirth >= DateTime.Today.AddYears(-15))
+            _errors[nameof(_dateOfBirth)] = "Musíte být starší 15 let";
+
+        if (string.IsNullOrWhiteSpace(_phone))
+            _errors[nameof(_phone)] = "Telefon je povinný";
+        else if (_phone.Replace(" ", "").Replace("+", "").Length < 9)
+            _errors[nameof(_phone)] = "Neplatné telefonní číslo";
+
+        if (string.IsNullOrWhiteSpace(_street))
+            _errors[nameof(_street)] = "Ulice je povinná";
+
+        if (string.IsNullOrWhiteSpace(_city))
+            _errors[nameof(_city)] = "Město je povinné";
+
+        if (string.IsNullOrWhiteSpace(_zipCode))
+            _errors[nameof(_zipCode)] = "PSČ je povinné";
+        else if (_zipCode.Replace(" ", "").Length < 5)
+            _errors[nameof(_zipCode)] = "Neplatné PSČ";
+
+        if (string.IsNullOrWhiteSpace(_email) || !_email.Contains('@'))
+            _errors[nameof(_email)] = "Zadejte platný email";
+
+        if (string.IsNullOrWhiteSpace(_password))
+            _errors[nameof(_password)] = "Heslo je povinné";
+        else if (_password.Length < 8)
+            _errors[nameof(_password)] = "Heslo musí mít alespoň 8 znaků";
+        else if (!_password.Any(char.IsUpper))
+            _errors[nameof(_password)] = "Heslo musí obsahovat velké písmeno";
+        else if (!_password.Any(char.IsDigit))
+            _errors[nameof(_password)] = "Heslo musí obsahovat číslici";
+
+        if (_passwordConfirm != _password)
+            _errors[nameof(_passwordConfirm)] = "Hesla se neshodují";
+
+        if (!_agreedToTerms)
+            _errors[nameof(_agreedToTerms)] = "Musíte souhlasit s podmínkami";
+
+        return _errors.Count == 0;
+    }
+
+    private async Task HandleRegister()
+    {
+        _errorMessage = "";
+
+        if (!Validate())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new RegisterRequest(
+                _firstName.Trim(),
+                _lastName.Trim(),
+                _email.Trim(),
+                _password,
+                _passwordConfirm,
+                _phone.Trim(),
+                _dateOfBirth,
+                _personalIdNumber.Trim(),
+                _street.Trim(),
+                _city.Trim(),
+                _zipCode.Trim(),
+                _country);
+
+            var result = await Auth.RegisterAsync(request);
+
+            if (result is null)
+            {
+                _errorMessage = "Registrace se nezdařila. Email může být již obsazený.";
+                return;
+            }
+
+            _registrationSuccess = true;
+        }
+        catch
+        {
+            _errorMessage = "Chyba připojení k serveru. Zkuste to později.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,195 @@
+@page "/prihlaseni"
+@namespace FairBank.Web.Auth.Pages
+@inject IAuthService Auth
+@inject NavigationManager Nav
+
+<div class="auth-page">
+    <div class="auth-header">
+        <div class="header-chip">
+            <div class="chip-outer">
+                <div class="chip-inner">V</div>
+            </div>
+        </div>
+        <h1 class="auth-title">VA-BANK</h1>
+        <p class="auth-subtitle">Tvůj život, tvé finance, tvá hra.</p>
+    </div>
+
+    <div class="auth-card">
+        <h2 class="auth-card-title">Přihlášení</h2>
+
+        @if (Auth.IsLocked)
+        {
+            <div class="auth-alert auth-alert-danger">
+                <span class="alert-icon">🔒</span>
+                <div>
+                    <strong>Účet dočasně zablokován</strong>
+                    <p>Příliš mnoho neúspěšných pokusů. Zkuste to znovu za chvíli.</p>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="auth-alert auth-alert-danger">
+                <span class="alert-icon">⚠️</span>
+                <span>@_errorMessage</span>
+            </div>
+        }
+
+        @if (_sessionExpired)
+        {
+            <div class="auth-alert auth-alert-warning">
+                <span class="alert-icon">⏰</span>
+                <span>Relace vypršela. Přihlaste se znovu.</span>
+            </div>
+        }
+
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input @(_emailError ? "input-error" : "")"
+                   type="email"
+                   @bind="_email"
+                   @bind:event="oninput"
+                   placeholder="vas@email.cz"
+                   disabled="@(Auth.IsLocked || _isLoading)" />
+            @if (_emailError)
+            {
+                <span class="field-error">Zadejte platný email</span>
+            }
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Heslo</label>
+            <div class="password-wrapper">
+                <input class="form-input @(_passwordError ? "input-error" : "")"
+                       type="@(_showPassword ? "text" : "password")"
+                       @bind="_password"
+                       @bind:event="oninput"
+                       placeholder="Zadejte heslo"
+                       disabled="@(Auth.IsLocked || _isLoading)"
+                       @onkeydown="HandleKeyDown" />
+                <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility">
+                    @(_showPassword ? "🙈" : "👁️")
+                </button>
+            </div>
+            @if (_passwordError)
+            {
+                <span class="field-error">Zadejte heslo</span>
+            }
+        </div>
+
+        @if (Auth.RemainingAttempts < 5 && Auth.RemainingAttempts > 0)
+        {
+            <div class="auth-attempts-warning">
+                Zbývající pokusy: <strong>@Auth.RemainingAttempts</strong> z 5
+            </div>
+        }
+
+        <VbButton OnClick="HandleLogin" Disabled="@(Auth.IsLocked || _isLoading)">
+            @if (_isLoading)
+            {
+                <span class="btn-loading">Přihlašování...</span>
+            }
+            else
+            {
+                <span>Přihlásit se</span>
+            }
+        </VbButton>
+
+        <div class="auth-footer">
+            <span>Nemáte účet?</span>
+            <a class="link-action" href="registrace">Zaregistrovat se</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _errorMessage = "";
+    private bool _emailError;
+    private bool _passwordError;
+    private bool _isLoading;
+    private bool _showPassword;
+    private bool _sessionExpired;
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (uri.Query.Contains("expired"))
+        {
+            _sessionExpired = true;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleLogin();
+        }
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = "";
+        _emailError = false;
+        _passwordError = false;
+
+        if (string.IsNullOrWhiteSpace(_email) || !_email.Contains('@'))
+        {
+            _emailError = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _passwordError = true;
+        }
+
+        if (_emailError || _passwordError) return;
+
+        if (Auth.IsLocked)
+        {
+            _errorMessage = "Účet je dočasně zablokován.";
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Auth.LoginAsync(new LoginRequest(_email.Trim(), _password));
+
+            if (result is null)
+            {
+                if (Auth.IsLocked)
+                {
+                    _errorMessage = "Účet byl zablokován po příliš mnoha neúspěšných pokusech.";
+                }
+                else
+                {
+                    _errorMessage = $"Nesprávný email nebo heslo. Zbývající pokusy: {Auth.RemainingAttempts}";
+                }
+
+                return;
+            }
+
+            Nav.NavigateTo("/prehled", forceLoad: false);
+        }
+        catch
+        {
+            _errorMessage = "Chyba připojení k serveru. Zkuste to později.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+}
