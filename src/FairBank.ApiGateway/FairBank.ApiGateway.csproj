@@ -4,4 +4,8 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
+  </ItemGroup>
 </Project>

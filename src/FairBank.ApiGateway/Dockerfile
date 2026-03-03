@@ -7,10 +7,12 @@ WORKDIR /src
 
 COPY Directory.Build.props .
 COPY Directory.Packages.props .
+COPY src/FairBank.SharedKernel/FairBank.SharedKernel.csproj src/FairBank.SharedKernel/
 COPY src/FairBank.ApiGateway/FairBank.ApiGateway.csproj src/FairBank.ApiGateway/
 
 RUN dotnet restore src/FairBank.ApiGateway/FairBank.ApiGateway.csproj
 
+COPY src/FairBank.SharedKernel/ src/FairBank.SharedKernel/
 COPY src/FairBank.ApiGateway/ src/FairBank.ApiGateway/
 RUN dotnet publish src/FairBank.ApiGateway/FairBank.ApiGateway.csproj -c Release -o /app/publish
 

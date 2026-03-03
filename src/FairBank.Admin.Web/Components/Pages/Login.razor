@@ -1,0 +1,66 @@
+@page "/login"
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IHttpContextAccessor HttpContextAccessor
+
+
+<h3>Admin Login</h3>
+<p>Only authorized administrators may access the logs.</p>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+<EditForm Model="LoginModel" OnValidSubmit="TryLogin" FormName="AdminLoginForm">
+    <div class="mb-3">
+        <label class="form-label">Passphrase</label>
+        <InputText @bind-Value="LoginModel.Passphrase" type="password" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    public LoginViewModel LoginModel { get; set; } = default!;
+
+    public string? ErrorMessage { get; set; }
+
+    private async Task TryLogin()
+    {
+        var expectedPassphrase = Configuration["AdminPassphrase"] ?? "SuperSecret2026";
+        
+        if (LoginModel?.Passphrase == expectedPassphrase)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, "Admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            if (HttpContextAccessor.HttpContext != null)
+            {
+                await HttpContextAccessor.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            }
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            ErrorMessage = "Invalid Passphrase";
+        }
+    }
+
+    public class LoginViewModel
+    {
+        public string Passphrase { get; set; } = "";
+    }
+}

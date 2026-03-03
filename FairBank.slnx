@@ -3,6 +3,7 @@
     <Project Path="src/FairBank.ApiGateway/FairBank.ApiGateway.csproj" />
     <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
     <Project Path="src/FairBank.Web/FairBank.Web.csproj" />
+    <Project Path="src/FairBank.Admin.Web/FairBank.Admin.Web.csproj" />
     <Project Path="src/FairBank.Web.Shared/FairBank.Web.Shared.csproj" />
   </Folder>
   <Folder Name="/src/Web/">

@@ -1,0 +1,66 @@
+@page "/"
+@using FairBank.Admin.Web.Services
+@inject KafkaLogConsumerService LogService
+@implements IDisposable
+
+<PageTitle>Admin Logs</PageTitle>
+
+<h1>Live System Logs</h1>
+
+<div class="mb-3">
+    <span class="badge bg-success">Connected to Kafka</span>
+    <span class="ms-2">Showing latest @Logs.Count logs</span>
+</div>
+
+<div class="card bg-dark text-light">
+    <div class="card-body p-0 mt-3" style="max-height: 70vh; overflow-y: auto;">
+        <table class="table table-dark table-striped table-hover m-0" style="font-family: monospace; font-size: 0.85rem;">
+            <thead>
+                <tr>
+                    <th scope="col">Log Entry</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Logs.Any())
+                {
+                    @foreach (var log in Logs)
+                    {
+                        <tr>
+                            <td>@log</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td class="text-center text-muted py-4">Waiting for logs...</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<string> Logs = new List<string>();
+
+    protected override void OnInitialized()
+    {
+        Logs = LogService.GetLatestLogs();
+        LogService.OnLogsUpdated += HandleLogsUpdated;
+    }
+
+    private void HandleLogsUpdated()
+    {
+        InvokeAsync(() =>
+        {
+            Logs = LogService.GetLatestLogs();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        LogService.OnLogsUpdated -= HandleLogsUpdated;
+    }
+}

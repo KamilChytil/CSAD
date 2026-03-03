@@ -7,6 +7,7 @@ COPY Directory.Packages.props .
 
 # Restore (copy only csproj files for layer caching)
 COPY src/FairBank.Web.Shared/FairBank.Web.Shared.csproj       src/FairBank.Web.Shared/
+COPY src/FairBank.Web.Auth/FairBank.Web.Auth.csproj          src/FairBank.Web.Auth/
 COPY src/FairBank.Web.Overview/FairBank.Web.Overview.csproj    src/FairBank.Web.Overview/
 COPY src/FairBank.Web.Payments/FairBank.Web.Payments.csproj    src/FairBank.Web.Payments/
 COPY src/FairBank.Web.Savings/FairBank.Web.Savings.csproj      src/FairBank.Web.Savings/
@@ -17,6 +18,7 @@ RUN dotnet restore src/FairBank.Web/FairBank.Web.csproj
 
 # Build & publish
 COPY src/FairBank.Web.Shared/      src/FairBank.Web.Shared/
+COPY src/FairBank.Web.Auth/        src/FairBank.Web.Auth/
 COPY src/FairBank.Web.Overview/    src/FairBank.Web.Overview/
 COPY src/FairBank.Web.Payments/    src/FairBank.Web.Payments/
 COPY src/FairBank.Web.Savings/     src/FairBank.Web.Savings/
