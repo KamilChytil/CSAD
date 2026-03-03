@@ -90,4 +90,28 @@ public class AccountTests
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*not active*");
     }
+
+    [Fact]
+    public void SetSpendingLimit_ShouldSetLimitAndRequireApproval()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        account.ClearUncommittedEvents();
+
+        account.SetSpendingLimit(Money.Create(500, Currency.CZK));
+
+        account.SpendingLimit!.Amount.Should().Be(500);
+        account.RequiresApproval.Should().BeTrue();
+        account.ApprovalThreshold!.Amount.Should().Be(500);
+        account.GetUncommittedEvents().Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void NeedsApproval_OverThreshold_ShouldReturnTrue()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        account.SetSpendingLimit(Money.Create(500, Currency.CZK));
+
+        account.NeedsApproval(Money.Create(600, Currency.CZK)).Should().BeTrue();
+        account.NeedsApproval(Money.Create(400, Currency.CZK)).Should().BeFalse();
+    }
 }
