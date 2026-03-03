@@ -45,5 +45,6 @@
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />
     <Project Path="tests/FairBank.Web.Exchange.Tests/FairBank.Web.Exchange.Tests.csproj" />
+    <Project Path="tests/FairBank.Web.Products.Tests/FairBank.Web.Products.Tests.csproj" />
   </Folder>
 </Solution>
