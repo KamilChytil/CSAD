@@ -1,24 +1,44 @@
-# Security, DB Redundancy & Child Accounts — Implementation Plan
+# DB Redundancy, Child Accounts & Spending Limits — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add JWT authentication, RBAC, PostgreSQL replication, child accounts with parental oversight, security hardening (rate limiting, CORS, audit log), and fix the Marten event store bug.
+**Goal:** Fix Marten event store bug, add PostgreSQL primary-replica replication, implement child accounts with parental oversight (ParentId, CreateChild, GetChildren), add spending limits and pending transaction approval flow in Accounts, and extend the frontend API client.
 
-**Architecture:** JWT issued by Identity service, validated by API Gateway. PostgreSQL primary-replica streaming replication. Parent-child self-reference in Identity domain. Spending limits and pending transaction approval in Accounts domain. Security middleware at gateway level.
+**Architecture:** PostgreSQL primary-replica streaming replication in Docker Compose. Parent-child self-reference FK in Identity domain. Spending limits and PendingTransaction event-sourced aggregate in Accounts domain. No auth enforcement — all endpoints open for easy testing. BCrypt for password hashing.
 
-**Tech Stack:** BCrypt.Net-Next, Microsoft.AspNetCore.Authentication.JwtBearer, System.IdentityModel.Tokens.Jwt, ASP.NET Core Rate Limiting, PostgreSQL 16 streaming replication.
+**Tech Stack:** BCrypt.Net-Next, PostgreSQL 16 streaming replication, Marten 8.22.1 (event sourcing), EF Core 10, MediatR 14.
+
+> **Scope exclusions (deferred):** JWT authentication, Session/RefreshToken entities, auth endpoints (login/logout/register/session-validation), API Gateway security (JWT validation, RBAC, rate limiting, CORS), audit log. These will be added in a future phase.
 
 ---
 
-### Task 1: Fix Marten EventStore Bug (AppendToStream vs StartStream)
+### Task 1: Fix Marten EventStore Bug (StartStream vs AppendToStream)
 
 **Files:**
 - Modify: `src/Services/Accounts/FairBank.Accounts.Infrastructure/Persistence/MartenAccountEventStore.cs`
 - Modify: `src/Services/Accounts/FairBank.Accounts.Application/Ports/IAccountEventStore.cs`
+- Modify: `src/Services/Accounts/FairBank.Accounts.Application/Commands/CreateAccount/CreateAccountCommandHandler.cs`
 
-**Step 1: Fix `AppendEventsAsync` to distinguish new vs existing streams**
+**Step 1: Update `IAccountEventStore` — add `StartStreamAsync`**
 
-In `MartenAccountEventStore.cs`, the current code always calls `StartStream` which fails for existing accounts (deposit/withdraw). Fix:
+Replace `src/Services/Accounts/FairBank.Accounts.Application/Ports/IAccountEventStore.cs`:
+
+```csharp
+using FairBank.Accounts.Domain.Aggregates;
+
+namespace FairBank.Accounts.Application.Ports;
+
+public interface IAccountEventStore
+{
+    Task<Account?> LoadAsync(Guid accountId, CancellationToken ct = default);
+    Task StartStreamAsync(Account account, CancellationToken ct = default);
+    Task AppendEventsAsync(Account account, CancellationToken ct = default);
+}
+```
+
+**Step 2: Fix `MartenAccountEventStore` — separate StartStream and Append**
+
+Replace `src/Services/Accounts/FairBank.Accounts.Infrastructure/Persistence/MartenAccountEventStore.cs`:
 
 ```csharp
 using FairBank.Accounts.Application.Ports;
@@ -56,40 +76,27 @@ public sealed class MartenAccountEventStore(IDocumentSession session) : IAccount
 }
 ```
 
-**Step 2: Update the `IAccountEventStore` interface**
+**Step 3: Update `CreateAccountCommandHandler` to use `StartStreamAsync`**
 
+In `src/Services/Accounts/FairBank.Accounts.Application/Commands/CreateAccount/CreateAccountCommandHandler.cs`, change line 15 from:
 ```csharp
-using FairBank.Accounts.Domain.Aggregates;
-
-namespace FairBank.Accounts.Application.Ports;
-
-public interface IAccountEventStore
-{
-    Task<Account?> LoadAsync(Guid accountId, CancellationToken ct = default);
-    Task StartStreamAsync(Account account, CancellationToken ct = default);
-    Task AppendEventsAsync(Account account, CancellationToken ct = default);
-}
+        await eventStore.AppendEventsAsync(account, ct);
+```
+to:
+```csharp
+        await eventStore.StartStreamAsync(account, ct);
 ```
 
-**Step 3: Update command handlers to use correct method**
+`DepositMoneyCommandHandler` and `WithdrawMoneyCommandHandler` already correctly call `AppendEventsAsync` — no change needed.
 
-- `CreateAccountCommandHandler` → call `StartStreamAsync` (new stream)
-- `DepositMoneyCommandHandler` → call `AppendEventsAsync` (existing stream)
-- `WithdrawMoneyCommandHandler` → call `AppendEventsAsync` (existing stream)
-
-Find handlers at:
-- `src/Services/Accounts/FairBank.Accounts.Application/Commands/CreateAccount/CreateAccountCommandHandler.cs`
-- `src/Services/Accounts/FairBank.Accounts.Application/Commands/DepositMoney/DepositMoneyCommandHandler.cs`
-- `src/Services/Accounts/FairBank.Accounts.Application/Commands/WithdrawMoney/WithdrawMoneyCommandHandler.cs`
-
-In each handler, change `await eventStore.AppendEventsAsync(account, ct)` to:
-- **CreateAccount**: `await eventStore.StartStreamAsync(account, ct);`
-- **Deposit/Withdraw**: keep `await eventStore.AppendEventsAsync(account, ct);`
-
-**Step 4: Run tests to verify**
+**Step 4: Run tests**
 
 Run: `dotnet test FairBank.slnx`
-Expected: All 40 tests pass (NSubstitute mocks won't break since interface changed)
+Expected: All 40 tests pass (NSubstitute mocks — interface change requires updating mock setups if any tests call `StartStreamAsync` directly, but existing tests mock `AppendEventsAsync` which still exists)
+
+Note: `CreateAccountCommandHandlerTests` mocks `AppendEventsAsync`. Update the mock to use `StartStreamAsync` instead:
+
+In `tests/FairBank.Accounts.UnitTests/Application/CreateAccountCommandHandlerTests.cs`, if the test verifies `AppendEventsAsync` was called, change it to verify `StartStreamAsync` was called.
 
 **Step 5: Commit**
 
@@ -99,1222 +106,65 @@ git add -A && git commit -m "fix: separate StartStream and AppendToStream in Mar
 
 ---
 
-### Task 2: Add New NuGet Packages to Directory.Packages.props
+### Task 2: Add BCrypt NuGet Package
 
 **Files:**
 - Modify: `Directory.Packages.props`
+- Modify: `src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj`
 
-**Step 1: Add BCrypt and JWT packages**
+**Step 1: Add BCrypt to central package management**
 
-Add these lines to the `<ItemGroup>` in `Directory.Packages.props`:
+In `Directory.Packages.props`, add after the `<!-- Database - Marten -->` section:
 
 ```xml
-    <!-- Authentication -->
+    <!-- Security -->
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0" />
 ```
 
-**Step 2: Verify build**
+**Step 2: Add BCrypt reference to Identity Application csproj**
 
-Run: `dotnet build FairBank.slnx`
-Expected: Build succeeded, 0 errors
-
-**Step 3: Commit**
-
-```bash
-git add Directory.Packages.props && git commit -m "chore: add BCrypt and JWT packages to central package management"
-```
-
----
-
-### Task 3: RefreshToken Entity + JWT Token Service (Identity Domain & Application)
-
-**Files:**
-- Create: `src/Services/Identity/FairBank.Identity.Domain/Entities/RefreshToken.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Domain/Ports/IRefreshTokenRepository.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/IJwtTokenService.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/JwtTokenService.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/JwtSettings.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/DTOs/LoginResponse.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Domain/Entities/User.cs` — add `VerifyPassword` and `ParentId`
-- Test: `tests/FairBank.Identity.UnitTests/Domain/RefreshTokenTests.cs`
-
-**Step 1: Create `RefreshToken` entity**
-
-Create `src/Services/Identity/FairBank.Identity.Domain/Entities/RefreshToken.cs`:
-
-```csharp
-using FairBank.SharedKernel.Domain;
-
-namespace FairBank.Identity.Domain.Entities;
-
-public sealed class RefreshToken : Entity<Guid>
-{
-    public Guid UserId { get; private set; }
-    public string Token { get; private set; } = null!;
-    public DateTime ExpiresAt { get; private set; }
-    public bool IsRevoked { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-
-    private RefreshToken() { } // EF Core
-
-    public static RefreshToken Create(Guid userId, TimeSpan lifetime)
-    {
-        return new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64)),
-            ExpiresAt = DateTime.UtcNow.Add(lifetime),
-            IsRevoked = false,
-            CreatedAt = DateTime.UtcNow
-        };
-    }
-
-    public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
-    public bool IsValid => !IsRevoked && !IsExpired;
-
-    public void Revoke()
-    {
-        IsRevoked = true;
-    }
-}
-```
-
-**Step 2: Create `IRefreshTokenRepository`**
-
-Create `src/Services/Identity/FairBank.Identity.Domain/Ports/IRefreshTokenRepository.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-
-namespace FairBank.Identity.Domain.Ports;
-
-public interface IRefreshTokenRepository
-{
-    Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken ct = default);
-    Task<IReadOnlyList<RefreshToken>> GetActiveByUserIdAsync(Guid userId, CancellationToken ct = default);
-    Task AddAsync(RefreshToken refreshToken, CancellationToken ct = default);
-    Task UpdateAsync(RefreshToken refreshToken, CancellationToken ct = default);
-}
-```
-
-**Step 3: Add `ParentId` and password methods to `User`**
-
-Modify `src/Services/Identity/FairBank.Identity.Domain/Entities/User.cs` — add after `DeletedAt` property (line 18):
-
-```csharp
-    public Guid? ParentId { get; private set; }
-    public User? Parent { get; private set; }
-    private readonly List<User> _children = [];
-    public IReadOnlyCollection<User> Children => _children.AsReadOnly();
-```
-
-Add new factory method for child creation after the existing `Create` method:
-
-```csharp
-    public static User CreateChild(
-        string firstName,
-        string lastName,
-        Email email,
-        string passwordHash,
-        Guid parentId)
-    {
-        var child = Create(firstName, lastName, email, passwordHash, Enums.UserRole.Child);
-        child.ParentId = parentId;
-        return child;
-    }
-```
-
-**Step 4: Create `JwtSettings`**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/JwtSettings.cs`:
-
-```csharp
-namespace FairBank.Identity.Application.Auth;
-
-public sealed class JwtSettings
-{
-    public string Secret { get; init; } = null!;
-    public string Issuer { get; init; } = "fairbank-identity";
-    public string Audience { get; init; } = "fairbank-api";
-    public int AccessTokenExpirationMinutes { get; init; } = 15;
-    public int RefreshTokenExpirationDays { get; init; } = 7;
-}
-```
-
-**Step 5: Create `LoginResponse` DTO**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/DTOs/LoginResponse.cs`:
-
-```csharp
-namespace FairBank.Identity.Application.Auth.DTOs;
-
-public sealed record LoginResponse(
-    string AccessToken,
-    string RefreshToken,
-    DateTime ExpiresAt);
-```
-
-**Step 6: Create `IJwtTokenService` interface**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/IJwtTokenService.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-using FairBank.Identity.Application.Auth.DTOs;
-
-namespace FairBank.Identity.Application.Auth;
-
-public interface IJwtTokenService
-{
-    LoginResponse GenerateTokens(User user);
-}
-```
-
-**Step 7: Create `JwtTokenService` implementation**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/JwtTokenService.cs`:
-
-```csharp
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using FairBank.Identity.Application.Auth.DTOs;
-using FairBank.Identity.Domain.Entities;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-
-namespace FairBank.Identity.Application.Auth;
-
-public sealed class JwtTokenService(IOptions<JwtSettings> settings) : IJwtTokenService
-{
-    private readonly JwtSettings _settings = settings.Value;
-
-    public LoginResponse GenerateTokens(User user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email.Value),
-            new("role", user.Role.ToString()),
-            new("firstName", user.FirstName),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        if (user.ParentId.HasValue)
-            claims.Add(new Claim("parentId", user.ParentId.Value.ToString()));
-
-        var expires = DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpirationMinutes);
-
-        var token = new JwtSecurityToken(
-            issuer: _settings.Issuer,
-            audience: _settings.Audience,
-            claims: claims,
-            expires: expires,
-            signingCredentials: credentials);
-
-        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
-
-        // Refresh token is a random string, stored in DB by the handler
-        var refreshToken = Convert.ToBase64String(
-            System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
-
-        return new LoginResponse(accessToken, refreshToken, expires);
-    }
-}
-```
-
-**Step 8: Add JWT packages to Identity Application csproj**
-
-Modify `src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj` — add to ItemGroup:
-
-```xml
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
-    <PackageReference Include="Microsoft.Extensions.Options" />
-```
-
-Note: `Microsoft.Extensions.Options` is likely already transitive, but add explicitly if build fails.
-
-**Step 9: Write unit tests for RefreshToken**
-
-Create `tests/FairBank.Identity.UnitTests/Domain/RefreshTokenTests.cs`:
-
-```csharp
-using FluentAssertions;
-using FairBank.Identity.Domain.Entities;
-
-namespace FairBank.Identity.UnitTests.Domain;
-
-public class RefreshTokenTests
-{
-    [Fact]
-    public void Create_ShouldGenerateValidToken()
-    {
-        var token = RefreshToken.Create(Guid.NewGuid(), TimeSpan.FromDays(7));
-
-        token.Id.Should().NotBeEmpty();
-        token.Token.Should().NotBeNullOrWhiteSpace();
-        token.IsRevoked.Should().BeFalse();
-        token.IsValid.Should().BeTrue();
-        token.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
-    }
-
-    [Fact]
-    public void Revoke_ShouldInvalidateToken()
-    {
-        var token = RefreshToken.Create(Guid.NewGuid(), TimeSpan.FromDays(7));
-        token.Revoke();
-
-        token.IsRevoked.Should().BeTrue();
-        token.IsValid.Should().BeFalse();
-    }
-}
-```
-
-**Step 10: Run tests**
-
-Run: `dotnet test FairBank.slnx`
-Expected: 42 tests pass (40 existing + 2 new)
-
-**Step 11: Commit**
-
-```bash
-git add -A && git commit -m "feat(identity): add RefreshToken entity, JWT token service, and ParentId on User"
-```
-
----
-
-### Task 4: Login, Refresh, Logout Commands + Auth Endpoints
-
-**Files:**
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommand.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommandHandler.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommandValidator.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/RefreshToken/RefreshTokenCommand.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/RefreshToken/RefreshTokenCommandHandler.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Logout/LogoutCommand.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Logout/LogoutCommandHandler.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Api/Endpoints/AuthEndpoints.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Api/Program.cs` — add auth endpoints, JWT config
-- Modify: `src/Services/Identity/FairBank.Identity.Application/Users/Commands/RegisterUser/RegisterUserCommandHandler.cs` — switch to BCrypt
-- Modify: `src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj` — add BCrypt package
-- Test: `tests/FairBank.Identity.UnitTests/Application/LoginCommandHandlerTests.cs`
-
-**Step 1: Add BCrypt package to Identity Api csproj**
-
-Add to `src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj`:
+In `src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj`, add to `<ItemGroup>`:
 
 ```xml
     <PackageReference Include="BCrypt.Net-Next" />
 ```
 
-Also add to `src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj`:
+**Step 3: Update `RegisterUserCommandHandler` to use BCrypt**
 
-```xml
-    <PackageReference Include="BCrypt.Net-Next" />
+In `src/Services/Identity/FairBank.Identity.Application/Users/Commands/RegisterUser/RegisterUserCommandHandler.cs`, replace lines 22-25:
+
+```csharp
+        // NOTE: In production, hash with BCrypt/Argon2. Simplified for now.
+        var passwordHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(request.Password)));
 ```
 
-**Step 2: Update `RegisterUserCommandHandler` to use BCrypt**
-
-In `src/Services/Identity/FairBank.Identity.Application/Users/Commands/RegisterUser/RegisterUserCommandHandler.cs`, replace the SHA256 hashing (lines 22-25) with:
+with:
 
 ```csharp
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
 ```
 
-Remove the SHA256 comment and old code.
-
-**Step 3: Create `LoginCommand`**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommand.cs`:
-
-```csharp
-using FairBank.Identity.Application.Auth.DTOs;
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.Login;
-
-public sealed record LoginCommand(string Email, string Password) : IRequest<LoginResponse>;
-```
-
-**Step 4: Create `LoginCommandValidator`**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommandValidator.cs`:
-
-```csharp
-using FluentValidation;
-
-namespace FairBank.Identity.Application.Auth.Commands.Login;
-
-public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
-{
-    public LoginCommandValidator()
-    {
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.Password).NotEmpty();
-    }
-}
-```
-
-**Step 5: Create `LoginCommandHandler`**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Login/LoginCommandHandler.cs`:
-
-```csharp
-using FairBank.Identity.Application.Auth.DTOs;
-using FairBank.Identity.Domain.Entities;
-using FairBank.Identity.Domain.Ports;
-using FairBank.Identity.Domain.ValueObjects;
-using FairBank.SharedKernel.Application;
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.Login;
-
-public sealed class LoginCommandHandler(
-    IUserRepository userRepository,
-    IRefreshTokenRepository refreshTokenRepository,
-    IJwtTokenService jwtTokenService,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<LoginCommand, LoginResponse>
-{
-    public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken ct)
-    {
-        var email = Email.Create(request.Email);
-        var user = await userRepository.GetByEmailAsync(email, ct)
-            ?? throw new InvalidOperationException("Invalid email or password.");
-
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new InvalidOperationException("Invalid email or password.");
-
-        if (!user.IsActive)
-            throw new InvalidOperationException("Account is deactivated.");
-
-        // Revoke all existing refresh tokens for this user (single session)
-        var existingTokens = await refreshTokenRepository.GetActiveByUserIdAsync(user.Id, ct);
-        foreach (var existing in existingTokens)
-        {
-            existing.Revoke();
-            await refreshTokenRepository.UpdateAsync(existing, ct);
-        }
-
-        // Generate new tokens
-        var loginResponse = jwtTokenService.GenerateTokens(user);
-
-        // Store refresh token in DB
-        var refreshToken = RefreshToken.Create(user.Id, TimeSpan.FromDays(7));
-        await refreshTokenRepository.AddAsync(refreshToken, ct);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return new LoginResponse(loginResponse.AccessToken, refreshToken.Token, loginResponse.ExpiresAt);
-    }
-}
-```
-
-**Step 6: Create `RefreshTokenCommand` + handler**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/RefreshToken/RefreshTokenCommand.cs`:
-
-```csharp
-using FairBank.Identity.Application.Auth.DTOs;
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.RefreshToken;
-
-public sealed record RefreshTokenCommand(string RefreshToken) : IRequest<LoginResponse>;
-```
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/RefreshToken/RefreshTokenCommandHandler.cs`:
-
-```csharp
-using FairBank.Identity.Application.Auth.DTOs;
-using FairBank.Identity.Domain.Ports;
-using FairBank.SharedKernel.Application;
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.RefreshToken;
-
-public sealed class RefreshTokenCommandHandler(
-    IRefreshTokenRepository refreshTokenRepository,
-    IUserRepository userRepository,
-    IJwtTokenService jwtTokenService,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<RefreshTokenCommand, LoginResponse>
-{
-    public async Task<LoginResponse> Handle(RefreshTokenCommand request, CancellationToken ct)
-    {
-        var storedToken = await refreshTokenRepository.GetByTokenAsync(request.RefreshToken, ct)
-            ?? throw new InvalidOperationException("Invalid refresh token.");
-
-        if (!storedToken.IsValid)
-            throw new InvalidOperationException("Refresh token is expired or revoked.");
-
-        var user = await userRepository.GetByIdAsync(storedToken.UserId, ct)
-            ?? throw new InvalidOperationException("User not found.");
-
-        // Revoke used token
-        storedToken.Revoke();
-        await refreshTokenRepository.UpdateAsync(storedToken, ct);
-
-        // Generate new tokens
-        var loginResponse = jwtTokenService.GenerateTokens(user);
-
-        var newRefreshToken = Domain.Entities.RefreshToken.Create(user.Id, TimeSpan.FromDays(7));
-        await refreshTokenRepository.AddAsync(newRefreshToken, ct);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return new LoginResponse(loginResponse.AccessToken, newRefreshToken.Token, loginResponse.ExpiresAt);
-    }
-}
-```
-
-**Step 7: Create `LogoutCommand` + handler**
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Logout/LogoutCommand.cs`:
-
-```csharp
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.Logout;
-
-public sealed record LogoutCommand(string RefreshToken) : IRequest;
-```
-
-Create `src/Services/Identity/FairBank.Identity.Application/Auth/Commands/Logout/LogoutCommandHandler.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Ports;
-using FairBank.SharedKernel.Application;
-using MediatR;
-
-namespace FairBank.Identity.Application.Auth.Commands.Logout;
-
-public sealed class LogoutCommandHandler(
-    IRefreshTokenRepository refreshTokenRepository,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<LogoutCommand>
-{
-    public async Task Handle(LogoutCommand request, CancellationToken ct)
-    {
-        var token = await refreshTokenRepository.GetByTokenAsync(request.RefreshToken, ct);
-        if (token is null) return;
-
-        token.Revoke();
-        await refreshTokenRepository.UpdateAsync(token, ct);
-        await unitOfWork.SaveChangesAsync(ct);
-    }
-}
-```
-
-**Step 8: Create `AuthEndpoints`**
-
-Create `src/Services/Identity/FairBank.Identity.Api/Endpoints/AuthEndpoints.cs`:
-
-```csharp
-using FairBank.Identity.Application.Auth.Commands.Login;
-using FairBank.Identity.Application.Auth.Commands.Logout;
-using FairBank.Identity.Application.Auth.Commands.RefreshToken;
-using FairBank.Identity.Application.Users.Queries.GetUserById;
-using MediatR;
-using System.Security.Claims;
-
-namespace FairBank.Identity.Api.Endpoints;
-
-public static class AuthEndpoints
-{
-    public static RouteGroupBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
-    {
-        var group = app.MapGroup("/api/v1/auth")
-            .WithTags("Auth");
-
-        group.MapPost("/login", async (LoginCommand command, ISender sender) =>
-        {
-            try
-            {
-                var result = await sender.Send(command);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { Error = ex.Message });
-            }
-        })
-        .WithName("Login")
-        .AllowAnonymous();
-
-        group.MapPost("/refresh", async (RefreshTokenCommand command, ISender sender) =>
-        {
-            try
-            {
-                var result = await sender.Send(command);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.Unauthorized();
-            }
-        })
-        .WithName("RefreshToken")
-        .AllowAnonymous();
-
-        group.MapPost("/logout", async (LogoutCommand command, ISender sender) =>
-        {
-            await sender.Send(command);
-            return Results.NoContent();
-        })
-        .WithName("Logout");
-
-        return group;
-    }
-
-    public static RouteGroupBuilder MapMeEndpoint(this IEndpointRouteBuilder app)
-    {
-        var group = app.MapGroup("/api/v1/users")
-            .WithTags("Users");
-
-        group.MapGet("/me", async (ClaimsPrincipal user, ISender sender) =>
-        {
-            var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? user.FindFirstValue("sub")
-                ?? throw new InvalidOperationException("User ID not found in token."));
-
-            var result = await sender.Send(new GetUserByIdQuery(userId));
-            return result is not null ? Results.Ok(result) : Results.NotFound();
-        })
-        .WithName("GetCurrentUser")
-        .RequireAuthorization();
-
-        return group;
-    }
-}
-```
-
-**Step 9: Update Identity API Program.cs**
-
-Modify `src/Services/Identity/FairBank.Identity.Api/Program.cs` — replace entire file:
-
-```csharp
-using FairBank.Identity.Api.Endpoints;
-using FairBank.Identity.Application;
-using FairBank.Identity.Application.Auth;
-using FairBank.Identity.Infrastructure;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Scalar.AspNetCore;
-using Serilog;
-using System.Text;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Logging
-builder.Host.UseSerilog((ctx, lc) => lc
-    .ReadFrom.Configuration(ctx.Configuration)
-    .WriteTo.Console());
-
-// JWT settings
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-
-// Authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
-    ?? throw new InvalidOperationException("JWT settings are missing.");
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtSettings.Audience,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-builder.Services.AddAuthorization();
-
-// Application layer (MediatR, FluentValidation)
-builder.Services.AddIdentityApplication();
-
-// Infrastructure layer (EF Core, repositories)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
-builder.Services.AddIdentityInfrastructure(connectionString);
-
-// JWT token service
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-
-// OpenAPI
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
-
-// Middleware pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-
-app.UseSerilogRequestLogging();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Map endpoints
-app.MapAuthEndpoints();
-app.MapUserEndpoints();
-app.MapMeEndpoint();
-
-// Health check
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Identity" }))
-    .WithTags("Health");
-
-app.Run();
-
-// Required for integration tests
-public partial class Program;
-```
-
-**Step 10: Add JWT config to appsettings.Development.json**
-
-Modify `src/Services/Identity/FairBank.Identity.Api/appsettings.Development.json` — add Jwt section:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
-  },
-  "Jwt": {
-    "Secret": "FairBank-Super-Secret-Key-For-JWT-2026-Must-Be-At-Least-32-Chars!",
-    "Issuer": "fairbank-identity",
-    "Audience": "fairbank-api",
-    "AccessTokenExpirationMinutes": 15,
-    "RefreshTokenExpirationDays": 7
-  }
-}
-```
-
-Also add to `src/Services/Identity/FairBank.Identity.Api/appsettings.json`:
-
-```json
-{
-  "Jwt": {
-    "Secret": "CHANGE-THIS-IN-PRODUCTION-MUST-BE-AT-LEAST-32-CHARACTERS-LONG!!",
-    "Issuer": "fairbank-identity",
-    "Audience": "fairbank-api",
-    "AccessTokenExpirationMinutes": 15,
-    "RefreshTokenExpirationDays": 7
-  }
-}
-```
-
-**Step 11: Add JwtBearer package to Identity API csproj**
-
-Add to `src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj`:
-
-```xml
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
-```
-
-**Step 12: Run build**
-
-Run: `dotnet build FairBank.slnx`
-Expected: Build succeeded
-
-**Step 13: Commit**
-
-```bash
-git add -A && git commit -m "feat(identity): add JWT login, refresh, logout endpoints with BCrypt password hashing"
-```
-
----
-
-### Task 5: Identity Infrastructure — RefreshToken Repository + EF Config + Migration
-
-**Files:**
-- Create: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/RefreshTokenConfiguration.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/RefreshTokenRepository.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/IdentityDbContext.cs` — add RefreshTokens DbSet
-- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/UserConfiguration.cs` — add ParentId FK
-- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/DependencyInjection.cs` — register RefreshTokenRepository
-
-**Step 1: Add `RefreshTokens` to DbContext**
-
-In `IdentityDbContext.cs`, add after line 10:
-
-```csharp
-    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-```
-
-Add using: `using FairBank.Identity.Domain.Entities;` (already present for User).
-
-**Step 2: Create `RefreshTokenConfiguration`**
-
-Create `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/RefreshTokenConfiguration.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace FairBank.Identity.Infrastructure.Persistence.Configurations;
-
-public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
-{
-    public void Configure(EntityTypeBuilder<RefreshToken> builder)
-    {
-        builder.ToTable("refresh_tokens");
-        builder.HasKey(t => t.Id);
-        builder.Property(t => t.Token).HasMaxLength(500).IsRequired();
-        builder.Property(t => t.ExpiresAt).IsRequired();
-        builder.Property(t => t.IsRevoked).IsRequired();
-        builder.Property(t => t.CreatedAt).IsRequired();
-        builder.HasIndex(t => t.Token).IsUnique();
-        builder.HasIndex(t => t.UserId);
-    }
-}
-```
-
-**Step 3: Update `UserConfiguration` for ParentId**
-
-In `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/UserConfiguration.cs`, add before the query filter (before line 48):
-
-```csharp
-        // Parent-child self-reference
-        builder.Property(u => u.ParentId);
-
-        builder.HasOne(u => u.Parent)
-            .WithMany(u => u.Children)
-            .HasForeignKey(u => u.ParentId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired(false);
-
-        builder.HasIndex(u => u.ParentId);
-```
-
-Note: The `Children` navigation property accesses a private `_children` field. EF Core can access this via the backing field convention. You may need to add to User.cs: change `private readonly List<User> _children = [];` to have EF Core use it as backing field. Add this line in UserConfiguration:
-
-```csharp
-        builder.Navigation(u => u.Children).HasField("_children");
-```
-
-**Step 4: Create `RefreshTokenRepository`**
-
-Create `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/RefreshTokenRepository.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-using FairBank.Identity.Domain.Ports;
-using Microsoft.EntityFrameworkCore;
-
-namespace FairBank.Identity.Infrastructure.Persistence.Repositories;
-
-public sealed class RefreshTokenRepository(IdentityDbContext db) : IRefreshTokenRepository
-{
-    public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken ct = default)
-    {
-        return await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token, ct);
-    }
-
-    public async Task<IReadOnlyList<RefreshToken>> GetActiveByUserIdAsync(Guid userId, CancellationToken ct = default)
-    {
-        return await db.RefreshTokens
-            .Where(t => t.UserId == userId && !t.IsRevoked)
-            .ToListAsync(ct);
-    }
-
-    public async Task AddAsync(RefreshToken refreshToken, CancellationToken ct = default)
-    {
-        await db.RefreshTokens.AddAsync(refreshToken, ct);
-    }
-
-    public async Task UpdateAsync(RefreshToken refreshToken, CancellationToken ct = default)
-    {
-        db.RefreshTokens.Update(refreshToken);
-        await Task.CompletedTask;
-    }
-}
-```
-
-**Step 5: Register in DI**
-
-In `src/Services/Identity/FairBank.Identity.Infrastructure/DependencyInjection.cs`, add after the `IUserRepository` registration:
-
-```csharp
-        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-```
-
-Add using: `using FairBank.Identity.Domain.Ports;` (already present).
-
-**Step 6: Add `GetChildrenAsync` to `IUserRepository` and `UserRepository`**
-
-In `IUserRepository.cs`, add:
-
-```csharp
-    Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default);
-```
-
-In `UserRepository.cs` (find at `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/UserRepository.cs`), add:
-
-```csharp
-    public async Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default)
-    {
-        return await db.Users.Where(u => u.ParentId == parentId).ToListAsync(ct);
-    }
-```
-
-**Step 7: Generate EF Core migration**
-
-Run:
-```bash
-export PATH="$PATH:$HOME/.dotnet/tools"
-dotnet ef migrations add AddRefreshTokensAndParentChild \
-  --project src/Services/Identity/FairBank.Identity.Infrastructure \
-  --startup-project src/Services/Identity/FairBank.Identity.Api
-```
-
-Expected: Migration file created in `Persistence/Migrations/`
-
-**Step 8: Run build + tests**
+**Step 4: Build + test**
 
 Run: `dotnet build FairBank.slnx && dotnet test FairBank.slnx`
 Expected: Build succeeded, all tests pass
 
-**Step 9: Commit**
+**Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "feat(identity): add RefreshToken repository, ParentId FK on User, EF Core migration"
+git add -A && git commit -m "chore: add BCrypt.Net-Next and replace SHA256 password hashing"
 ```
 
 ---
 
-### Task 6: API Gateway — JWT Validation + RBAC + Rate Limiting + CORS
-
-**Files:**
-- Modify: `src/FairBank.ApiGateway/Program.cs` — add JWT, RBAC, rate limiting, CORS
-- Modify: `src/FairBank.ApiGateway/FairBank.ApiGateway.csproj` — add JWT package
-- Modify: `src/FairBank.ApiGateway/appsettings.json` — add JWT config, auth route
-- Create: `src/FairBank.ApiGateway/appsettings.Development.json` — dev JWT secret
-
-**Step 1: Add packages to Gateway csproj**
-
-Modify `src/FairBank.ApiGateway/FairBank.ApiGateway.csproj`:
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk.Web">
-  <ItemGroup>
-    <PackageReference Include="Yarp.ReverseProxy" />
-    <PackageReference Include="Serilog.AspNetCore" />
-    <PackageReference Include="Serilog.Sinks.Console" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
-  </ItemGroup>
-</Project>
-```
-
-**Step 2: Update Gateway Program.cs**
-
-Replace `src/FairBank.ApiGateway/Program.cs`:
-
-```csharp
-using System.Text;
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Host.UseSerilog((ctx, lc) => lc
-    .ReadFrom.Configuration(ctx.Configuration)
-    .WriteTo.Console());
-
-// JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("JWT secret is missing.");
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "fairbank-identity",
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "fairbank-api",
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-
-// Authorization policies
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("ClientOnly", p => p.RequireRole("Client", "Admin"))
-    .AddPolicy("BankerOnly", p => p.RequireRole("Banker", "Admin"))
-    .AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
-
-// Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-    options.AddFixedWindowLimiter("global", cfg =>
-    {
-        cfg.Window = TimeSpan.FromMinutes(1);
-        cfg.PermitLimit = 100;
-        cfg.QueueLimit = 0;
-    });
-
-    options.AddFixedWindowLimiter("auth", cfg =>
-    {
-        cfg.Window = TimeSpan.FromMinutes(1);
-        cfg.PermitLimit = 5;
-        cfg.QueueLimit = 0;
-    });
-});
-
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("FairBankPolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost", "https://localhost")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
-
-// YARP
-builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
-var app = builder.Build();
-
-app.UseSerilogRequestLogging();
-app.UseCors("FairBankPolicy");
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapReverseProxy();
-
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "ApiGateway" }));
-
-app.Run();
-```
-
-**Step 3: Update Gateway appsettings.json**
-
-Add JWT config and auth route to `src/FairBank.ApiGateway/appsettings.json`. Add the `auth-route` to the Routes section:
-
-```json
-        "auth-route": {
-          "ClusterId": "identity-cluster",
-          "Match": {
-            "Path": "/api/v1/auth/{**catch-all}"
-          }
-        },
-```
-
-Add JWT section at root level:
-
-```json
-  "Jwt": {
-    "Secret": "FairBank-Super-Secret-Key-For-JWT-2026-Must-Be-At-Least-32-Chars!",
-    "Issuer": "fairbank-identity",
-    "Audience": "fairbank-api"
-  }
-```
-
-**Step 4: Add JWT config to docker-compose environment**
-
-In `docker-compose.yml`, add to `api-gateway` service environment:
-
-```yaml
-      environment:
-        ASPNETCORE_ENVIRONMENT: Development
-        Jwt__Secret: "FairBank-Super-Secret-Key-For-JWT-2026-Must-Be-At-Least-32-Chars!"
-        Jwt__Issuer: "fairbank-identity"
-        Jwt__Audience: "fairbank-api"
-```
-
-Also add Jwt env vars to `identity-api` service:
-
-```yaml
-        Jwt__Secret: "FairBank-Super-Secret-Key-For-JWT-2026-Must-Be-At-Least-32-Chars!"
-        Jwt__Issuer: "fairbank-identity"
-        Jwt__Audience: "fairbank-api"
-```
-
-**Step 5: Run build**
-
-Run: `dotnet build FairBank.slnx`
-Expected: Build succeeded
-
-**Step 6: Commit**
-
-```bash
-git add -A && git commit -m "feat(gateway): add JWT validation, RBAC policies, rate limiting, and CORS"
-```
-
----
-
-### Task 7: Audit Log Entity + Middleware
-
-**Files:**
-- Create: `src/Services/Identity/FairBank.Identity.Domain/Entities/AuditLog.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/IdentityDbContext.cs` — add AuditLogs DbSet
-- Create: `src/Services/Identity/FairBank.Identity.Domain/Ports/IAuditLogRepository.cs`
-- Create: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/AuditLogRepository.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/DependencyInjection.cs` — register repository
-
-**Step 1: Create `AuditLog` entity**
-
-Create `src/Services/Identity/FairBank.Identity.Domain/Entities/AuditLog.cs`:
-
-```csharp
-using FairBank.SharedKernel.Domain;
-
-namespace FairBank.Identity.Domain.Entities;
-
-public sealed class AuditLog : Entity<Guid>
-{
-    public string Action { get; private set; } = null!;
-    public Guid? UserId { get; private set; }
-    public string? IpAddress { get; private set; }
-    public string? Details { get; private set; }
-    public DateTime Timestamp { get; private set; }
-
-    private AuditLog() { }
-
-    public static AuditLog Create(string action, Guid? userId = null, string? ipAddress = null, string? details = null)
-    {
-        return new AuditLog
-        {
-            Id = Guid.NewGuid(),
-            Action = action,
-            UserId = userId,
-            IpAddress = ipAddress,
-            Details = details,
-            Timestamp = DateTime.UtcNow
-        };
-    }
-}
-```
-
-**Step 2: Create `IAuditLogRepository`**
-
-Create `src/Services/Identity/FairBank.Identity.Domain/Ports/IAuditLogRepository.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-
-namespace FairBank.Identity.Domain.Ports;
-
-public interface IAuditLogRepository
-{
-    Task AddAsync(AuditLog auditLog, CancellationToken ct = default);
-}
-```
-
-**Step 3: Create EF Core configuration**
-
-Create `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace FairBank.Identity.Infrastructure.Persistence.Configurations;
-
-public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
-{
-    public void Configure(EntityTypeBuilder<AuditLog> builder)
-    {
-        builder.ToTable("audit_logs");
-        builder.HasKey(a => a.Id);
-        builder.Property(a => a.Action).HasMaxLength(100).IsRequired();
-        builder.Property(a => a.IpAddress).HasMaxLength(50);
-        builder.Property(a => a.Details).HasMaxLength(4000);
-        builder.Property(a => a.Timestamp).IsRequired();
-        builder.HasIndex(a => a.UserId);
-        builder.HasIndex(a => a.Timestamp);
-    }
-}
-```
-
-**Step 4: Add DbSet to context**
-
-In `IdentityDbContext.cs`, add:
-
-```csharp
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-```
-
-**Step 5: Create repository + register in DI**
-
-Create `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/AuditLogRepository.cs`:
-
-```csharp
-using FairBank.Identity.Domain.Entities;
-using FairBank.Identity.Domain.Ports;
-
-namespace FairBank.Identity.Infrastructure.Persistence.Repositories;
-
-public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogRepository
-{
-    public async Task AddAsync(AuditLog auditLog, CancellationToken ct = default)
-    {
-        await db.AuditLogs.AddAsync(auditLog, ct);
-        await db.SaveChangesAsync(ct);
-    }
-}
-```
-
-Register in DI (`DependencyInjection.cs`):
-
-```csharp
-        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-```
-
-**Step 6: Generate migration**
-
-Run:
-```bash
-dotnet ef migrations add AddAuditLogsTable \
-  --project src/Services/Identity/FairBank.Identity.Infrastructure \
-  --startup-project src/Services/Identity/FairBank.Identity.Api
-```
-
-**Step 7: Build + test**
-
-Run: `dotnet build FairBank.slnx && dotnet test FairBank.slnx`
-
-**Step 8: Commit**
-
-```bash
-git add -A && git commit -m "feat(identity): add AuditLog entity with EF Core configuration and migration"
-```
-
----
-
-### Task 8: PostgreSQL Primary + Replica Docker Setup
+### Task 3: PostgreSQL Primary + Replica Docker Setup
 
 **Files:**
 - Create: `docker/postgres/primary-init.sh`
 - Create: `docker/postgres/replica-entrypoint.sh`
-- Modify: `docker-compose.yml` — replace single postgres with primary + replica
-- Modify: `docker/postgres/init.sql` — add replication grant
+- Modify: `docker-compose.yml`
 
 **Step 1: Create `primary-init.sh`**
 
@@ -1342,8 +192,6 @@ echo "host replication replicator all md5" >> "$PGDATA/pg_hba.conf"
 pg_ctl reload -D "$PGDATA"
 ```
 
-Make executable: `chmod +x docker/postgres/primary-init.sh`
-
 **Step 2: Create `replica-entrypoint.sh`**
 
 Create `docker/postgres/replica-entrypoint.sh`:
@@ -1368,7 +216,6 @@ if [ -z "$(ls -A /var/lib/postgresql/data 2>/dev/null)" ]; then
     -D /var/lib/postgresql/data \
     -Fp -Xs -R -P
 
-  # Ensure standby.signal exists (pg_basebackup -R creates it, but just in case)
   touch /var/lib/postgresql/data/standby.signal
 
   echo "Base backup complete. Starting replica..."
@@ -1380,15 +227,77 @@ exec postgres \
   -c shared_buffers=64MB
 ```
 
-Make executable: `chmod +x docker/postgres/replica-entrypoint.sh`
+**Step 3: Make scripts executable**
 
-**Step 3: Update `docker-compose.yml`**
+Run: `chmod +x docker/postgres/primary-init.sh docker/postgres/replica-entrypoint.sh`
 
-Replace the single `postgres` service with `postgres-primary` and `postgres-replica`. Update connection strings in `identity-api` and `accounts-api` to point to `postgres-primary`:
+**Step 4: Update `docker-compose.yml`**
 
-Replace `postgres` service block with:
+Replace the entire file with:
 
 ```yaml
+services:
+
+  # ─── Web App (Blazor WASM) — ONLY EXPOSED SERVICE ────────
+  web-app:
+    build:
+      context: .
+      dockerfile: src/FairBank.Web/Dockerfile
+    container_name: fairbank-web
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - backend
+
+  # ─── Internal services (closed Docker network) ───────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/FairBank.ApiGateway/Dockerfile
+    container_name: fairbank-api-gateway
+    expose:
+      - "8080"
+    depends_on:
+      - identity-api
+      - accounts-api
+    networks:
+      - backend
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/Services/Identity/FairBank.Identity.Api/Dockerfile
+    container_name: fairbank-identity-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=identity_service"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - backend
+
+  accounts-api:
+    build:
+      context: .
+      dockerfile: src/Services/Accounts/FairBank.Accounts.Api/Dockerfile
+    container_name: fairbank-accounts-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # ─── PostgreSQL Primary ──────────────────────────────────
   postgres-primary:
     image: postgres:16-alpine
     container_name: fairbank-pg-primary
@@ -1423,6 +332,7 @@ Replace `postgres` service block with:
     networks:
       - backend
 
+  # ─── PostgreSQL Replica ──────────────────────────────────
   postgres-replica:
     image: postgres:16-alpine
     container_name: fairbank-pg-replica
@@ -1445,38 +355,164 @@ Replace `postgres` service block with:
       retries: 5
     networks:
       - backend
-```
 
-Update `depends_on` in both API services from `postgres` to `postgres-primary`.
+networks:
+  backend:
+    driver: bridge
+    internal: false
 
-Update connection strings to use `Host=postgres-primary`.
-
-Add to volumes section:
-
-```yaml
+volumes:
   pgdata-primary:
   pgdata-replica:
 ```
 
-Remove old `pgdata:` volume.
-
-**Step 4: Verify Docker build**
-
-Note: Docker build must be done by the user (permission issue). But verify the compose file is valid:
+**Step 5: Validate docker-compose**
 
 Run: `docker compose config --quiet`
 Expected: No errors
 
-**Step 5: Commit**
+**Step 6: Commit**
 
 ```bash
-chmod +x docker/postgres/primary-init.sh docker/postgres/replica-entrypoint.sh
 git add -A && git commit -m "feat(infra): add PostgreSQL primary-replica streaming replication"
 ```
 
 ---
 
-### Task 9: Child Accounts — Identity Endpoints
+### Task 4: Child Accounts — User Entity + ParentId + Migration
+
+**Files:**
+- Modify: `src/Services/Identity/FairBank.Identity.Domain/Entities/User.cs` — add ParentId, Children, CreateChild factory
+- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/UserConfiguration.cs` — add ParentId FK
+- Modify: `src/Services/Identity/FairBank.Identity.Domain/Ports/IUserRepository.cs` — add GetChildrenAsync
+- Modify: `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/UserRepository.cs` — implement GetChildrenAsync
+- Test: `tests/FairBank.Identity.UnitTests/Domain/UserTests.cs` — add child creation tests
+
+**Step 1: Add ParentId, Children, and CreateChild to User entity**
+
+In `src/Services/Identity/FairBank.Identity.Domain/Entities/User.cs`, add after `DeletedAt` (line 18):
+
+```csharp
+    public Guid? ParentId { get; private set; }
+    public User? Parent { get; private set; }
+    private readonly List<User> _children = [];
+    public IReadOnlyCollection<User> Children => _children.AsReadOnly();
+```
+
+Add factory method after the `Create` method (after line 46):
+
+```csharp
+    public static User CreateChild(
+        string firstName,
+        string lastName,
+        Email email,
+        string passwordHash,
+        Guid parentId)
+    {
+        var child = Create(firstName, lastName, email, passwordHash, Enums.UserRole.Child);
+        child.ParentId = parentId;
+        return child;
+    }
+```
+
+**Step 2: Update `UserConfiguration` for ParentId FK**
+
+In `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Configurations/UserConfiguration.cs`, add before the query filter (before line 47):
+
+```csharp
+        // Parent-child self-reference
+        builder.Property(u => u.ParentId);
+
+        builder.HasOne(u => u.Parent)
+            .WithMany(u => u.Children)
+            .HasForeignKey(u => u.ParentId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasIndex(u => u.ParentId);
+
+        builder.Navigation(u => u.Children).HasField("_children");
+```
+
+**Step 3: Add `GetChildrenAsync` to `IUserRepository`**
+
+In `src/Services/Identity/FairBank.Identity.Domain/Ports/IUserRepository.cs`, add:
+
+```csharp
+    Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default);
+```
+
+**Step 4: Implement `GetChildrenAsync` in `UserRepository`**
+
+In `src/Services/Identity/FairBank.Identity.Infrastructure/Persistence/Repositories/UserRepository.cs`, add:
+
+```csharp
+    public async Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default)
+    {
+        return await db.Users.Where(u => u.ParentId == parentId).ToListAsync(ct);
+    }
+```
+
+**Step 5: Write unit tests for child creation**
+
+Add to `tests/FairBank.Identity.UnitTests/Domain/UserTests.cs`:
+
+```csharp
+    [Fact]
+    public void CreateChild_ShouldSetParentIdAndChildRole()
+    {
+        var parentId = Guid.NewGuid();
+        var child = User.CreateChild(
+            "Petr", "Novák",
+            Email.Create("petr@example.com"),
+            "hashedpw",
+            parentId);
+
+        child.ParentId.Should().Be(parentId);
+        child.Role.Should().Be(UserRole.Child);
+        child.FirstName.Should().Be("Petr");
+        child.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateChild_WithEmptyName_ShouldThrow()
+    {
+        var act = () => User.CreateChild(
+            "", "Novák",
+            Email.Create("petr@example.com"),
+            "hashedpw",
+            Guid.NewGuid());
+
+        act.Should().Throw<ArgumentException>();
+    }
+```
+
+**Step 6: Run tests**
+
+Run: `dotnet test FairBank.slnx`
+Expected: All tests pass (40 existing + 2 new = 42)
+
+**Step 7: Generate EF Core migration**
+
+Run:
+```bash
+export PATH="$PATH:$HOME/.dotnet/tools"
+dotnet ef migrations add AddParentChildRelationship \
+  --project src/Services/Identity/FairBank.Identity.Infrastructure \
+  --startup-project src/Services/Identity/FairBank.Identity.Api
+```
+
+Expected: Migration file created in `Persistence/Migrations/`
+
+**Step 8: Commit**
+
+```bash
+git add -A && git commit -m "feat(identity): add ParentId self-reference FK on User for child accounts"
+```
+
+---
+
+### Task 5: Child Accounts — CreateChild + GetChildren Commands + Endpoints
 
 **Files:**
 - Create: `src/Services/Identity/FairBank.Identity.Application/Users/Commands/CreateChild/CreateChildCommand.cs`
@@ -1484,7 +520,7 @@ git add -A && git commit -m "feat(infra): add PostgreSQL primary-replica streami
 - Create: `src/Services/Identity/FairBank.Identity.Application/Users/Commands/CreateChild/CreateChildCommandValidator.cs`
 - Create: `src/Services/Identity/FairBank.Identity.Application/Users/Queries/GetChildren/GetChildrenQuery.cs`
 - Create: `src/Services/Identity/FairBank.Identity.Application/Users/Queries/GetChildren/GetChildrenQueryHandler.cs`
-- Modify: `src/Services/Identity/FairBank.Identity.Api/Endpoints/UserEndpoints.cs` — add child endpoints
+- Modify: `src/Services/Identity/FairBank.Identity.Api/Endpoints/UserEndpoints.cs`
 - Test: `tests/FairBank.Identity.UnitTests/Application/CreateChildCommandHandlerTests.cs`
 
 **Step 1: Create `CreateChildCommand`**
@@ -1628,16 +664,49 @@ public sealed class GetChildrenQueryHandler(IUserRepository userRepository)
 
 **Step 5: Add endpoints to UserEndpoints**
 
-In `src/Services/Identity/FairBank.Identity.Api/Endpoints/UserEndpoints.cs`, add inside the `MapUserEndpoints` method, after existing endpoints:
+Replace `src/Services/Identity/FairBank.Identity.Api/Endpoints/UserEndpoints.cs`:
 
 ```csharp
+using FairBank.Identity.Application.Users.Commands.CreateChild;
+using FairBank.Identity.Application.Users.Commands.RegisterUser;
+using FairBank.Identity.Application.Users.Queries.GetChildren;
+using FairBank.Identity.Application.Users.Queries.GetUserById;
+using MediatR;
+
+namespace FairBank.Identity.Api.Endpoints;
+
+public static class UserEndpoints
+{
+    public static RouteGroupBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/users")
+            .WithTags("Users");
+
+        group.MapPost("/register", async (RegisterUserCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Created($"/api/v1/users/{result.Id}", result);
+        })
+        .WithName("RegisterUser")
+        .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new GetUserByIdQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetUserById")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // Child accounts
         group.MapPost("/{parentId:guid}/children", async (Guid parentId, CreateChildCommand command, ISender sender) =>
         {
             var result = await sender.Send(command with { ParentId = parentId });
             return Results.Created($"/api/v1/users/{result.Id}", result);
         })
         .WithName("CreateChild")
-        .RequireAuthorization()
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
@@ -1647,14 +716,11 @@ In `src/Services/Identity/FairBank.Identity.Api/Endpoints/UserEndpoints.cs`, add
             return Results.Ok(result);
         })
         .WithName("GetChildren")
-        .RequireAuthorization()
         .Produces(StatusCodes.Status200OK);
-```
 
-Add using for the new commands/queries:
-```csharp
-using FairBank.Identity.Application.Users.Commands.CreateChild;
-using FairBank.Identity.Application.Users.Queries.GetChildren;
+        return group;
+    }
+}
 ```
 
 **Step 6: Write tests**
@@ -1719,7 +785,7 @@ public class CreateChildCommandHandlerTests
 **Step 7: Run tests**
 
 Run: `dotnet test FairBank.slnx`
-Expected: All tests pass (42 existing + 2 new = 44)
+Expected: 44 tests pass (42 + 2 new)
 
 **Step 8: Commit**
 
@@ -1729,29 +795,14 @@ git add -A && git commit -m "feat(identity): add child account creation and list
 
 ---
 
-### Task 10: Accounts — Spending Limits + PendingTransaction
+### Task 6: Accounts — Spending Limits on Account Aggregate
 
 **Files:**
-- Modify: `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/Account.cs` — add SpendingLimit, RequiresApproval, ApprovalThreshold
-- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/PendingTransaction.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Enums/PendingTransactionStatus.cs`
+- Modify: `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/Account.cs` — add SpendingLimit, RequiresApproval, NeedsApproval
 - Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/SpendingLimitSet.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionRequested.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionApproved.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionRejected.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/SetSpendingLimit/`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/ApproveTransaction/`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/RejectTransaction/`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetAccountsByOwner/`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/Ports/IPendingTransactionStore.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Application/DTOs/PendingTransactionResponse.cs`
-- Create: `src/Services/Accounts/FairBank.Accounts.Infrastructure/Persistence/MartenPendingTransactionStore.cs`
-- Modify: `src/Services/Accounts/FairBank.Accounts.Infrastructure/DependencyInjection.cs` — register PendingTransaction projection
-- Modify: `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs` — add new endpoints
-- Test: `tests/FairBank.Accounts.UnitTests/Domain/PendingTransactionTests.cs`
+- Test: `tests/FairBank.Accounts.UnitTests/Domain/AccountTests.cs` — add spending limit tests
 
-**Step 1: Create domain events**
+**Step 1: Create `SpendingLimitSet` event**
 
 Create `src/Services/Accounts/FairBank.Accounts.Domain/Events/SpendingLimitSet.cs`:
 
@@ -1766,6 +817,117 @@ public sealed record SpendingLimitSet(
     Currency Currency,
     DateTime OccurredAt);
 ```
+
+**Step 2: Add spending limit fields and methods to Account**
+
+In `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/Account.cs`, add after `CreatedAt` (line 14):
+
+```csharp
+    public Money? SpendingLimit { get; private set; }
+    public bool RequiresApproval { get; private set; }
+    public Money? ApprovalThreshold { get; private set; }
+```
+
+Add method after `Deactivate()`:
+
+```csharp
+    public void SetSpendingLimit(Money limit, Money? approvalThreshold = null)
+    {
+        EnsureActive();
+        SpendingLimit = limit;
+        RequiresApproval = true;
+        ApprovalThreshold = approvalThreshold ?? limit;
+
+        RaiseEvent(new SpendingLimitSet(Id, limit.Amount, limit.Currency, DateTime.UtcNow));
+    }
+
+    public bool NeedsApproval(Money amount)
+    {
+        if (!RequiresApproval || ApprovalThreshold is null) return false;
+        return amount.Amount > ApprovalThreshold.Amount;
+    }
+```
+
+Add Apply method after existing Apply methods:
+
+```csharp
+    public void Apply(SpendingLimitSet @event)
+    {
+        SpendingLimit = Money.Create(@event.Limit, @event.Currency);
+        RequiresApproval = true;
+        ApprovalThreshold = SpendingLimit;
+    }
+```
+
+Add missing using at top: `using FairBank.Accounts.Domain.Events;` (already exists for AccountCreated etc.)
+
+**Step 3: Write tests**
+
+Add to `tests/FairBank.Accounts.UnitTests/Domain/AccountTests.cs`:
+
+```csharp
+    [Fact]
+    public void SetSpendingLimit_ShouldSetLimitAndRequireApproval()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        account.ClearUncommittedEvents();
+
+        account.SetSpendingLimit(Money.Create(500, Currency.CZK));
+
+        account.SpendingLimit!.Amount.Should().Be(500);
+        account.RequiresApproval.Should().BeTrue();
+        account.ApprovalThreshold!.Amount.Should().Be(500);
+        account.GetUncommittedEvents().Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void NeedsApproval_OverThreshold_ShouldReturnTrue()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        account.SetSpendingLimit(Money.Create(500, Currency.CZK));
+
+        account.NeedsApproval(Money.Create(600, Currency.CZK)).Should().BeTrue();
+        account.NeedsApproval(Money.Create(400, Currency.CZK)).Should().BeFalse();
+    }
+```
+
+**Step 4: Run tests**
+
+Run: `dotnet test FairBank.slnx`
+Expected: All tests pass (44 + 2 = 46)
+
+**Step 5: Commit**
+
+```bash
+git add -A && git commit -m "feat(accounts): add spending limits and approval threshold to Account aggregate"
+```
+
+---
+
+### Task 7: PendingTransaction Aggregate + Commands + Endpoints
+
+**Files:**
+- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/PendingTransaction.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Enums/PendingTransactionStatus.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionRequested.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionApproved.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionRejected.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Ports/IPendingTransactionStore.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/DTOs/PendingTransactionResponse.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/SetSpendingLimit/SetSpendingLimitCommand.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/SetSpendingLimit/SetSpendingLimitCommandHandler.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/ApproveTransaction/ApproveTransactionCommand.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/ApproveTransaction/ApproveTransactionCommandHandler.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/RejectTransaction/RejectTransactionCommand.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Commands/RejectTransaction/RejectTransactionCommandHandler.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/GetPendingTransactionsQuery.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/GetPendingTransactionsQueryHandler.cs`
+- Create: `src/Services/Accounts/FairBank.Accounts.Infrastructure/Persistence/MartenPendingTransactionStore.cs`
+- Modify: `src/Services/Accounts/FairBank.Accounts.Infrastructure/DependencyInjection.cs` — register PendingTransaction projection + store
+- Modify: `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs` — add new endpoints
+- Test: `tests/FairBank.Accounts.UnitTests/Domain/PendingTransactionTests.cs`
+
+**Step 1: Create domain events**
 
 Create `src/Services/Accounts/FairBank.Accounts.Domain/Events/TransactionRequested.cs`:
 
@@ -1822,48 +984,7 @@ public enum PendingTransactionStatus
 }
 ```
 
-**Step 3: Add spending limit fields to Account**
-
-In `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/Account.cs`, add after `CreatedAt` property:
-
-```csharp
-    public Money? SpendingLimit { get; private set; }
-    public bool RequiresApproval { get; private set; }
-    public Money? ApprovalThreshold { get; private set; }
-```
-
-Add method:
-
-```csharp
-    public void SetSpendingLimit(Money limit, Money? approvalThreshold = null)
-    {
-        EnsureActive();
-        SpendingLimit = limit;
-        RequiresApproval = true;
-        ApprovalThreshold = approvalThreshold ?? limit;
-
-        RaiseEvent(new SpendingLimitSet(Id, limit.Amount, limit.Currency, DateTime.UtcNow));
-    }
-
-    public bool NeedsApproval(Money amount)
-    {
-        if (!RequiresApproval || ApprovalThreshold is null) return false;
-        return amount.Amount > ApprovalThreshold.Amount;
-    }
-```
-
-Add Apply method:
-
-```csharp
-    public void Apply(SpendingLimitSet @event)
-    {
-        SpendingLimit = Money.Create(@event.Limit, @event.Currency);
-        RequiresApproval = true;
-        ApprovalThreshold = SpendingLimit;
-    }
-```
-
-**Step 4: Create `PendingTransaction` aggregate**
+**Step 3: Create `PendingTransaction` aggregate**
 
 Create `src/Services/Accounts/FairBank.Accounts.Domain/Aggregates/PendingTransaction.cs`:
 
@@ -1972,7 +1093,7 @@ public sealed class PendingTransaction
 }
 ```
 
-**Step 5: Create `IPendingTransactionStore`**
+**Step 4: Create `IPendingTransactionStore`**
 
 Create `src/Services/Accounts/FairBank.Accounts.Application/Ports/IPendingTransactionStore.cs`:
 
@@ -1990,7 +1111,7 @@ public interface IPendingTransactionStore
 }
 ```
 
-**Step 6: Create `PendingTransactionResponse` DTO**
+**Step 5: Create `PendingTransactionResponse` DTO**
 
 Create `src/Services/Accounts/FairBank.Accounts.Application/DTOs/PendingTransactionResponse.cs`:
 
@@ -2011,7 +1132,7 @@ public sealed record PendingTransactionResponse(
     DateTime? ResolvedAt);
 ```
 
-**Step 7: Create commands and queries**
+**Step 6: Create commands and queries**
 
 Create `src/Services/Accounts/FairBank.Accounts.Application/Commands/SetSpendingLimit/SetSpendingLimitCommand.cs`:
 
@@ -2075,7 +1196,6 @@ Create `src/Services/Accounts/FairBank.Accounts.Application/Commands/ApproveTran
 ```csharp
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Ports;
-using FairBank.Accounts.Domain.ValueObjects;
 using MediatR;
 
 namespace FairBank.Accounts.Application.Commands.ApproveTransaction;
@@ -2148,47 +1268,40 @@ public sealed class RejectTransactionCommandHandler(IPendingTransactionStore pen
 }
 ```
 
-Create `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetAccountsByOwner/GetAccountsByOwnerQuery.cs`:
+Create `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/GetPendingTransactionsQuery.cs`:
 
 ```csharp
 using FairBank.Accounts.Application.DTOs;
 using MediatR;
 
-namespace FairBank.Accounts.Application.Queries.GetAccountsByOwner;
+namespace FairBank.Accounts.Application.Queries.GetPendingTransactions;
 
-public sealed record GetAccountsByOwnerQuery(Guid OwnerId) : IRequest<IReadOnlyList<AccountResponse>>;
+public sealed record GetPendingTransactionsQuery(Guid AccountId) : IRequest<IReadOnlyList<PendingTransactionResponse>>;
 ```
 
-Create `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetAccountsByOwner/GetAccountsByOwnerQueryHandler.cs`:
+Create `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/GetPendingTransactionsQueryHandler.cs`:
 
 ```csharp
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Ports;
 using MediatR;
 
-namespace FairBank.Accounts.Application.Queries.GetAccountsByOwner;
+namespace FairBank.Accounts.Application.Queries.GetPendingTransactions;
 
-public sealed class GetAccountsByOwnerQueryHandler(IAccountEventStore eventStore)
-    : IRequestHandler<GetAccountsByOwnerQuery, IReadOnlyList<AccountResponse>>
+public sealed class GetPendingTransactionsQueryHandler(IPendingTransactionStore store)
+    : IRequestHandler<GetPendingTransactionsQuery, IReadOnlyList<PendingTransactionResponse>>
 {
-    public async Task<IReadOnlyList<AccountResponse>> Handle(GetAccountsByOwnerQuery request, CancellationToken ct)
+    public async Task<IReadOnlyList<PendingTransactionResponse>> Handle(GetPendingTransactionsQuery request, CancellationToken ct)
     {
-        var accounts = await eventStore.GetByOwnerIdAsync(request.OwnerId, ct);
-        return accounts.Select(a => new AccountResponse(
-            a.Id, a.OwnerId, a.AccountNumber.Value,
-            a.Balance.Amount, a.Balance.Currency,
-            a.IsActive, a.CreatedAt)).ToList();
+        var txs = await store.GetByAccountIdAsync(request.AccountId, ct);
+        return txs.Select(t => new PendingTransactionResponse(
+            t.Id, t.AccountId, t.Amount.Amount, t.Amount.Currency,
+            t.Description, t.RequestedBy, t.Status, t.CreatedAt, t.ResolvedAt)).ToList();
     }
 }
 ```
 
-Note: This requires adding `GetByOwnerIdAsync` to `IAccountEventStore`:
-
-```csharp
-    Task<IReadOnlyList<Account>> GetByOwnerIdAsync(Guid ownerId, CancellationToken ct = default);
-```
-
-**Step 8: Implement `MartenPendingTransactionStore` and update `MartenAccountEventStore`**
+**Step 7: Create `MartenPendingTransactionStore`**
 
 Create `src/Services/Accounts/FairBank.Accounts.Infrastructure/Persistence/MartenPendingTransactionStore.cs`:
 
@@ -2236,55 +1349,114 @@ public sealed class MartenPendingTransactionStore(IDocumentSession session) : IP
 }
 ```
 
-Add `GetByOwnerIdAsync` to `MartenAccountEventStore`:
+**Step 8: Register in DI and add Marten projections**
+
+Replace `src/Services/Accounts/FairBank.Accounts.Infrastructure/DependencyInjection.cs`:
 
 ```csharp
-    public async Task<IReadOnlyList<Account>> GetByOwnerIdAsync(Guid ownerId, CancellationToken ct = default)
+using FairBank.Accounts.Application.Ports;
+using FairBank.Accounts.Domain.Aggregates;
+using FairBank.Accounts.Infrastructure.Persistence;
+using Marten;
+using Marten.Events.Projections;
+using Microsoft.Extensions.DependencyInjection;
+using JasperFx;
+
+namespace FairBank.Accounts.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddAccountsInfrastructure(
+        this IServiceCollection services,
+        string connectionString)
     {
-        return await session.Query<Account>()
-            .Where(a => a.OwnerId == ownerId)
-            .ToListAsync(ct);
-    }
-```
-
-**Step 9: Register in DI and add Marten projections**
-
-In `src/Services/Accounts/FairBank.Accounts.Infrastructure/DependencyInjection.cs`, add `PendingTransaction` snapshot registration:
-
-```csharp
-    options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
-```
-
-Register store:
-
-```csharp
-    services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
-```
-
-**Step 10: Add new endpoints**
-
-In `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs`, add new endpoints inside the `MapAccountEndpoints` method:
-
-```csharp
-        // List accounts by owner
-        group.MapGet("/", async ([AsParameters] Guid? ownerId, ISender sender) =>
+        services.AddMarten(options =>
         {
-            if (ownerId is null) return Results.BadRequest("ownerId query parameter is required.");
-            var result = await sender.Send(new GetAccountsByOwnerQuery(ownerId.Value));
+            options.Connection(connectionString);
+            options.DatabaseSchemaName = "accounts_service";
+            options.Events.DatabaseSchemaName = "accounts_service";
+
+            // Auto-create schema in development
+            options.AutoCreateSchemaObjects = AutoCreate.All;
+
+            // Register aggregates for event sourcing
+            options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
+        })
+        .UseLightweightSessions();
+
+        services.AddScoped<IAccountEventStore, MartenAccountEventStore>();
+        services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
+
+        return services;
+    }
+}
+```
+
+**Step 9: Add endpoints**
+
+Replace `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs`:
+
+```csharp
+using FairBank.Accounts.Application.Commands.ApproveTransaction;
+using FairBank.Accounts.Application.Commands.CreateAccount;
+using FairBank.Accounts.Application.Commands.DepositMoney;
+using FairBank.Accounts.Application.Commands.RejectTransaction;
+using FairBank.Accounts.Application.Commands.SetSpendingLimit;
+using FairBank.Accounts.Application.Commands.WithdrawMoney;
+using FairBank.Accounts.Application.Queries.GetAccountById;
+using FairBank.Accounts.Application.Queries.GetPendingTransactions;
+using MediatR;
+
+namespace FairBank.Accounts.Api.Endpoints;
+
+public static class AccountEndpoints
+{
+    public static RouteGroupBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/accounts")
+            .WithTags("Accounts");
+
+        group.MapPost("/", async (CreateAccountCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Created($"/api/v1/accounts/{result.Id}", result);
+        })
+        .WithName("CreateAccount")
+        .Produces(StatusCodes.Status201Created);
+
+        group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new GetAccountByIdQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetAccountById")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/deposit", async (Guid id, DepositMoneyCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { AccountId = id });
             return Results.Ok(result);
         })
-        .WithName("GetAccountsByOwner")
-        .RequireAuthorization()
+        .WithName("DepositMoney")
         .Produces(StatusCodes.Status200OK);
 
-        // Set spending limit
+        group.MapPost("/{id:guid}/withdraw", async (Guid id, WithdrawMoneyCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { AccountId = id });
+            return Results.Ok(result);
+        })
+        .WithName("WithdrawMoney")
+        .Produces(StatusCodes.Status200OK);
+
+        // Spending limits
         group.MapPost("/{id:guid}/limits", async (Guid id, SetSpendingLimitCommand command, ISender sender) =>
         {
             var result = await sender.Send(command with { AccountId = id });
             return Results.Ok(result);
         })
         .WithName("SetSpendingLimit")
-        .RequireAuthorization()
         .Produces(StatusCodes.Status200OK);
 
         // Pending transactions
@@ -2294,10 +1466,9 @@ In `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs`, 
             return Results.Ok(result);
         })
         .WithName("GetPendingTransactions")
-        .RequireAuthorization()
         .Produces(StatusCodes.Status200OK);
 
-        // Approve/Reject
+        // Approve/Reject pending transactions
         var pendingGroup = app.MapGroup("/api/v1/accounts/pending")
             .WithTags("PendingTransactions");
 
@@ -2307,7 +1478,7 @@ In `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs`, 
             return Results.Ok(result);
         })
         .WithName("ApproveTransaction")
-        .RequireAuthorization();
+        .Produces(StatusCodes.Status200OK);
 
         pendingGroup.MapPost("/{id:guid}/reject", async (Guid id, RejectTransactionCommand command, ISender sender) =>
         {
@@ -2315,43 +1486,14 @@ In `src/Services/Accounts/FairBank.Accounts.Api/Endpoints/AccountEndpoints.cs`, 
             return Results.Ok(result);
         })
         .WithName("RejectTransaction")
-        .RequireAuthorization();
-```
+        .Produces(StatusCodes.Status200OK);
 
-Also need `GetPendingTransactionsQuery` — create `src/Services/Accounts/FairBank.Accounts.Application/Queries/GetPendingTransactions/GetPendingTransactionsQuery.cs`:
-
-```csharp
-using FairBank.Accounts.Application.DTOs;
-using MediatR;
-
-namespace FairBank.Accounts.Application.Queries.GetPendingTransactions;
-
-public sealed record GetPendingTransactionsQuery(Guid AccountId) : IRequest<IReadOnlyList<PendingTransactionResponse>>;
-```
-
-Create handler `GetPendingTransactionsQueryHandler.cs`:
-
-```csharp
-using FairBank.Accounts.Application.DTOs;
-using FairBank.Accounts.Application.Ports;
-using MediatR;
-
-namespace FairBank.Accounts.Application.Queries.GetPendingTransactions;
-
-public sealed class GetPendingTransactionsQueryHandler(IPendingTransactionStore store)
-    : IRequestHandler<GetPendingTransactionsQuery, IReadOnlyList<PendingTransactionResponse>>
-{
-    public async Task<IReadOnlyList<PendingTransactionResponse>> Handle(GetPendingTransactionsQuery request, CancellationToken ct)
-    {
-        var txs = await store.GetByAccountIdAsync(request.AccountId, ct);
-        return txs.Select(t => new PendingTransactionResponse(
-            t.Id, t.AccountId, t.Amount.Amount, t.Amount.Currency,
-            t.Description, t.RequestedBy, t.Status, t.CreatedAt, t.ResolvedAt)).ToList();
+        return group;
     }
 }
 ```
 
-**Step 11: Write tests for PendingTransaction**
+**Step 10: Write tests for PendingTransaction**
 
 Create `tests/FairBank.Accounts.UnitTests/Domain/PendingTransactionTests.cs`:
 
@@ -2408,10 +1550,10 @@ public class PendingTransactionTests
         tx.ClearUncommittedEvents();
 
         var approverId = Guid.NewGuid();
-        tx.Reject(approverId, "Příliš drahé");
+        tx.Reject(approverId, "Too expensive");
 
         tx.Status.Should().Be(PendingTransactionStatus.Rejected);
-        tx.RejectionReason.Should().Be("Příliš drahé");
+        tx.RejectionReason.Should().Be("Too expensive");
     }
 
     [Fact]
@@ -2430,47 +1572,31 @@ public class PendingTransactionTests
 }
 ```
 
-**Step 12: Run build + tests**
+**Step 11: Run build + tests**
 
 Run: `dotnet build FairBank.slnx && dotnet test FairBank.slnx`
-Expected: All tests pass
+Expected: All tests pass (46 + 4 = 50)
 
-**Step 13: Commit**
+**Step 12: Commit**
 
 ```bash
-git add -A && git commit -m "feat(accounts): add spending limits, PendingTransaction aggregate, and approval endpoints"
+git add -A && git commit -m "feat(accounts): add PendingTransaction aggregate, spending limit commands, and approval endpoints"
 ```
 
 ---
 
-### Task 11: Frontend — Auth Integration
+### Task 8: Frontend — Extend API Client for Children & Pending Transactions
+
+> **Already exists (DO NOT modify):** `AuthService.cs`, `IAuthService.cs`, `Login.razor`, `Register.razor`,
+> `AuthGuard.razor`, `LoginRequest.cs`, `LoginResponse.cs`, `AuthSession.cs`, `RegisterRequest.cs`,
+> and existing methods in `IFairBankApi.cs` / `FairBankApiClient.cs`.
 
 **Files:**
-- Modify: `src/FairBank.Web.Shared/Services/IFairBankApi.cs` — add auth + child + pending methods
-- Modify: `src/FairBank.Web.Shared/Services/FairBankApiClient.cs` — implement new methods
-- Create: `src/FairBank.Web.Shared/Models/LoginRequest.cs`
-- Create: `src/FairBank.Web.Shared/Models/LoginResponse.cs`
 - Create: `src/FairBank.Web.Shared/Models/PendingTransactionDto.cs`
-- Modify: `src/FairBank.Web/Program.cs` — add auth services
-- Modify: `src/FairBank.Web/FairBank.Web.csproj` — add auth package
+- Modify: `src/FairBank.Web.Shared/Services/IFairBankApi.cs` — add children + pending methods
+- Modify: `src/FairBank.Web.Shared/Services/FairBankApiClient.cs` — implement new methods
 
-**Step 1: Add auth models**
-
-Create `src/FairBank.Web.Shared/Models/LoginRequest.cs`:
-
-```csharp
-namespace FairBank.Web.Shared.Models;
-
-public sealed record LoginRequest(string Email, string Password);
-```
-
-Create `src/FairBank.Web.Shared/Models/LoginResponse.cs`:
-
-```csharp
-namespace FairBank.Web.Shared.Models;
-
-public sealed record LoginResponse(string AccessToken, string RefreshToken, DateTime ExpiresAt);
-```
+**Step 1: Create `PendingTransactionDto`**
 
 Create `src/FairBank.Web.Shared/Models/PendingTransactionDto.cs`:
 
@@ -2491,13 +1617,9 @@ public sealed record PendingTransactionDto(
 
 **Step 2: Extend `IFairBankApi`**
 
-Add to `src/FairBank.Web.Shared/Services/IFairBankApi.cs`:
+In `src/FairBank.Web.Shared/Services/IFairBankApi.cs`, add after the Auth section (after line 21):
 
 ```csharp
-    // Auth
-    Task<LoginResponse?> LoginAsync(string email, string password);
-    Task<LoginResponse?> RefreshTokenAsync(string refreshToken);
-    Task LogoutAsync(string refreshToken);
 
     // Children
     Task<List<UserResponse>> GetChildrenAsync(Guid parentId);
@@ -2514,54 +1636,39 @@ Add to `src/FairBank.Web.Shared/Services/IFairBankApi.cs`:
 
 **Step 3: Implement in `FairBankApiClient`**
 
-Add implementations to `src/FairBank.Web.Shared/Services/FairBankApiClient.cs`:
+In `src/FairBank.Web.Shared/Services/FairBankApiClient.cs`, add before the closing `}` of the class:
 
 ```csharp
-    public async Task<LoginResponse?> LoginAsync(string email, string password)
-    {
-        var response = await _http.PostAsJsonAsync("/api/v1/auth/login", new { Email = email, Password = password });
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<LoginResponse>();
-    }
 
-    public async Task<LoginResponse?> RefreshTokenAsync(string refreshToken)
-    {
-        var response = await _http.PostAsJsonAsync("/api/v1/auth/refresh", new { RefreshToken = refreshToken });
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<LoginResponse>();
-    }
-
-    public async Task LogoutAsync(string refreshToken)
-    {
-        await _http.PostAsJsonAsync("/api/v1/auth/logout", new { RefreshToken = refreshToken });
-    }
-
+    // ── Children ────────────────────────────────────────────────
     public async Task<List<UserResponse>> GetChildrenAsync(Guid parentId)
     {
-        return await _http.GetFromJsonAsync<List<UserResponse>>($"/api/v1/users/{parentId}/children") ?? [];
+        return await http.GetFromJsonAsync<List<UserResponse>>($"api/v1/users/{parentId}/children") ?? [];
     }
 
     public async Task<UserResponse> CreateChildAsync(Guid parentId, string firstName, string lastName, string email, string password)
     {
-        var response = await _http.PostAsJsonAsync($"/api/v1/users/{parentId}/children",
+        var response = await http.PostAsJsonAsync($"api/v1/users/{parentId}/children",
             new { FirstName = firstName, LastName = lastName, Email = email, Password = password });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<UserResponse>())!;
     }
 
+    // ── Account queries ─────────────────────────────────────────
     public async Task<List<AccountResponse>> GetAccountsByOwnerAsync(Guid ownerId)
     {
-        return await _http.GetFromJsonAsync<List<AccountResponse>>($"/api/v1/accounts?ownerId={ownerId}") ?? [];
+        return await http.GetFromJsonAsync<List<AccountResponse>>($"api/v1/accounts?ownerId={ownerId}") ?? [];
     }
 
+    // ── Pending transactions ────────────────────────────────────
     public async Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId)
     {
-        return await _http.GetFromJsonAsync<List<PendingTransactionDto>>($"/api/v1/accounts/{accountId}/pending") ?? [];
+        return await http.GetFromJsonAsync<List<PendingTransactionDto>>($"api/v1/accounts/{accountId}/pending") ?? [];
     }
 
     public async Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId)
     {
-        var response = await _http.PostAsJsonAsync($"/api/v1/accounts/pending/{transactionId}/approve",
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/pending/{transactionId}/approve",
             new { ApproverId = approverId });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PendingTransactionDto>())!;
@@ -2569,46 +1676,32 @@ Add implementations to `src/FairBank.Web.Shared/Services/FairBankApiClient.cs`:
 
     public async Task<PendingTransactionDto> RejectTransactionAsync(Guid transactionId, Guid approverId, string reason)
     {
-        var response = await _http.PostAsJsonAsync($"/api/v1/accounts/pending/{transactionId}/reject",
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/pending/{transactionId}/reject",
             new { ApproverId = approverId, Reason = reason });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PendingTransactionDto>())!;
     }
 ```
 
-**Step 4: Add auth package to Web project**
-
-Add to `src/FairBank.Web/FairBank.Web.csproj`:
-
-```xml
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" />
-```
-
-Add to `Directory.Packages.props`:
-
-```xml
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.3" />
-```
-
-**Step 5: Build**
+**Step 4: Build**
 
 Run: `dotnet build FairBank.slnx`
 Expected: Build succeeded
 
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "feat(frontend): extend IFairBankApi with auth, children, and pending transaction methods"
+git add -A && git commit -m "feat(frontend): extend IFairBankApi with children and pending transaction methods"
 ```
 
 ---
 
-### Task 12: Final — Run All Tests + Docker Config Validation
+### Task 9: Final — Run All Tests + Docker Config Validation
 
 **Step 1: Run full test suite**
 
 Run: `dotnet test FairBank.slnx -v minimal`
-Expected: All tests pass (44+ tests)
+Expected: All tests pass (50 tests)
 
 **Step 2: Validate docker-compose**
 

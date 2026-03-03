@@ -1,7 +1,11 @@
+using FairBank.Accounts.Application.Commands.ApproveTransaction;
 using FairBank.Accounts.Application.Commands.CreateAccount;
 using FairBank.Accounts.Application.Commands.DepositMoney;
+using FairBank.Accounts.Application.Commands.RejectTransaction;
+using FairBank.Accounts.Application.Commands.SetSpendingLimit;
 using FairBank.Accounts.Application.Commands.WithdrawMoney;
 using FairBank.Accounts.Application.Queries.GetAccountById;
+using FairBank.Accounts.Application.Queries.GetPendingTransactions;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -44,6 +48,44 @@ public static class AccountEndpoints
             return Results.Ok(result);
         })
         .WithName("WithdrawMoney")
+        .Produces(StatusCodes.Status200OK);
+
+        // Spending limits
+        group.MapPost("/{id:guid}/limits", async (Guid id, SetSpendingLimitCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { AccountId = id });
+            return Results.Ok(result);
+        })
+        .WithName("SetSpendingLimit")
+        .Produces(StatusCodes.Status200OK);
+
+        // Pending transactions
+        group.MapGet("/{id:guid}/pending", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new GetPendingTransactionsQuery(id));
+            return Results.Ok(result);
+        })
+        .WithName("GetPendingTransactions")
+        .Produces(StatusCodes.Status200OK);
+
+        // Approve/Reject pending transactions
+        var pendingGroup = app.MapGroup("/api/v1/accounts/pending")
+            .WithTags("PendingTransactions");
+
+        pendingGroup.MapPost("/{id:guid}/approve", async (Guid id, ApproveTransactionCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { TransactionId = id });
+            return Results.Ok(result);
+        })
+        .WithName("ApproveTransaction")
+        .Produces(StatusCodes.Status200OK);
+
+        pendingGroup.MapPost("/{id:guid}/reject", async (Guid id, RejectTransactionCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { TransactionId = id });
+            return Results.Ok(result);
+        })
+        .WithName("RejectTransaction")
         .Produces(StatusCodes.Status200OK);
 
         return group;
