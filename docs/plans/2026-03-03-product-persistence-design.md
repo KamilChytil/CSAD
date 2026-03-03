@@ -166,17 +166,25 @@ Services/Products/
 - Modal shows parameter summary → "Odeslat žádost" button → POST to API
 - Success feedback: "Žádost odeslána, čeká na schválení"
 
-### 3. Admin page — `/admin/zadosti`
-- New Blazor component in FairBank.Admin.Web or as page accessible to Admin role in main app
-- Table of pending applications with applicant info
+### 3. Banker management page — `/sprava`
+- New Blazor component accessible to Banker role (nav: 📋 Správa)
+- Table of pending product applications with applicant info
 - Detail view with all parameters
 - Approve/Reject buttons with optional note
-- Accessible from existing admin nav link in SideNav
+- Banker = product/loan officer who reviews and approves applications
 
-### 4. Role-based UI restrictions
-- Child role: hide "Produkty" nav item in SideNav and BottomNav
+### 4. Admin page — `/admin`
+- Admin = system administrator (logs, system health, user management)
+- Admin can also see and approve/reject pending applications (as superuser)
+- Separate from Banker — different nav item (⚙️ Admin)
+
+### 5. Role-based UI restrictions (DONE)
+- `AuthStateService` has: `IsAdmin`, `IsBanker`, `IsChild`, `IsStaff`
+- Child role: "Produkty" hidden in SideNav and BottomNav
+- Banker: sees "📋 Správa" nav item
+- Admin: sees "⚙️ Admin" nav item
+- All roles see "👤 Profil"
 - Banker/Admin: show calculators but hide/disable submit buttons
-- Add `Auth.CurrentUser.Role` checks in components
 
 ---
 
