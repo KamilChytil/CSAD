@@ -1,45 +1,274 @@
 @page "/platby"
 @namespace FairBank.Web.Payments.Pages
 @inject IFairBankApi Api
+@inject IAuthService Auth
 
 <PageHeader Title="PLATBY" />
 
 <div class="page-content">
-    <ContentCard Title="Nová platba">
-        <ChildContent>
-            <div class="form-group">
-                <label class="form-label">Příjemce</label>
-                <input class="form-input" @bind="_recipient" placeholder="Číslo účtu příjemce" />
-            </div>
-            <div class="form-group">
-                <label class="form-label">Částka</label>
-                <div class="input-with-suffix">
-                    <input class="form-input" type="number" @bind="_amount" placeholder="0" />
-                    <span class="input-suffix">Kč</span>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Popis</label>
-                <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
-            </div>
-            <VbButton OnClick="SendPayment" Disabled="@(_amount <= 0)">
-                Odeslat platbu
-            </VbButton>
-        </ChildContent>
-    </ContentCard>
 
+    @* ── TAB NAVIGATION ─────────────────────────── *@
+    <div class="tab-bar">
+        <button class="tab-btn @(_activeTab == "payment" ? "active" : "")" @onclick='() => SetTab("payment")'>Nová platba</button>
+        <button class="tab-btn @(_activeTab == "instant" ? "active" : "")" @onclick='() => SetTab("instant")'>Okamžitá</button>
+        <button class="tab-btn @(_activeTab == "transfer" ? "active" : "")" @onclick='() => SetTab("transfer")'>Převod</button>
+        <button class="tab-btn @(_activeTab == "standing" ? "active" : "")" @onclick='() => SetTab("standing")'>Trvalé příkazy</button>
+        <button class="tab-btn @(_activeTab == "templates" ? "active" : "")" @onclick='() => SetTab("templates")'>Šablony</button>
+    </div>
+
+    @* ── STANDARD / INSTANT PAYMENT ─────────────── *@
+    @if (_activeTab is "payment" or "instant")
+    {
+        <ContentCard Title="@(_activeTab == "instant" ? "Okamžitá platba" : "Nová platba")">
+            <ChildContent>
+                @if (_templates.Any())
+                {
+                    <div class="form-group">
+                        <label class="form-label">Použít šablonu</label>
+                        <select class="form-input" @onchange="OnTemplateSelected">
+                            <option value="">— vyberte šablonu —</option>
+                            @foreach (var t in _templates)
+                            {
+                                <option value="@t.Id">@t.Name (@t.RecipientAccountNumber)</option>
+                            }
+                        </select>
+                    </div>
+                }
+                <div class="form-group">
+                    <label class="form-label">Příjemce (číslo účtu)</label>
+                    <input class="form-input" @bind="_recipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Částka</label>
+                    <div class="input-with-suffix">
+                        <input class="form-input" type="number" @bind="_amount" placeholder="0" />
+                        <span class="input-suffix">Kč</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Popis</label>
+                    <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
+                </div>
+                @if (_activeTab == "instant")
+                {
+                    <div class="info-banner">⚡ Okamžitá platba bude zpracována ihned</div>
+                }
+                <VbButton OnClick="SendPayment" Disabled="@(_amount <= 0 || string.IsNullOrWhiteSpace(_recipient) || _isLoading)">
+                    @if (_isLoading) { <span>Odesílám...</span> } else { <span>@(_activeTab == "instant" ? "Odeslat okamžitě" : "Odeslat platbu")</span> }
+                </VbButton>
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="error-banner">@_errorMessage</div>
+                }
+                @if (_paymentSuccess)
+                {
+                    <div class="success-banner">✓ Platba úspěšně odeslána</div>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @* ── INTERNAL TRANSFER ──────────────────────── *@
+    @if (_activeTab == "transfer")
+    {
+        <ContentCard Title="Převod mezi účty">
+            <ChildContent>
+                <div class="form-group">
+                    <label class="form-label">Z účtu</label>
+                    <select class="form-input" @bind="_transferFromAccountId">
+                        <option value="">— vyberte účet —</option>
+                        @foreach (var acc in _accounts)
+                        {
+                            <option value="@acc.Id">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Na účet</label>
+                    <select class="form-input" @bind="_transferToAccountNumber">
+                        <option value="">— vyberte cílový účet —</option>
+                        @foreach (var acc in _accounts.Where(a => a.Id.ToString() != _transferFromAccountId))
+                        {
+                            <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Částka</label>
+                    <div class="input-with-suffix">
+                        <input class="form-input" type="number" @bind="_transferAmount" placeholder="0" />
+                        <span class="input-suffix">Kč</span>
+                    </div>
+                </div>
+                <VbButton OnClick="SendTransfer" Disabled="@(_transferAmount <= 0 || string.IsNullOrWhiteSpace(_transferFromAccountId) || string.IsNullOrWhiteSpace(_transferToAccountNumber) || _isLoading)">
+                    @if (_isLoading) { <span>Převádím...</span> } else { <span>Převést</span> }
+                </VbButton>
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="error-banner">@_errorMessage</div>
+                }
+                @if (_paymentSuccess)
+                {
+                    <div class="success-banner">✓ Převod úspěšně proveden</div>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @* ── STANDING ORDER ─────────────────────────── *@
+    @if (_activeTab == "standing")
+    {
+        <ContentCard Title="Nový trvalý příkaz">
+            <ChildContent>
+                <div class="form-group">
+                    <label class="form-label">Příjemce (číslo účtu)</label>
+                    <input class="form-input" @bind="_soRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Částka</label>
+                    <div class="input-with-suffix">
+                        <input class="form-input" type="number" @bind="_soAmount" placeholder="0" />
+                        <span class="input-suffix">Kč</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Popis</label>
+                    <input class="form-input" @bind="_soDescription" placeholder="Např. Nájem" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Interval</label>
+                    <select class="form-input" @bind="_soInterval">
+                        <option value="Daily">Denně</option>
+                        <option value="Weekly">Týdně</option>
+                        <option value="Monthly">Měsíčně</option>
+                        <option value="Quarterly">Čtvrtletně</option>
+                        <option value="Yearly">Ročně</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">První platba</label>
+                    <input class="form-input" type="date" @bind="_soFirstDate" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Konec (volitelné)</label>
+                    <input class="form-input" type="date" @bind="_soEndDate" />
+                </div>
+                <VbButton OnClick="CreateStandingOrder" Disabled="@(_soAmount <= 0 || string.IsNullOrWhiteSpace(_soRecipient) || _isLoading)">
+                    @if (_isLoading) { <span>Vytvářím...</span> } else { <span>Vytvořit trvalý příkaz</span> }
+                </VbButton>
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="error-banner">@_errorMessage</div>
+                }
+                @if (_paymentSuccess)
+                {
+                    <div class="success-banner">✓ Trvalý příkaz vytvořen</div>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        <ContentCard Title="Aktivní trvalé příkazy">
+            <ChildContent>
+                @foreach (var so in _standingOrders.Where(s => s.IsActive))
+                {
+                    <div class="standing-order-item">
+                        <div class="so-details">
+                            <span class="so-recipient">→ @so.RecipientAccountNumber</span>
+                            <span class="so-info">@so.Amount.ToString("N0") @so.Currency · @FormatInterval(so.Interval) · další: @so.NextExecutionDate.ToString("dd.MM.yyyy")</span>
+                            @if (!string.IsNullOrWhiteSpace(so.Description))
+                            {
+                                <span class="so-desc">@so.Description</span>
+                            }
+                        </div>
+                        <button class="btn-cancel" @onclick="() => CancelStandingOrder(so.Id)">Zrušit</button>
+                    </div>
+                }
+                @if (!_standingOrders.Any(s => s.IsActive))
+                {
+                    <p class="empty-state">Žádné aktivní trvalé příkazy</p>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @* ── TEMPLATES ──────────────────────────────── *@
+    @if (_activeTab == "templates")
+    {
+        <ContentCard Title="Nová šablona">
+            <ChildContent>
+                <div class="form-group">
+                    <label class="form-label">Název šablony</label>
+                    <input class="form-input" @bind="_tplName" placeholder="Např. Nájem" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Příjemce (číslo účtu)</label>
+                    <input class="form-input" @bind="_tplRecipient" placeholder="FAIR-XXXX-XXXX-XXXX" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Jméno příjemce (volitelné)</label>
+                    <input class="form-input" @bind="_tplRecipientName" placeholder="Jan Novák" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Výchozí částka (volitelné)</label>
+                    <div class="input-with-suffix">
+                        <input class="form-input" type="number" @bind="_tplAmount" placeholder="0" />
+                        <span class="input-suffix">Kč</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Výchozí popis (volitelné)</label>
+                    <input class="form-input" @bind="_tplDescription" placeholder="Popis platby" />
+                </div>
+                <VbButton OnClick="CreateTemplate" Disabled="@(string.IsNullOrWhiteSpace(_tplName) || string.IsNullOrWhiteSpace(_tplRecipient) || _isLoading)">
+                    @if (_isLoading) { <span>Ukládám...</span> } else { <span>Uložit šablonu</span> }
+                </VbButton>
+                @if (_paymentSuccess)
+                {
+                    <div class="success-banner">✓ Šablona uložena</div>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        <ContentCard Title="Uložené šablony">
+            <ChildContent>
+                @foreach (var tpl in _templates)
+                {
+                    <div class="template-item">
+                        <div class="tpl-details">
+                            <span class="tpl-name">@tpl.Name</span>
+                            <span class="tpl-info">→ @tpl.RecipientAccountNumber @(tpl.RecipientName is not null ? $"({tpl.RecipientName})" : "")</span>
+                            @if (tpl.DefaultAmount.HasValue)
+                            {
+                                <span class="tpl-amount">@tpl.DefaultAmount.Value.ToString("N0") @tpl.Currency</span>
+                            }
+                        </div>
+                        <div class="tpl-actions">
+                            <button class="btn-use" @onclick="() => UseTemplate(tpl)">Použít</button>
+                            <button class="btn-cancel" @onclick="() => DeleteTemplate(tpl.Id)">Smazat</button>
+                        </div>
+                    </div>
+                }
+                @if (!_templates.Any())
+                {
+                    <p class="empty-state">Žádné uložené šablony</p>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @* ── PAYMENT HISTORY ────────────────────────── *@
     <ContentCard Title="Historie plateb">
         <ChildContent>
             @foreach (var tx in _history)
             {
+                var isSent = tx.SenderAccountId == _selectedAccountId;
                 <TransactionItem
-                    Description="@tx.Description"
-                    Date="@tx.Date"
-                    Amount="@tx.Amount"
+                    Description="@($"{(isSent ? "→" : "←")} {tx.RecipientAccountNumber}: {tx.Description ?? ""}")"
+                    Date="@tx.CreatedAt"
+                    Amount="@(isSent ? -tx.Amount : tx.Amount)"
                     Currency="Kč"
-                    Type="@tx.Type" />
+                    Type="@(isSent ? "withdrawal" : "deposit")" />
             }
-
             @if (!_history.Any())
             {
                 <p class="empty-state">Zatím žádné platby</p>
@@ -49,30 +278,263 @@
 </div>
 
 @code {
+    private string _activeTab = "payment";
+    private bool _isLoading;
+    private string _errorMessage = "";
+    private bool _paymentSuccess;
+
+    // Account data
+    private List<AccountResponse> _accounts = [];
+    private Guid? _selectedAccountId;
+    private string _selectedAccountCurrency = "CZK";
+
+    // Standard/instant payment
     private string _recipient = "";
     private decimal _amount;
     private string _description = "";
-    private List<TransactionDto> _history = [];
 
-    protected override void OnInitialized()
+    // Internal transfer
+    private string _transferFromAccountId = "";
+    private string _transferToAccountNumber = "";
+    private decimal _transferAmount;
+
+    // Standing order
+    private string _soRecipient = "";
+    private decimal _soAmount;
+    private string _soDescription = "";
+    private string _soInterval = "Monthly";
+    private DateTime _soFirstDate = DateTime.Today.AddDays(1);
+    private DateTime? _soEndDate;
+
+    // Templates
+    private string _tplName = "";
+    private string _tplRecipient = "";
+    private string _tplRecipientName = "";
+    private decimal? _tplAmount;
+    private string _tplDescription = "";
+
+    // Data
+    private List<PaymentDto> _history = [];
+    private List<StandingOrderDto> _standingOrders = [];
+    private List<PaymentTemplateDto> _templates = [];
+
+    protected override async Task OnInitializedAsync()
     {
-        _history =
-        [
-            new(Guid.NewGuid(), "Platba – Nájem", new DateTime(2022, 2, 15), -12_500m, "withdrawal"),
-            new(Guid.NewGuid(), "Platba – Energie", new DateTime(2022, 2, 10), -3_200m, "withdrawal"),
-            new(Guid.NewGuid(), "Příchozí platba", new DateTime(2022, 2, 5), 25_000m, "deposit"),
-        ];
+        try
+        {
+            var session = Auth.CurrentSession;
+            if (session is null) return;
+
+            _accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
+            if (_accounts.Any())
+            {
+                _selectedAccountId = _accounts[0].Id;
+                _selectedAccountCurrency = _accounts[0].Currency;
+                await LoadData();
+            }
+        }
+        catch
+        {
+            // Silently handle – data will be empty
+        }
+    }
+
+    private async Task LoadData()
+    {
+        if (_selectedAccountId is null) return;
+        try
+        {
+            var historyTask = Api.GetPaymentsByAccountAsync(_selectedAccountId.Value);
+            var standingTask = Api.GetStandingOrdersByAccountAsync(_selectedAccountId.Value);
+            var templatesTask = Api.GetPaymentTemplatesByAccountAsync(_selectedAccountId.Value);
+            await Task.WhenAll(historyTask, standingTask, templatesTask);
+            _history = historyTask.Result;
+            _standingOrders = standingTask.Result;
+            _templates = templatesTask.Result;
+        }
+        catch
+        {
+            // Keep existing data on failure
+        }
+    }
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+        _errorMessage = "";
+        _paymentSuccess = false;
     }
 
     private async Task SendPayment()
     {
-        if (_amount <= 0) return;
-        // TODO: Call API
-        _history.Insert(0, new TransactionDto(
-            Guid.NewGuid(), $"Platba – {_description}", DateTime.Now, -_amount, "withdrawal"));
-        _amount = 0;
-        _description = "";
-        _recipient = "";
-        await Task.CompletedTask;
+        if (_amount <= 0 || string.IsNullOrWhiteSpace(_recipient) || _selectedAccountId is null) return;
+
+        _isLoading = true;
+        _errorMessage = "";
+        _paymentSuccess = false;
+
+        try
+        {
+            bool isInstant = _activeTab == "instant";
+            await Api.SendPaymentAsync(_selectedAccountId.Value, _recipient.Trim(), _amount, _selectedAccountCurrency, _description, isInstant);
+            _paymentSuccess = true;
+            _amount = 0;
+            _description = "";
+            _recipient = "";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Platba se nezdařila. Zkuste to znovu.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
+
+    private async Task SendTransfer()
+    {
+        if (_transferAmount <= 0 || string.IsNullOrWhiteSpace(_transferFromAccountId) || string.IsNullOrWhiteSpace(_transferToAccountNumber)) return;
+
+        _isLoading = true;
+        _errorMessage = "";
+        _paymentSuccess = false;
+
+        try
+        {
+            var fromId = Guid.Parse(_transferFromAccountId);
+            await Api.SendPaymentAsync(fromId, _transferToAccountNumber, _transferAmount, _selectedAccountCurrency, "Převod mezi vlastními účty");
+            _paymentSuccess = true;
+            _transferAmount = 0;
+            _transferFromAccountId = "";
+            _transferToAccountNumber = "";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Převod se nezdařil. Zkuste to znovu.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateStandingOrder()
+    {
+        if (_soAmount <= 0 || string.IsNullOrWhiteSpace(_soRecipient) || _selectedAccountId is null) return;
+
+        _isLoading = true;
+        _errorMessage = "";
+        _paymentSuccess = false;
+
+        try
+        {
+            await Api.CreateStandingOrderAsync(_selectedAccountId.Value, _soRecipient.Trim(), _soAmount, _selectedAccountCurrency, _soInterval, _soFirstDate, _soDescription, _soEndDate);
+            _paymentSuccess = true;
+            _soRecipient = "";
+            _soAmount = 0;
+            _soDescription = "";
+            _soEndDate = null;
+            await LoadData();
+        }
+        catch
+        {
+            _errorMessage = "Vytvoření trvalého příkazu se nezdařilo.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CancelStandingOrder(Guid id)
+    {
+        try
+        {
+            await Api.CancelStandingOrderAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+            _errorMessage = "Zrušení trvalého příkazu se nezdařilo.";
+        }
+    }
+
+    private async Task CreateTemplate()
+    {
+        if (string.IsNullOrWhiteSpace(_tplName) || string.IsNullOrWhiteSpace(_tplRecipient) || _selectedAccountId is null) return;
+
+        _isLoading = true;
+        _paymentSuccess = false;
+
+        try
+        {
+            await Api.CreatePaymentTemplateAsync(
+                _selectedAccountId.Value, _tplName.Trim(), _tplRecipient.Trim(), _selectedAccountCurrency,
+                string.IsNullOrWhiteSpace(_tplRecipientName) ? null : _tplRecipientName.Trim(),
+                _tplAmount > 0 ? _tplAmount : null,
+                string.IsNullOrWhiteSpace(_tplDescription) ? null : _tplDescription);
+            _paymentSuccess = true;
+            _tplName = "";
+            _tplRecipient = "";
+            _tplRecipientName = "";
+            _tplAmount = null;
+            _tplDescription = "";
+            await LoadData();
+        }
+        catch
+        {
+            _errorMessage = "Uložení šablony se nezdařilo.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task DeleteTemplate(Guid id)
+    {
+        try
+        {
+            await Api.DeletePaymentTemplateAsync(id);
+            await LoadData();
+        }
+        catch
+        {
+            _errorMessage = "Smazání šablony se nezdařilo.";
+        }
+    }
+
+    private void UseTemplate(PaymentTemplateDto tpl)
+    {
+        _activeTab = "payment";
+        _recipient = tpl.RecipientAccountNumber;
+        _description = tpl.DefaultDescription ?? "";
+        _amount = tpl.DefaultAmount ?? 0;
+        _errorMessage = "";
+        _paymentSuccess = false;
+    }
+
+    private void OnTemplateSelected(ChangeEventArgs e)
+    {
+        var tplId = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(tplId)) return;
+        var tpl = _templates.FirstOrDefault(t => t.Id.ToString() == tplId);
+        if (tpl is null) return;
+        _recipient = tpl.RecipientAccountNumber;
+        _description = tpl.DefaultDescription ?? "";
+        _amount = tpl.DefaultAmount ?? 0;
+    }
+
+    private static string FormatInterval(string interval) => interval switch
+    {
+        "Daily" => "denně",
+        "Weekly" => "týdně",
+        "Monthly" => "měsíčně",
+        "Quarterly" => "čtvrtletně",
+        "Yearly" => "ročně",
+        _ => interval
+    };
 }

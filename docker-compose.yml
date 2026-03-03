@@ -11,7 +11,7 @@ services:
     depends_on:
       - api-gateway
     networks:
-      - backend
+      - frontend
 
   # ─── Admin Web App (Standalone Logging UI) ────────
   admin-web-app:
@@ -26,7 +26,7 @@ services:
     networks:
       - backend
 
-  # ─── Internal services (closed Docker network) ───────────
+  # ─── API Gateway (bridges frontend ↔ backend) ───────────
   api-gateway:
     build:
       context: .
@@ -37,7 +37,9 @@ services:
     depends_on:
       - identity-api
       - accounts-api
+      - payments-api
     networks:
+      - frontend
       - backend
 
   identity-api:
@@ -87,6 +89,25 @@ services:
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+    networks:
+      - backend
+
+  payments-api:
+    build:
+      context: .
+      dockerfile: src/Services/Payments/FairBank.Payments.Api/Dockerfile
+    container_name: fairbank-payments-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=payments_service"
+      Services__AccountsApi: "http://accounts-api:8080"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      accounts-api:
+        condition: service_started
     networks:
       - backend
 
@@ -150,9 +171,11 @@ services:
       - backend
 
 networks:
+  frontend:
+    driver: bridge
   backend:
     driver: bridge
-    internal: false
+    internal: true
 
 volumes:
   pgdata-primary:

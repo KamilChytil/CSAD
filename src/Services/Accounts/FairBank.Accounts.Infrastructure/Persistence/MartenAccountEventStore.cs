@@ -11,6 +11,11 @@ public sealed class MartenAccountEventStore(IDocumentSession session) : IAccount
         return await session.Events.AggregateStreamAsync<Account>(accountId, token: ct);
     }
 
+    public async Task<Account?> LoadByAccountNumberAsync(string accountNumber, CancellationToken ct = default)
+    {
+        return await session.Query<Account>().FirstOrDefaultAsync(a => a.AccountNumber.Value == accountNumber, ct);
+    }
+
     public async Task StartStreamAsync(Account account, CancellationToken ct = default)
     {
         var events = account.GetUncommittedEvents();

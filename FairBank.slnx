@@ -28,6 +28,12 @@
     <Project Path="src/Services/Identity/FairBank.Identity.Domain/FairBank.Identity.Domain.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Infrastructure/FairBank.Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Payments/">
+    <Project Path="src/Services/Payments/FairBank.Payments.Api/FairBank.Payments.Api.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Application/FairBank.Payments.Application.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Domain/FairBank.Payments.Domain.csproj" />
+    <Project Path="src/Services/Payments/FairBank.Payments.Infrastructure/FairBank.Payments.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />

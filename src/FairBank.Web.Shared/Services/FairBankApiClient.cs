@@ -153,4 +153,58 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<UserResponse>();
     }
+
+    // ── Payments ─────────────────────────────────────────────────
+    public async Task<PaymentDto> SendPaymentAsync(Guid senderAccountId, string recipientAccountNumber, decimal amount, string currency, string? description = null, bool isInstant = false)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/payments",
+            new { SenderAccountId = senderAccountId, RecipientAccountNumber = recipientAccountNumber, Amount = amount, Currency = currency, Description = description, IsInstant = isInstant });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PaymentDto>())!;
+    }
+
+    public async Task<List<PaymentDto>> GetPaymentsByAccountAsync(Guid accountId, int limit = 50)
+    {
+        return await http.GetFromJsonAsync<List<PaymentDto>>($"api/v1/payments/account/{accountId}?limit={limit}") ?? [];
+    }
+
+    // ── Standing orders ─────────────────────────────────────────
+    public async Task<StandingOrderDto> CreateStandingOrderAsync(Guid senderAccountId, string recipientAccountNumber, decimal amount, string currency, string interval, DateTime firstExecutionDate, string? description = null, DateTime? endDate = null)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/standing-orders",
+            new { SenderAccountId = senderAccountId, RecipientAccountNumber = recipientAccountNumber, Amount = amount, Currency = currency, Interval = interval, FirstExecutionDate = firstExecutionDate, Description = description, EndDate = endDate });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<StandingOrderDto>())!;
+    }
+
+    public async Task<List<StandingOrderDto>> GetStandingOrdersByAccountAsync(Guid accountId)
+    {
+        return await http.GetFromJsonAsync<List<StandingOrderDto>>($"api/v1/standing-orders/account/{accountId}") ?? [];
+    }
+
+    public async Task CancelStandingOrderAsync(Guid standingOrderId)
+    {
+        var response = await http.DeleteAsync($"api/v1/standing-orders/{standingOrderId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // ── Payment templates ───────────────────────────────────────
+    public async Task<PaymentTemplateDto> CreatePaymentTemplateAsync(Guid ownerAccountId, string name, string recipientAccountNumber, string currency, string? recipientName = null, decimal? defaultAmount = null, string? defaultDescription = null)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/payment-templates",
+            new { OwnerAccountId = ownerAccountId, Name = name, RecipientAccountNumber = recipientAccountNumber, Currency = currency, RecipientName = recipientName, DefaultAmount = defaultAmount, DefaultDescription = defaultDescription });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PaymentTemplateDto>())!;
+    }
+
+    public async Task<List<PaymentTemplateDto>> GetPaymentTemplatesByAccountAsync(Guid accountId)
+    {
+        return await http.GetFromJsonAsync<List<PaymentTemplateDto>>($"api/v1/payment-templates/account/{accountId}") ?? [];
+    }
+
+    public async Task DeletePaymentTemplateAsync(Guid templateId)
+    {
+        var response = await http.DeleteAsync($"api/v1/payment-templates/{templateId}");
+        response.EnsureSuccessStatusCode();
+    }
 }

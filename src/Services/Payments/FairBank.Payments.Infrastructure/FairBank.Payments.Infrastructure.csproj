@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FairBank.Payments.Domain/FairBank.Payments.Domain.csproj" />
+    <ProjectReference Include="../FairBank.Payments.Application/FairBank.Payments.Application.csproj" />
+  </ItemGroup>
+</Project>

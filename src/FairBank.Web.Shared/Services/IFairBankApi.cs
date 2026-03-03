@@ -32,4 +32,18 @@ public interface IFairBankApi
     Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId);
     Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId);
     Task<PendingTransactionDto> RejectTransactionAsync(Guid transactionId, Guid approverId, string reason);
+
+    // Payments
+    Task<PaymentDto> SendPaymentAsync(Guid senderAccountId, string recipientAccountNumber, decimal amount, string currency, string? description = null, bool isInstant = false);
+    Task<List<PaymentDto>> GetPaymentsByAccountAsync(Guid accountId, int limit = 50);
+
+    // Standing orders
+    Task<StandingOrderDto> CreateStandingOrderAsync(Guid senderAccountId, string recipientAccountNumber, decimal amount, string currency, string interval, DateTime firstExecutionDate, string? description = null, DateTime? endDate = null);
+    Task<List<StandingOrderDto>> GetStandingOrdersByAccountAsync(Guid accountId);
+    Task CancelStandingOrderAsync(Guid standingOrderId);
+
+    // Payment templates
+    Task<PaymentTemplateDto> CreatePaymentTemplateAsync(Guid ownerAccountId, string name, string recipientAccountNumber, string currency, string? recipientName = null, decimal? defaultAmount = null, string? defaultDescription = null);
+    Task<List<PaymentTemplateDto>> GetPaymentTemplatesByAccountAsync(Guid accountId);
+    Task DeletePaymentTemplateAsync(Guid templateId);
 }

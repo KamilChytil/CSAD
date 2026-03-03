@@ -1,0 +1,103 @@
+using FairBank.Payments.Application.DTOs;
+using FairBank.Payments.Application.Ports;
+using FairBank.Payments.Domain.Entities;
+using FairBank.Payments.Domain.Enums;
+using FairBank.Payments.Domain.Ports;
+using FairBank.SharedKernel.Application;
+using MediatR;
+
+namespace FairBank.Payments.Application.Payments.Commands.SendPayment;
+
+public sealed class SendPaymentCommandHandler(
+    IPaymentRepository paymentRepository,
+    IAccountsServiceClient accountsClient,
+    IUnitOfWork unitOfWork) : IRequestHandler<SendPaymentCommand, PaymentResponse>
+{
+    public async Task<PaymentResponse> Handle(SendPaymentCommand request, CancellationToken ct)
+    {
+        // 1. Validate sender account exists
+        var senderAccount = await accountsClient.GetAccountByIdAsync(request.SenderAccountId, ct)
+            ?? throw new InvalidOperationException("Sender account not found.");
+
+        if (!senderAccount.IsActive)
+            throw new InvalidOperationException("Sender account is not active.");
+
+        // 2. Parse currency
+        if (!Enum.TryParse<Currency>(request.Currency, true, out var currency))
+            throw new ArgumentException($"Invalid currency: {request.Currency}");
+
+        // 3. Check sufficient balance
+        if (senderAccount.Balance < request.Amount)
+            throw new InvalidOperationException("Insufficient funds.");
+
+        // 4. Determine payment type
+        var paymentType = request.IsInstant ? PaymentType.Instant : PaymentType.Standard;
+
+        // 5. Check if it's an internal transfer (same FAIR- prefix)
+        var recipientAccount = await accountsClient.GetAccountByNumberAsync(request.RecipientAccountNumber, ct);
+        if (recipientAccount is not null && senderAccount.OwnerId == recipientAccount.OwnerId)
+            paymentType = PaymentType.InternalTransfer;
+
+        // 6. Create payment record
+        var payment = Payment.Create(
+            senderAccountId: request.SenderAccountId,
+            senderAccountNumber: senderAccount.AccountNumber,
+            recipientAccountNumber: request.RecipientAccountNumber,
+            amount: request.Amount,
+            currency: currency,
+            type: paymentType,
+            description: request.Description,
+            recipientAccountId: recipientAccount?.Id);
+
+        await paymentRepository.AddAsync(payment, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        // 7. Execute the transfer via Accounts service
+        var withdrawOk = await accountsClient.WithdrawAsync(
+            request.SenderAccountId, request.Amount, request.Currency,
+            $"Platba → {request.RecipientAccountNumber}: {request.Description ?? ""}".Trim(), ct);
+
+        if (!withdrawOk)
+        {
+            payment.MarkFailed("Withdraw from sender account failed.");
+            await paymentRepository.UpdateAsync(payment, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+            return MapToResponse(payment);
+        }
+
+        // 8. Deposit to recipient (if internal)
+        if (recipientAccount is not null)
+        {
+            var depositOk = await accountsClient.DepositAsync(
+                recipientAccount.Id, request.Amount, request.Currency,
+                $"Příchozí platba ← {senderAccount.AccountNumber}: {request.Description ?? ""}".Trim(), ct);
+
+            if (!depositOk)
+            {
+                // Compensate — refund sender
+                await accountsClient.DepositAsync(
+                    request.SenderAccountId, request.Amount, request.Currency,
+                    $"Vrácení platby (selhání převodu na {request.RecipientAccountNumber})", ct);
+
+                payment.MarkFailed("Deposit to recipient account failed.");
+                await paymentRepository.UpdateAsync(payment, ct);
+                await unitOfWork.SaveChangesAsync(ct);
+                return MapToResponse(payment);
+            }
+        }
+
+        // 9. Mark completed
+        payment.MarkCompleted(recipientAccount?.Id);
+        await paymentRepository.UpdateAsync(payment, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        return MapToResponse(payment);
+    }
+
+    private static PaymentResponse MapToResponse(Payment p) => new(
+        p.Id, p.SenderAccountId, p.RecipientAccountId,
+        p.SenderAccountNumber, p.RecipientAccountNumber,
+        p.Amount, p.Currency.ToString(), p.Description,
+        p.Type.ToString(), p.Status.ToString(),
+        p.CreatedAt, p.CompletedAt, p.FailureReason);
+}
