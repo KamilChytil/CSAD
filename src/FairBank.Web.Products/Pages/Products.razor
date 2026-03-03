@@ -1,12 +1,41 @@
 @page "/produkty"
 @namespace FairBank.Web.Products.Pages
+@using FairBank.Web.Products.Services
 
 <PageHeader Title="PRODUKTY" />
 
 <div class="page-content">
-    <ContentCard Title="Produkty">
-        <ChildContent>
-            <p>Brzy zde najdete naše produkty.</p>
-        </ChildContent>
-    </ContentCard>
+
+    <div class="product-tabs">
+        <button class="product-tab @(_activeTab == "loan" ? "active" : "")"
+                @onclick='() => _activeTab = "loan"'>
+            <span class="tab-icon">💰</span> Osobní úvěr
+        </button>
+        <button class="product-tab @(_activeTab == "mortgage" ? "active" : "")"
+                @onclick='() => _activeTab = "mortgage"'>
+            <span class="tab-icon">🏠</span> Hypotéka
+        </button>
+        <button class="product-tab @(_activeTab == "insurance" ? "active" : "")"
+                @onclick='() => _activeTab = "insurance"'>
+            <span class="tab-icon">🛡️</span> Pojištění
+        </button>
+    </div>
+
+    @switch (_activeTab)
+    {
+        case "loan":
+            <LoanCalculatorPanel />
+            break;
+        case "mortgage":
+            <MortgageCalculatorPanel />
+            break;
+        case "insurance":
+            <InsurancePanel />
+            break;
+    }
+
 </div>
+
+@code {
+    private string _activeTab = "loan";
+}

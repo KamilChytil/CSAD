@@ -1,0 +1,76 @@
+@namespace FairBank.Web.Products.Pages
+@using FairBank.Web.Products.Services
+
+<ContentCard Title="Kalkulačka osobního úvěru">
+    <ChildContent>
+        <div class="calculator-form">
+            <div class="form-group">
+                <label class="form-label">Částka úvěru</label>
+                <input class="form-input" type="range" min="10000" max="2000000" step="10000"
+                       @bind="_amount" @bind:event="oninput" />
+                <div class="range-value">@_amount.ToString("N0") Kč</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Doba splácení (měsíce)</label>
+                <input class="form-input" type="range" min="6" max="96" step="6"
+                       @bind="_months" @bind:event="oninput" />
+                <div class="range-value">@_months měsíců (@(_months / 12) let @(_months % 12 > 0 ? $"a {_months % 12} měs." : ""))</div>
+            </div>
+        </div>
+
+        <div class="calc-results">
+            <div class="calc-result-primary">
+                <span class="result-label">Měsíční splátka</span>
+                <span class="result-value">@_result.MonthlyPayment.ToString("N0") Kč</span>
+            </div>
+            <div class="calc-results-grid">
+                <div class="calc-result-item">
+                    <span class="result-label">Úroková sazba</span>
+                    <span class="result-value-sm">@_result.InterestRate.ToString("F1") % p.a.</span>
+                </div>
+                <div class="calc-result-item">
+                    <span class="result-label">RPSN</span>
+                    <span class="result-value-sm">@_result.Rpsn.ToString("F1") %</span>
+                </div>
+                <div class="calc-result-item">
+                    <span class="result-label">Celkem zaplatíte</span>
+                    <span class="result-value-sm">@_result.TotalCost.ToString("N0") Kč</span>
+                </div>
+            </div>
+        </div>
+
+        <VbButton OnClick="ShowModal">Požádat o úvěr</VbButton>
+
+        <div class="representative-example">
+            <strong>Reprezentativní příklad:</strong>
+            Výše úvěru @_amount.ToString("N0") Kč, doba splácení @_months měsíců,
+            úroková sazba @_result.InterestRate.ToString("F1") % p.a. (fixní),
+            RPSN @_result.Rpsn.ToString("F1") %, měsíční splátka @_result.MonthlyPayment.ToString("N0") Kč,
+            celková částka splatná @_result.TotalCost.ToString("N0") Kč.
+        </div>
+
+        @if (_showModal)
+        {
+            <div class="modal-overlay" @onclick="HideModal">
+                <div class="modal-card" @onclick:stopPropagation>
+                    <h3>Děkujeme za váš zájem!</h3>
+                    <p>Vaše žádost o úvěr ve výši @_amount.ToString("N0") Kč byla přijata.
+                       Náš bankéř vás bude kontaktovat do 24 hodin.</p>
+                    <VbButton OnClick="HideModal">Zavřít</VbButton>
+                </div>
+            </div>
+        }
+    </ChildContent>
+</ContentCard>
+
+@code {
+    private decimal _amount = 200_000m;
+    private int _months = 60;
+    private bool _showModal;
+
+    private LoanCalculator.LoanResult _result => LoanCalculator.Calculate(_amount, _months);
+
+    private void ShowModal() => _showModal = true;
+    private void HideModal() => _showModal = false;
+}
