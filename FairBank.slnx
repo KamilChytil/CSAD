@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Identity/">
+    <Project Path="src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Domain/FairBank.Identity.Domain.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Infrastructure/FairBank.Identity.Infrastructure.csproj" />
