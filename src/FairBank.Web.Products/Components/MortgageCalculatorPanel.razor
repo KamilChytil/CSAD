@@ -1,5 +1,7 @@
 @namespace FairBank.Web.Products.Pages
 @using FairBank.Web.Products.Services
+@inject IFairBankApi Api
+@inject AuthStateService Auth
 
 <ContentCard Title="Hypoteční kalkulačka">
     <ChildContent>
@@ -64,7 +66,10 @@
             </div>
         </div>
 
-        <VbButton OnClick="ShowModal">Požádat o hypotéku</VbButton>
+        @if (!Auth.IsStaff)
+        {
+            <VbButton OnClick="ShowModal">Požádat o hypotéku</VbButton>
+        }
 
         <div class="representative-example">
             <strong>Reprezentativní příklad:</strong>
@@ -80,10 +85,38 @@
         {
             <div class="modal-overlay" @onclick="HideModal">
                 <div class="modal-card" @onclick:stopPropagation>
-                    <h3>Děkujeme za váš zájem!</h3>
-                    <p>Vaše žádost o hypotéku ve výši @_loanAmount.ToString("N0") Kč byla přijata.
-                       Náš hypoteční specialista vás bude kontaktovat do 48 hodin.</p>
-                    <VbButton OnClick="HideModal">Zavřít</VbButton>
+                    @if (_submitSuccess)
+                    {
+                        <h3>Žádost odeslána!</h3>
+                        <p>Vaše žádost byla přijata a čeká na schválení bankéřem. Stav můžete sledovat v záložce "Moje produkty".</p>
+                        <VbButton OnClick="HideModal">Zavřít</VbButton>
+                    }
+                    else if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <h3>Chyba</h3>
+                        <p>@_errorMessage</p>
+                        <VbButton OnClick="HideModal">Zavřít</VbButton>
+                    }
+                    else
+                    {
+                        <h3>Potvrdit žádost o hypotéku</h3>
+                        <div class="modal-summary">
+                            <div class="summary-row"><span>Cena nemovitosti:</span> <strong>@_propertyPrice.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Výše úvěru:</span> <strong>@_loanAmount.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Doba splácení:</span> <strong>@_years let</strong></div>
+                            <div class="summary-row"><span>Fixace:</span> <strong>@_fixation @(_fixation == 1 ? "rok" : _fixation < 5 ? "roky" : "let")</strong></div>
+                            <div class="summary-row"><span>Úroková sazba:</span> <strong>@_result.InterestRate.ToString("F2") % p.a.</strong></div>
+                            <div class="summary-row"><span>LTV:</span> <strong>@_result.Ltv.ToString("F0") %</strong></div>
+                            <div class="summary-row"><span>Měsíční splátka:</span> <strong>@_result.MonthlyPayment.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Celkem zaplatíte:</span> <strong>@_result.TotalCost.ToString("N0") Kč</strong></div>
+                        </div>
+                        <div class="modal-actions">
+                            <VbButton OnClick="SubmitApplication" Disabled="@_isSubmitting">
+                                @(_isSubmitting ? "Odesílání..." : "Odeslat žádost")
+                            </VbButton>
+                            <VbButton OnClick="HideModal">Zrušit</VbButton>
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -96,6 +129,9 @@
     private int _years = 25;
     private int _fixation = 5;
     private bool _showModal;
+    private bool _isSubmitting;
+    private bool _submitSuccess;
+    private string _errorMessage = "";
 
     private decimal _maxLoan => Math.Floor(_propertyPrice * 0.8m / 100_000m) * 100_000m;
 
@@ -108,6 +144,44 @@
             _loanAmount = Math.Min(val, _maxLoan);
     }
 
-    private void ShowModal() => _showModal = true;
-    private void HideModal() => _showModal = false;
+    private void ShowModal()
+    {
+        _showModal = true;
+        _submitSuccess = false;
+        _errorMessage = "";
+    }
+
+    private void HideModal()
+    {
+        _showModal = false;
+        _isSubmitting = false;
+    }
+
+    private async Task SubmitApplication()
+    {
+        _isSubmitting = true;
+        try
+        {
+            var parameters = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                propertyPrice = _propertyPrice,
+                loanAmount = _loanAmount,
+                years = _years,
+                fixation = _fixation,
+                interestRate = _result.InterestRate,
+                ltv = _result.Ltv,
+                monthlyPayment = _result.MonthlyPayment
+            });
+            await Api.SubmitProductApplicationAsync(Auth.CurrentUser!.Id, "Mortgage", parameters, _result.MonthlyPayment);
+            _submitSuccess = true;
+        }
+        catch
+        {
+            _errorMessage = "Žádost se nepodařilo odeslat. Zkuste to prosím později.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
 }
