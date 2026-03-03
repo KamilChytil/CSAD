@@ -111,6 +111,22 @@ services:
     networks:
       - backend
 
+  chat-api:
+    build:
+      context: .
+      dockerfile: src/Services/Chat/FairBank.Chat.Api/Dockerfile
+    container_name: fairbank-chat-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=chat_service"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - backend
+
   # ─── PostgreSQL Primary ──────────────────────────────────
   postgres-primary:
     image: postgres:16-alpine

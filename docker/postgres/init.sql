@@ -11,6 +11,7 @@ $$;
 CREATE SCHEMA IF NOT EXISTS identity_service;
 CREATE SCHEMA IF NOT EXISTS accounts_service;
 CREATE SCHEMA IF NOT EXISTS payments_service;
+CREATE SCHEMA IF NOT EXISTS chat_service;
 
 -- Grant permissions
 GRANT CONNECT ON DATABASE fairbank TO fairbank_app;
