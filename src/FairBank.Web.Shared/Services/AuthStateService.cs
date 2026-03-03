@@ -18,6 +18,13 @@ public sealed class AuthStateService
 
     public bool IsAdmin => _currentUser?.Role == "Admin";
 
+    public bool IsBanker => _currentUser?.Role == "Banker";
+
+    public bool IsChild => _currentUser?.Role == "Child";
+
+    /// <summary>Admin or Banker — staff that can review product applications.</summary>
+    public bool IsStaff => IsAdmin || IsBanker;
+
     public async Task InitializeAsync(IJSRuntime js)
     {
         try

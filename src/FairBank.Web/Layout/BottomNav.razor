@@ -23,14 +23,24 @@
         <span class="nav-icon">💱</span>
         <span class="nav-label">Kurzy</span>
     </NavLink>
-    <NavLink class="nav-item" href="produkty">
-        <span class="nav-icon">🏦</span>
-        <span class="nav-label">Produkty</span>
-    </NavLink>
+    @if (!Auth.IsChild)
+    {
+        <NavLink class="nav-item" href="produkty">
+            <span class="nav-icon">🏦</span>
+            <span class="nav-label">Produkty</span>
+        </NavLink>
+    }
     <NavLink class="nav-item" href="zpravy">
         <span class="nav-icon">💬</span>
         <span class="nav-label">Zprávy</span>
     </NavLink>
+    @if (Auth.IsBanker)
+    {
+        <NavLink class="nav-item" href="sprava">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Správa</span>
+        </NavLink>
+    }
     @if (Auth.IsAdmin)
     {
         <NavLink class="nav-item" href="admin">
@@ -38,13 +48,10 @@
             <span class="nav-label">Admin</span>
         </NavLink>
     }
-    else
-    {
-        <NavLink class="nav-item" href="profil">
-            <span class="nav-icon">👤</span>
-            <span class="nav-label">Profil</span>
-        </NavLink>
-    }
+    <NavLink class="nav-item" href="profil">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Profil</span>
+    </NavLink>
 </nav>
 
 @code {
