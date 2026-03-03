@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FairBank.Accounts.Domain.Enums;
 using FairBank.Accounts.Domain.Events;
 using FairBank.Accounts.Domain.ValueObjects;
@@ -6,16 +7,19 @@ namespace FairBank.Accounts.Domain.Aggregates;
 
 public sealed class Account
 {
-    public Guid Id { get; private set; }
-    public Guid OwnerId { get; private set; }
-    public AccountNumber AccountNumber { get; private set; } = null!;
-    public Money Balance { get; private set; } = null!;
-    public bool IsActive { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    [JsonInclude] public Guid Id { get; private set; }
+    [JsonInclude] public Guid OwnerId { get; private set; }
+    [JsonInclude] public AccountNumber AccountNumber { get; private set; } = null!;
+    [JsonInclude] public Money Balance { get; private set; } = null!;
+    [JsonInclude] public bool IsActive { get; private set; }
+    [JsonInclude] public DateTime CreatedAt { get; private set; }
 
+    [JsonIgnore]
     private readonly List<object> _uncommittedEvents = [];
 
-    private Account() { } // Marten rehydration
+    // For Marten/System.Text.Json deserialization
+    [JsonConstructor]
+    public Account() { }
 
     public static Account Create(Guid ownerId, Currency currency)
     {
@@ -41,6 +45,7 @@ public sealed class Account
 
     public void Deposit(Money amount, string description)
     {
+        EnsureInitialized();
         EnsureActive();
 
         Balance = Balance.Add(amount);
@@ -55,6 +60,7 @@ public sealed class Account
 
     public void Withdraw(Money amount, string description)
     {
+        EnsureInitialized();
         EnsureActive();
 
         Balance = Balance.Subtract(amount); // Throws if insufficient
@@ -69,6 +75,7 @@ public sealed class Account
 
     public void Deactivate()
     {
+        EnsureInitialized();
         IsActive = false;
     }
 
@@ -84,6 +91,12 @@ public sealed class Account
     {
         if (!IsActive)
             throw new InvalidOperationException("Account is not active.");
+    }
+
+    private void EnsureInitialized()
+    {
+        if (Id == Guid.Empty)
+            throw new InvalidOperationException("Account is not initialized. Use Account.Create(...) or rehydrate from events.");
     }
 
     // Marten event sourcing: Apply methods for rehydration from events

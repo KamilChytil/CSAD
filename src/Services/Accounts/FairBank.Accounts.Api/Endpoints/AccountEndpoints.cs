@@ -2,6 +2,7 @@ using FairBank.Accounts.Application.Commands.CreateAccount;
 using FairBank.Accounts.Application.Commands.DepositMoney;
 using FairBank.Accounts.Application.Commands.WithdrawMoney;
 using FairBank.Accounts.Application.Queries.GetAccountById;
+using FairBank.Accounts.Application.Commands.Roulette;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -45,6 +46,17 @@ public static class AccountEndpoints
         })
         .WithName("WithdrawMoney")
         .Produces(StatusCodes.Status200OK);
+        
+        group.MapPost("/{id:guid}/roulette/bet", async (
+                Guid id,
+                PlaceRouletteBetCommand command,
+                ISender sender) =>
+            {
+                var result = await sender.Send(command with { AccountId = id });
+                return Results.Ok(result);
+            })
+            .WithName("PlaceRouletteBet")
+            .Produces(StatusCodes.Status200OK);
 
         return group;
     }

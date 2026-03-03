@@ -14,12 +14,20 @@ public sealed class MartenAccountEventStore(IDocumentSession session) : IAccount
     public async Task AppendEventsAsync(Account account, CancellationToken ct = default)
     {
         var events = account.GetUncommittedEvents();
-
         if (events.Count == 0) return;
 
-        session.Events.StartStream<Account>(account.Id, events.ToArray());
-        account.ClearUncommittedEvents();
+        var state = await session.Events.FetchStreamStateAsync(account.Id, ct);
 
+        if (state is null)
+        {
+            session.Events.StartStream(account.Id, events.ToArray());
+        }
+        else
+        {
+            session.Events.Append(account.Id, events.ToArray());
+        }
+
+        account.ClearUncommittedEvents();
         await session.SaveChangesAsync(ct);
     }
 }
