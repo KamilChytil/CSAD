@@ -14,8 +14,9 @@ RUN dotnet publish src/FairBank.Admin.Web/FairBank.Admin.Web.csproj -c Release -
 
 FROM base AS final
 RUN addgroup -g 1000 -S appgroup && adduser -u 1000 -S appuser -G appgroup
-USER appuser:appgroup
 WORKDIR /app
 COPY --from=build /app/publish .
+RUN chown -R appuser:appgroup /app
+USER appuser:appgroup
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 ENTRYPOINT ["dotnet", "FairBank.Admin.Web.dll"]

@@ -1,22 +1,7 @@
 @inherits LayoutComponentBase
-@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <AuthorizeView>
-                <Authorized>
-                    <a href="/logout">Log Out</a>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+<main>
+    <article class="content">
+        @Body
+    </article>
+</main>
