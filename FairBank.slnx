@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/FairBank.ApiGateway/FairBank.ApiGateway.csproj" />
     <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />

@@ -60,6 +60,19 @@ services:
     networks:
       - backend
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/FairBank.ApiGateway/Dockerfile
+    container_name: fairbank-api-gateway
+    ports:
+      - "5000:8080"
+    depends_on:
+      - identity-api
+      - accounts-api
+    networks:
+      - backend
+
 networks:
   backend:
     driver: bridge
