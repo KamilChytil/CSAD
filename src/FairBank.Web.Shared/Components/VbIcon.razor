@@ -1,0 +1,11 @@
+@namespace FairBank.Web.Shared.Components
+
+<span class="vb-icon vb-icon-@Name vb-icon-@Size @Class" @attributes="AdditionalAttributes"></span>
+
+@code {
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string Size { get; set; } = "md";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string? Color { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

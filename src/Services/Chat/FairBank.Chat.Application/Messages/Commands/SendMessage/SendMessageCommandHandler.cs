@@ -10,17 +10,35 @@ public sealed record SendMessageCommand(
     string SenderName,
     string Content) : IRequest<ChatMessageResponse>;
 
-public sealed class SendMessageCommandHandler(IChatRepository repo) : IRequestHandler<SendMessageCommand, ChatMessageResponse>
+public sealed class SendMessageCommandHandler(IChatRepository msgRepo, IConversationRepository convRepo) : IRequestHandler<SendMessageCommand, ChatMessageResponse>
 {
     public async Task<ChatMessageResponse> Handle(SendMessageCommand request, CancellationToken ct)
     {
+        var conversation = await convRepo.GetByIdAsync(request.ConversationId, ct)
+                           ?? throw new InvalidOperationException("Conversation not found.");
+
+        if (conversation.Status == Domain.Enums.ConversationStatus.Closed)
+            throw new InvalidOperationException("Cannot send messages to a closed conversation.");
+
         var message = Domain.Aggregates.ChatMessage.Create(
             request.ConversationId,
             request.SenderId,
             request.SenderName,
             request.Content);
 
-        await repo.SaveMessageAsync(message, ct);
+        // Record activity to know if it's Banker or Client typing
+        // If it's a Support chat, client sends if SenderId == ClientOrChildId
+        bool isClient = request.SenderId == conversation.ClientOrChildId;
+        conversation.RecordMessageActivity(isClient);
+
+        // Auto-claim logic: If a Banker sends a message to an unassigned Support conversation, assign it to them.
+        if (!isClient && conversation.Type == Domain.Enums.ConversationType.Support && conversation.BankerOrParentId == null)
+        {
+            conversation.AssignBanker(request.SenderId);
+        }
+
+        await msgRepo.SaveMessageAsync(message, ct);
+        await convRepo.UpdateAsync(conversation, ct);
 
         return new ChatMessageResponse(
             message.Id,

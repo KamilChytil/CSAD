@@ -5,5 +5,9 @@ public sealed record ConversationDto(
     string Type,   // "Support" | "Family"
     string Label,
     string? LastMessage,
-    DateTime? LastMessageAt
+    DateTime? LastMessageAt,
+    string Status,
+    DateTime? ClosedAt,
+    Guid? AssignedBankerId,
+    string? InternalNotes
 );

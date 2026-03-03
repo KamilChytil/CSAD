@@ -7,58 +7,167 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 
-<div class="chat-container">
-    <div class="chat-header">
-        <button class="chat-back" @onclick="GoBack">←</button>
-        <h3>@_label</h3>
-    </div>
-    
-    <div class="chat-messages" id="message-list">
-        @foreach (var msg in _messages)
-        {
-            var isMine = msg.SenderId == _currentUserId;
-            <div class="message @(isMine ? "sent" : "received")">
-                @if (!isMine)
+<div class="chat-layout">
+    <div class="chat-container">
+        <div class="chat-header">
+            <button class="chat-back" @onclick="GoBack">←</button>
+            <div class="chat-header-info">
+                <h3>@_conversation?.Label</h3>
+                @if (_conversation?.Status == "Closed")
                 {
-                    <div class="message-sender">@msg.SenderName</div>
+                    <span class="badge closed-badge">Uzavřeno</span>
                 }
-                <div class="message-content">@msg.Content</div>
-                <div class="message-time">@msg.SentAt.ToShortTimeString()</div>
+                else if (_isBanker && _conversation?.AssignedBankerId == null && _conversation?.Type == "Support")
+                {
+                    <span class="badge unassigned-badge">Nepřiřazeno</span>
+                }
+            </div>
+            
+            <div class="chat-actions">
+                @if (_isBanker && _conversation?.Type == "Support")
+                {
+                    @if (_conversation?.AssignedBankerId == null && _conversation?.Status == "Active")
+                    {
+                        <button class="btn btn-primary" @onclick="ClaimChat">Převzít chat</button>
+                    }
+                    else if (_conversation?.Status == "Active")
+                    {
+                        <button class="btn btn-outline" @onclick="CloseChat">Uzavřít chat</button>
+                    }
+                }
+                else if (!_isBanker && _conversation != null)
+                {
+                    @if (_conversation.Status == "Closed")
+                    {
+                        @if (_conversation.ClosedAt.HasValue && (DateTime.UtcNow - _conversation.ClosedAt.Value).TotalHours < 2)
+                        {
+                            <button class="btn btn-primary" @onclick="ReopenChat">Znovu otevřít</button>
+                        }
+                    }
+                    else
+                    {
+                        <button class="btn btn-outline" @onclick="CloseChat">Ukončit chat</button>
+                    }
+                }
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="message-list">
+            @foreach (var msg in _messages)
+            {
+                var isMine = msg.SenderId == _currentUserId;
+                <div class="message @(isMine ? "sent" : "received")">
+                    @if (!isMine)
+                    {
+                        <div class="message-sender">@msg.SenderName</div>
+                    }
+                    <div class="message-content">@msg.Content</div>
+                    <div class="message-time">@msg.SentAt.ToLocalTime().ToShortTimeString()</div>
+                </div>
+            }
+        </div>
+
+        @if (_conversation?.Status == "Closed")
+        {
+            <div class="chat-closed-banner">
+                Tato konverzace je uzavřena.
+            </div>
+        }
+        else if (_isBanker && _conversation?.AssignedBankerId == null && _conversation?.Type == "Support")
+        {
+            <div class="chat-closed-banner action-required">
+                Nejprve chat převezměte, abyste mohli odpovídat.
+            </div>
+        }
+        else
+        {
+            <div class="chat-input">
+                <input type="text" @bind="_messageText" @onkeyup="HandleKeyUp" placeholder="Napište zprávu..." />
+                <button @onclick="SendMessage" disabled="@(string.IsNullOrWhiteSpace(_messageText))">Odeslat</button>
             </div>
         }
     </div>
 
-    <div class="chat-input">
-        <input type="text" @bind="_messageText" @onkeyup="HandleKeyUp" placeholder="Napište zprávu..." />
-        <button @onclick="SendMessage" disabled="@(string.IsNullOrWhiteSpace(_messageText))">Odeslat</button>
-    </div>
+    @if (_isBanker)
+    {
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <h4>Interní poznámky</h4>
+            </div>
+            <div class="sidebar-content">
+                <textarea class="notes-textarea" @bind="_internalNotes" placeholder="Zde můžete psát interní poznámky pro ostatní bankéře..."></textarea>
+                <button class="btn btn-primary w-100 mt-2" @onclick="SaveNotes">Uložit poznámky</button>
+                @if (_notesSaved)
+                {
+                    <div class="saved-indicator">✓ Uloženo</div>
+                }
+            </div>
+        </div>
+    }
 </div>
 
 <style>
-    .chat-container { display:flex; flex-direction:column; height:calc(100vh - 100px); max-width:800px; margin:0 auto; background:white; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
-    .chat-header { display:flex; align-items:center; gap:.75rem; padding:1rem; border-bottom:1px solid #eee; background:#f8f9fa; border-radius:8px 8px 0 0; }
-    .chat-back { background:none; border:none; font-size:1.2rem; cursor:pointer; padding:.25rem .5rem; border-radius:4px; }
-    .chat-back:hover { background:#e9ecef; }
-    .chat-messages { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.5rem; }
-    .message { max-width:70%; padding:.5rem 1rem; border-radius:1rem; font-size:.9rem; }
-    .message.sent { align-self:flex-end; background:#007bff; color:white; border-bottom-right-radius:.2rem; }
-    .message.received { align-self:flex-start; background:#e9ecef; color:#333; border-bottom-left-radius:.2rem; }
-    .message-sender { font-size:.75rem; font-weight:600; opacity:.7; margin-bottom:.2rem; }
-    .message-time { font-size:.7rem; opacity:.7; margin-top:.2rem; text-align:right; }
-    .chat-input { padding:1rem; border-top:1px solid #eee; display:flex; gap:.5rem; }
-    .chat-input input { flex:1; padding:.5rem; border:1px solid #ddd; border-radius:4px; outline:none; }
-    .chat-input button { padding:.5rem 1rem; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; }
-    .chat-input button:disabled { background:#ccc; }
+    .chat-layout { display: flex; gap: 1rem; max-width: 1000px; margin: 0 auto; height: calc(100vh - 100px); }
+    .chat-container { flex: 1; display:flex; flex-direction:column; background: var(--vb-bg-elevated); border-radius: var(--vb-radius-md); box-shadow: var(--vb-shadow); border: 1px solid var(--vb-card-border); overflow: hidden; }
+    .chat-sidebar { width: 300px; display:flex; flex-direction:column; background: var(--vb-bg-elevated); border-radius: var(--vb-radius-md); box-shadow: var(--vb-shadow); border: 1px solid var(--vb-card-border); }
+    
+    .chat-header { display:flex; align-items:center; gap:.75rem; padding:1rem; border-bottom:1px solid var(--vb-divider); background: var(--vb-gray-50); }
+    .chat-header-info { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+    .chat-header h3 { margin: 0; font-size: 1.1rem; color: var(--vb-text-primary); }
+    .chat-actions { display: flex; gap: 0.5rem; }
+    
+    .sidebar-header { padding: 1rem; border-bottom: 1px solid var(--vb-divider); background: var(--vb-gray-50); }
+    .sidebar-header h4 { margin: 0; font-size: 1rem; color: var(--vb-text-secondary); }
+    .sidebar-content { padding: 1rem; flex: 1; display: flex; flex-direction: column; }
+    .notes-textarea { flex: 1; resize: none; border: 1px solid var(--vb-input-border); background: var(--vb-input-bg); color: var(--vb-text-primary); border-radius: var(--vb-radius-sm); padding: 0.5rem; font-size: 0.9rem; outline: none; }
+    .notes-textarea:focus { border-color: var(--vb-red); }
+    .saved-indicator { color: var(--vb-green); font-size: 0.8rem; text-align: center; margin-top: 0.5rem; }
+    .w-100 { width: 100%; }
+    .mt-2 { margin-top: 0.5rem; }
+    
+    .badge { padding: 2px 8px; border-radius: var(--vb-radius-full); font-size: 0.75rem; font-weight: 600; }
+    .closed-badge { background: var(--vb-gray-200); color: var(--vb-gray-700); }
+    .unassigned-badge { background: #fdf0f0; color: #d11; }
+    
+    .btn { padding: 0.4rem 1rem; border-radius: var(--vb-radius-xs); font-weight: 600; cursor: pointer; border: none; font-size: 0.85rem; transition: var(--vb-transition); }
+    .btn-primary { background: var(--vb-red); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); box-shadow: var(--vb-shadow-red); }
+    .btn-outline { background: transparent; border: 1px solid var(--vb-divider); color: var(--vb-text-secondary); }
+    .btn-outline:hover { background: var(--vb-gray-100); color: var(--vb-text-primary); }
+    
+    .chat-back { background:none; border:none; font-size:1.2rem; cursor:pointer; padding:.25rem .5rem; border-radius:var(--vb-radius-xs); color: var(--vb-text-secondary); }
+    .chat-back:hover { background: var(--vb-gray-100); color: var(--vb-text-primary); }
+    
+    .chat-messages { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.5rem; background: var(--vb-bg); }
+    .message { max-width:75%; padding:.6rem 1rem; border-radius: var(--vb-radius-md); font-size:.9rem; line-height: 1.4; word-break: break-word; }
+    .message.sent { align-self:flex-end; background: var(--vb-red); color: white; border-bottom-right-radius: 2px; }
+    .message.received { align-self:flex-start; background: var(--vb-gray-100); color: var(--vb-text-primary); border-bottom-left-radius: 2px; }
+    .message-sender { font-size:.7rem; font-weight:600; color: var(--vb-text-secondary); margin-bottom:.2rem; }
+    .message-time { font-size:.7rem; color: var(--vb-text-muted); margin-top:.2rem; text-align:right; }
+    
+    .chat-input { padding:1rem; border-top:1px solid var(--vb-divider); display:flex; gap:.5rem; background: var(--vb-bg-elevated); }
+    .chat-input input { flex:1; padding:.6rem; border:1px solid var(--vb-input-border); background: var(--vb-input-bg); color: var(--vb-text-primary); border-radius: var(--vb-radius-sm); outline:none; font-size: 0.95rem; }
+    .chat-input input:focus { border-color: var(--vb-red); }
+    .chat-input button { padding:.6rem 1.2rem; background: var(--vb-red); color:white; border:none; border-radius:var(--vb-radius-xs); cursor:pointer; font-weight: 600; transition: var(--vb-transition); }
+    .chat-input button:hover:not(:disabled) { filter: brightness(1.1); box-shadow: var(--vb-shadow-red); }
+    .chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .chat-closed-banner { padding: 1rem; text-align: center; background: var(--vb-gray-50); color: var(--vb-text-muted); font-style: italic; border-top: 1px solid var(--vb-divider); }
+    .chat-closed-banner.action-required { background: #fff5f5; color: #d11; font-style: normal; font-weight: 600; }
 </style>
 
 @code {
     [Parameter] public Guid ConversationId { get; set; }
 
     private List<ChatMessageDto> _messages = new();
+    private ConversationDto? _conversation;
     private string _messageText = "";
+    private string _internalNotes = "";
+    private bool _notesSaved = false;
+    
     private Guid _currentUserId;
     private string _senderName = "";
-    private string _label = "Chat";
+    private bool _isBanker = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,29 +177,93 @@
 
         _currentUserId = session.UserId;
         _senderName = $"{session.FirstName} {session.LastName}";
+        _isBanker = session.Role == "Banker" || session.Role == "Admin";
 
         await ChatService.InitializeAsync(session.Token);
         await ChatService.JoinConversationAsync(ConversationId);
 
         _messages = (await ChatService.GetConversationMessagesAsync(ConversationId)).ToList();
         ChatService.OnMessageReceived += HandleMessageReceived;
+
+        await LoadConversationDetails(session.UserId, session.Role, _senderName);
+    }
+
+    private async Task LoadConversationDetails(Guid userId, string role, string label)
+    {
+        // To get the details of THIS conversation, we fetch all and find it. 
+        // A direct GetById endpoint would be cleaner, but we can reuse GetConversationsAsync for now
+        var convs = await ChatService.GetConversationsAsync(userId, role, label);
+        _conversation = convs.FirstOrDefault(c => c.Id == ConversationId);
+        
+        if (_conversation != null)
+        {
+            _internalNotes = _conversation.InternalNotes ?? "";
+        }
+    }
+
+    private async Task ClaimChat()
+    {
+        await ChatService.AssignConversationAsync(ConversationId, _currentUserId);
+        if (_conversation != null)
+        {
+            _conversation = _conversation with { AssignedBankerId = _currentUserId };
+        }
+    }
+
+    private async Task CloseChat()
+    {
+        await ChatService.CloseConversationAsync(ConversationId);
+        if (_conversation != null)
+        {
+            _conversation = _conversation with { Status = "Closed", ClosedAt = DateTime.UtcNow };
+        }
+    }
+
+    private async Task ReopenChat()
+    {
+        await ChatService.ReopenConversationAsync(ConversationId);
+        if (_conversation != null)
+        {
+            _conversation = _conversation with { Status = "Active", ClosedAt = null };
+        }
+    }
+
+    private async Task SaveNotes()
+    {
+        await ChatService.UpdateConversationNotesAsync(ConversationId, _internalNotes);
+        _notesSaved = true;
+        await Task.Delay(2000);
+        _notesSaved = false;
+        StateHasChanged();
     }
 
     private void HandleMessageReceived(ChatMessageDto message)
     {
         if (message.ConversationId != ConversationId) return;
-        // Avoid echo for messages we already added optimistically
         if (_messages.Any(m => m.Id == message.Id)) return;
+        
         _messages.Add(message);
+        
+        // If banker receives a client message, technically it resets unassigned timeout.
+        // The API handles that, we just show messages physically.
+        
         InvokeAsync(StateHasChanged);
     }
 
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(_messageText)) return;
+        
+        if (_isBanker && _conversation?.AssignedBankerId == null)
+            return; // UI also prevents this, but double check
+
         var text = _messageText;
         _messageText = "";
         await ChatService.SendMessageAsync(ConversationId, _currentUserId, _senderName, text);
+        
+        // SendMessageAsync creates local optimistic message or wait for ReceiveMessage?
+        // Let's rely on ReceiveMessage echo, or optimistic insert. The old code relied on echo mostly, 
+        // but could feel slow. We just clear the box.
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)

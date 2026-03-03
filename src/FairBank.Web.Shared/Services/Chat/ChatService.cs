@@ -4,17 +4,34 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace FairBank.Web.Shared.Services.Chat;
 
-public sealed class ChatService : IAsyncDisposable
+public interface IChatService
 {
-    private readonly HttpClient _http;
+    event Action<ChatMessageDto>? OnMessageReceived;
+    Task InitializeAsync(string token);
+    Task<IEnumerable<ConversationDto>> GetConversationsAsync(Guid userId, string role, string label, Guid? parentId = null);
+    Task<IEnumerable<ChatMessageDto>> GetConversationMessagesAsync(Guid conversationId);
+    Task JoinConversationAsync(Guid conversationId);
+    Task LeaveConversationAsync(Guid conversationId);
+    Task SendMessageAsync(Guid conversationId, Guid senderId, string senderName, string content);
+    
+    // Banker tool methods
+    Task AssignConversationAsync(Guid conversationId, Guid bankerId);
+    Task UpdateConversationNotesAsync(Guid conversationId, string notes);
+    Task CloseConversationAsync(Guid conversationId);
+    Task ReopenConversationAsync(Guid conversationId);
+}
+
+public sealed class ChatService : IChatService, IAsyncDisposable
+{
+    private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
     private HubConnection? _hubConnection;
 
     public event Action<ChatMessageDto>? OnMessageReceived;
 
-    public ChatService(HttpClient http, string baseUrl)
+    public ChatService(HttpClient httpClient, string baseUrl)
     {
-        _http = http;
+        _httpClient = httpClient;
         _baseUrl = baseUrl.TrimEnd('/');
     }
 
@@ -23,27 +40,46 @@ public sealed class ChatService : IAsyncDisposable
     public async Task<IEnumerable<ConversationDto>> GetConversationsAsync(
         Guid userId, string role, string label, Guid? parentId = null)
     {
-        var qs = $"api/v1/chat/conversations?userId={userId}&role={role}&label={Uri.EscapeDataString(label)}";
-        if (parentId.HasValue) qs += $"&parentId={parentId}";
-        try
-        {
-            return await _http.GetFromJsonAsync<IEnumerable<ConversationDto>>(qs)
-                   ?? Enumerable.Empty<ConversationDto>();
-        }
-        catch { return Enumerable.Empty<ConversationDto>(); }
+        var url = $"/api/v1/chat/conversations?userId={userId}&role={Uri.EscapeDataString(role)}&label={Uri.EscapeDataString(label ?? "")}";
+        if (parentId.HasValue)
+            url += $"&parentId={parentId.Value}";
+
+        var response = await _httpClient.GetFromJsonAsync<IEnumerable<ConversationDto>>(url);
+        return response ?? Array.Empty<ConversationDto>();
     }
 
     // ── Message history ────────────────────────────────────────────────────
 
     public async Task<IEnumerable<ChatMessageDto>> GetConversationMessagesAsync(Guid conversationId)
     {
-        try
-        {
-            return await _http.GetFromJsonAsync<IEnumerable<ChatMessageDto>>(
-                       $"api/v1/chat/conversations/{conversationId}/messages")
-                   ?? Enumerable.Empty<ChatMessageDto>();
-        }
-        catch { return Enumerable.Empty<ChatMessageDto>(); }
+        var response = await _httpClient.GetFromJsonAsync<IEnumerable<ChatMessageDto>>($"/api/v1/chat/conversations/{conversationId}/messages");
+        return response ?? Array.Empty<ChatMessageDto>();
+    }
+
+    // Banker tool methods implementations
+    public async Task AssignConversationAsync(Guid conversationId, Guid bankerId)
+    {
+        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/assign?bankerId={bankerId}", null);
+    }
+
+    public async Task UpdateConversationNotesAsync(Guid conversationId, string notes)
+    {
+        await _httpClient.PatchAsJsonAsync($"/api/v1/chat/conversations/{conversationId}/notes", notes);
+    }
+
+    public async Task TransferChatAsync(Guid conversationId, Guid targetBankerId)
+    {
+        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/transfer?bankerId={targetBankerId}", null);
+    }
+
+    public async Task CloseConversationAsync(Guid conversationId)
+    {
+        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/close", null);
+    }
+
+    public async Task ReopenConversationAsync(Guid conversationId)
+    {
+        await _httpClient.PostAsync($"/api/v1/chat/conversations/{conversationId}/reopen", null);
     }
 
     // ── SignalR ────────────────────────────────────────────────────────────

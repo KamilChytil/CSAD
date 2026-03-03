@@ -6,6 +6,7 @@ using FairBank.Chat.Infrastructure;
 using FairBank.Chat.Infrastructure.Persistence;
 using MediatR;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,6 +87,37 @@ app.MapGet("/api/v1/chat/conversations/{id:guid}/messages", async (Guid id, IMed
 {
     var messages = await mediator.Send(new GetConversationHistoryQuery(id));
     return Results.Ok(messages);
+});
+
+// ── BANKER TOOLS ────────────────────────────────────────────────────────
+app.MapPost("/api/v1/chat/conversations/{id:guid}/assign", async (ISender sender, Guid id, [FromQuery] Guid bankerId) =>
+{
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId));
+    return Results.NoContent();
+});
+
+app.MapPatch("/api/v1/chat/conversations/{id:guid}/notes", async (ISender sender, Guid id, [FromBody] string notes) =>
+{
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.UpdateNotes.UpdateConversationNotesCommand(id, notes));
+    return Results.NoContent();
+});
+
+app.MapPost("/api/v1/chat/conversations/{id:guid}/close", async (ISender sender, Guid id) =>
+{
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.CloseConversation.CloseConversationCommand(id));
+    return Results.NoContent();
+});
+
+app.MapPost("/api/v1/chat/conversations/{id:guid}/reopen", async (ISender sender, Guid id) =>
+{
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.ReopenConversation.ReopenConversationCommand(id));
+    return Results.NoContent();
+});
+
+app.MapPost("/api/v1/chat/conversations/{id:guid}/transfer", async (ISender sender, Guid id, [FromQuery] Guid bankerId) =>
+{
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId));
+    return Results.NoContent();
 });
 
 // ── SignalR Hub ────────────────────────────────────────────────────────────

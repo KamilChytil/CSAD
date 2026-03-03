@@ -22,6 +22,11 @@ public sealed class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbC
         conv.Property(c => c.BankerOrParentId);
         conv.Property(c => c.Label).IsRequired().HasMaxLength(200);
         conv.Property(c => c.CreatedAt).IsRequired();
+        conv.Property(c => c.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
+        conv.Property(c => c.ClosedAt);
+        conv.Property(c => c.InternalNotes).HasMaxLength(4000);
+        conv.Property(c => c.LastClientMessageAt);
+        conv.Property(c => c.LastBankerMessageAt);
 
         // ── ChatMessage ───────────────────────────────────────────────────
         var msg = modelBuilder.Entity<ChatMessage>();
