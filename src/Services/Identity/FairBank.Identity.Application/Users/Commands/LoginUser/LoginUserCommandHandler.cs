@@ -6,9 +6,9 @@ using MediatR;
 namespace FairBank.Identity.Application.Users.Commands.LoginUser;
 
 public sealed class LoginUserCommandHandler(IUserRepository userRepository)
-    : IRequestHandler<LoginUserCommand, UserResponse?>
+    : IRequestHandler<LoginUserCommand, LoginResponse?>
 {
-    public async Task<UserResponse?> Handle(LoginUserCommand request, CancellationToken ct)
+    public async Task<LoginResponse?> Handle(LoginUserCommand request, CancellationToken ct)
     {
         Email email;
         try
@@ -32,13 +32,15 @@ public sealed class LoginUserCommandHandler(IUserRepository userRepository)
         if (user.PasswordHash != passwordHash)
             return null;
 
-        return new UserResponse(
-            user.Id,
-            user.FirstName,
-            user.LastName,
-            user.Email.Value,
-            user.Role,
-            user.IsActive,
-            user.CreatedAt);
+        // Dummy token and session for now to satisfy the frontend
+        return new LoginResponse(
+            Token: "dummy-jwt-token-" + Guid.NewGuid().ToString("N"),
+            UserId: user.Id,
+            Email: user.Email.Value,
+            FirstName: user.FirstName,
+            LastName: user.LastName,
+            Role: user.Role.ToString(),
+            SessionId: Guid.NewGuid(),
+            ExpiresAt: DateTime.UtcNow.AddHours(1));
     }
 }

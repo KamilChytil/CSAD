@@ -142,7 +142,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     {
         try
         {
-            var response = await http.PostAsJsonAsync("api/v1/auth/register", request);
+            var response = await http.PostAsJsonAsync("api/v1/users/register", request);
 
             if (!response.IsSuccessStatusCode) return null;
 
@@ -158,33 +158,9 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     {
         if (_currentSession is null) return false;
 
-        try
-        {
-            http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentSession.Token);
-
-            var response = await http.GetAsync($"api/v1/auth/session/{_currentSession.SessionId}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                await LogoutAsync();
-                return false;
-            }
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-        finally
-        {
-            if (_currentSession is not null)
-            {
-                http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentSession.Token);
-            }
-        }
+        // Backend doesn't have session validation yet, but we'll return true if we have a locally valid session
+        // to avoid constant redirection to login.
+        return await Task.FromResult(_currentSession.ExpiresAt > DateTime.UtcNow);
     }
 
     public void ResetInactivityTimer()

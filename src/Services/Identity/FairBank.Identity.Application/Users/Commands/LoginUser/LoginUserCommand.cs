@@ -5,4 +5,4 @@ namespace FairBank.Identity.Application.Users.Commands.LoginUser;
 
 public sealed record LoginUserCommand(
     string Email,
-    string Password) : IRequest<UserResponse?>;
+    string Password) : IRequest<LoginResponse?>;

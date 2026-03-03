@@ -1,5 +1,6 @@
-@page "/prihlaseni"
+@page "/login"
 @namespace FairBank.Web.Auth.Pages
+@layout FairBank.Web.Shared.Components.LoginLayout
 @inject IAuthService Auth
 @inject NavigationManager Nav
 
@@ -98,7 +99,7 @@
 
         <div class="auth-footer">
             <span>Nemáte účet?</span>
-            <a class="link-action" href="registrace">Zaregistrovat se</a>
+            <a class="link-action" href="register">Zaregistrovat se</a>
         </div>
     </div>
 </div>

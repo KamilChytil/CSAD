@@ -1,5 +1,6 @@
-@page "/registrace"
+@page "/register"
 @namespace FairBank.Web.Auth.Pages
+@layout FairBank.Web.Shared.Components.LoginLayout
 @inject IAuthService Auth
 @inject NavigationManager Nav
 
@@ -26,7 +27,7 @@
                     <p>Nyní se můžete přihlásit.</p>
                 </div>
             </div>
-            <VbButton OnClick="@(() => Nav.NavigateTo("/prihlaseni"))">
+            <VbButton OnClick="@(() => Nav.NavigateTo("/login"))">
                 Přejít na přihlášení
             </VbButton>
         }
@@ -251,7 +252,7 @@
 
             <div class="auth-footer">
                 <span>Již máte účet?</span>
-                <a class="link-action" href="prihlaseni">Přihlásit se</a>
+                <a class="link-action" href="login">Přihlásit se</a>
             </div>
         }
     </div>

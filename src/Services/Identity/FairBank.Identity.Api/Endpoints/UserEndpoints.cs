@@ -1,6 +1,7 @@
 using FairBank.Identity.Application.Users.Commands.CreateChild;
 using FairBank.Identity.Application.Users.Commands.LoginUser;
 using FairBank.Identity.Application.Users.Commands.RegisterUser;
+using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Application.Users.Queries.GetChildren;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
 using MediatR;
@@ -29,7 +30,7 @@ public static class UserEndpoints
             return result is not null ? Results.Ok(result) : Results.Unauthorized();
         })
         .WithName("LoginUser")
-        .Produces(StatusCodes.Status200OK)
+        .Produces<LoginResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest);
 
