@@ -1,0 +1,12 @@
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.AdminLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(Layout.AdminLayout)">
+            <div class="page-content">
+                <p class="empty-state">Stránka nenalezena</p>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>
