@@ -14,7 +14,7 @@
                 <div class="form-group">
                     <label class="form-label">Částka</label>
                     <input class="form-input" type="number" min="0" step="0.01"
-                           @bind="_amount" @bind:event="oninput" />
+                           @bind="_amount" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Z měny</label>
@@ -189,7 +189,6 @@
                 _displayRates.Add(new DisplayRate(
                     CurrencyConverter.GetFlag(code),
                     code.ToUpperInvariant(),
-                    CurrencyConverter.GetName(code),
                     rateFromCzk,
                     1m / rateFromCzk));
             }
@@ -208,5 +207,5 @@
             Convert();
     }
 
-    private sealed record DisplayRate(string Flag, string Code, string Name, decimal RateFromCzk, decimal RateToCzk);
+    private sealed record DisplayRate(string Flag, string Code, decimal RateFromCzk, decimal RateToCzk);
 }
