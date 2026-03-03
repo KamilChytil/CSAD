@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Services/Accounts/FairBank.Accounts.Domain/FairBank.Accounts.Domain.csproj" />
+    <ProjectReference Include="../../src/Services/Accounts/FairBank.Accounts.Application/FairBank.Accounts.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
