@@ -58,4 +58,32 @@ public class UserTests
         user.IsActive.Should().BeTrue();
         user.DeletedAt.Should().BeNull();
     }
+
+    [Fact]
+    public void CreateChild_ShouldSetParentIdAndChildRole()
+    {
+        var parentId = Guid.NewGuid();
+        var child = User.CreateChild(
+            "Petr", "Novák",
+            Email.Create("petr@example.com"),
+            "hashedpw",
+            parentId);
+
+        child.ParentId.Should().Be(parentId);
+        child.Role.Should().Be(UserRole.Child);
+        child.FirstName.Should().Be("Petr");
+        child.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateChild_WithEmptyName_ShouldThrow()
+    {
+        var act = () => User.CreateChild(
+            "", "Novák",
+            Email.Create("petr@example.com"),
+            "hashedpw",
+            Guid.NewGuid());
+
+        act.Should().Throw<ArgumentException>();
+    }
 }

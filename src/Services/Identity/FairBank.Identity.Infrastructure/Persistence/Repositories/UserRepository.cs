@@ -32,4 +32,9 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
     {
         return await db.Users.AnyAsync(u => u.Email.Value == email.Value, ct);
     }
+
+    public async Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default)
+    {
+        return await db.Users.Where(u => u.ParentId == parentId).ToListAsync(ct);
+    }
 }
