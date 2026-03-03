@@ -60,9 +60,19 @@ body {
     box-shadow: var(--vb-shadow-lg);
 }
 
+.vb-content-area {
+    flex: 1;
+    min-width: 0;
+}
+
 .vb-main {
     padding-bottom: calc(var(--vb-nav-height) + 16px);
     min-height: 100dvh;
+}
+
+/* ── Side Navigation (hidden on mobile) ──────────────────── */
+.side-nav {
+    display: none;
 }
 
 /* ── Page Header ─────────────────────────────────────────── */
@@ -1007,12 +1017,202 @@ body {
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
-@media (min-width: 431px) {
+
+/* Tablet / small desktop */
+@media (min-width: 431px) and (max-width: 599px) {
     body {
         background: var(--vb-gray-900);
     }
     .vb-app {
         border-left: 1px solid var(--vb-dark);
         border-right: 1px solid var(--vb-dark);
+    }
+}
+
+/* Desktop: ≥ 600px — sidebar layout */
+@media screen and (min-width: 600px) {
+    body {
+        background: var(--vb-gray-900);
+    }
+
+    .vb-app {
+        max-width: 1280px;
+        display: flex;
+        flex-direction: row;
+        box-shadow: none;
+        border-left: 1px solid var(--vb-dark);
+        border-right: 1px solid var(--vb-dark);
+    }
+
+    .vb-content-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+
+    .vb-main {
+        padding-bottom: 24px;
+        flex: 1;
+    }
+
+    /* Show sidebar, hide bottom nav */
+    .side-nav {
+        display: flex !important;
+        flex-direction: column;
+        width: 260px;
+        min-height: 100vh;
+        min-height: 100dvh;
+        background: var(--vb-black);
+        padding: 0;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+    }
+
+    .bottom-nav {
+        display: none !important;
+    }
+
+    /* Side-nav brand */
+    .side-nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 28px 24px 24px;
+        border-bottom: 1px solid var(--vb-dark);
+    }
+
+    .side-nav-chip .chip-outer {
+        width: 40px;
+        height: 40px;
+        border-width: 2px;
+        outline-width: 2px;
+    }
+
+    .side-nav-chip .chip-inner {
+        font-size: 17px;
+    }
+
+    .side-nav-title {
+        color: var(--vb-white);
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    /* Side-nav links */
+    .side-nav-links {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 12px;
+        gap: 4px;
+    }
+
+    .side-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px;
+        border-radius: var(--vb-radius-sm);
+        text-decoration: none;
+        color: var(--vb-gray-300);
+        font-size: 15px;
+        font-weight: 600;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .side-nav-item:hover {
+        background: var(--vb-dark);
+        color: var(--vb-white);
+    }
+
+    .side-nav-item.active {
+        background: var(--vb-red);
+        color: var(--vb-white);
+        box-shadow: 0 2px 12px rgba(196,30,58,0.3);
+    }
+
+    .side-nav-icon {
+        font-size: 20px;
+        line-height: 1;
+        width: 28px;
+        text-align: center;
+    }
+
+    .side-nav-label {
+        letter-spacing: 0.3px;
+    }
+
+    /* Side-nav footer */
+    .side-nav-footer {
+        padding: 20px 24px;
+        border-top: 1px solid var(--vb-dark);
+    }
+
+    .side-nav-tagline {
+        font-size: 11px;
+        color: var(--vb-gray-500);
+        font-style: italic;
+    }
+
+    /* Page content — wider spacing on desktop */
+    .page-content {
+        padding: 24px 32px;
+        max-width: 840px;
+    }
+
+    /* Page header stretches full width */
+    .page-header {
+        padding: 40px 32px 28px;
+    }
+
+    /* Balance card — horizontal alignment */
+    .balance-card {
+        padding: 32px;
+    }
+
+    .balance-amount {
+        font-size: 42px;
+    }
+
+    /* Buttons — not full width on desktop */
+    .vb-button {
+        max-width: 320px;
+    }
+
+    /* Forms — constrain width */
+    .form-group {
+        max-width: 480px;
+    }
+
+    /* Empty state card */
+    .empty-state-card {
+        padding: 48px 32px;
+    }
+}
+
+/* Large desktop: ≥ 900px */
+@media screen and (min-width: 900px) {
+    .side-nav {
+        width: 280px;
+    }
+
+    .page-content {
+        padding: 28px 40px;
+    }
+
+    .page-header {
+        padding: 44px 40px 32px;
+    }
+
+    .header-title {
+        font-size: 26px;
     }
 }

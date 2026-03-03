@@ -65,12 +65,12 @@
 </div>
 
 @code {
-    private string _firstName = "Jan";
-    private string _lastName = "Novák";
-    private string _email = "jan.novak@email.cz";
-    private string _role = "Klient";
+    private string _firstName = "";
+    private string _lastName = "";
+    private string _email = "";
+    private string _role = "";
     private string _accountNumber = "FAIR-1234-5678-9012";
-    private DateTime _createdAt = new(2022, 1, 15);
+    private DateTime _createdAt = DateTime.UtcNow;
 
     private bool _pushEnabled = true;
     private bool _darkMode;
@@ -93,6 +93,6 @@
     private async Task HandleLogout()
     {
         await Auth.LogoutAsync();
-        Nav.NavigateTo("/prihlaseni", forceLoad: false);
+        Nav.NavigateTo("/login", forceLoad: false);
     }
 }

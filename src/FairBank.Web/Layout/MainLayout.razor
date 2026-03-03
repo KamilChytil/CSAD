@@ -2,9 +2,12 @@
 
 <AuthGuard>
     <div class="vb-app">
-        <main class="vb-main">
-            @Body
-        </main>
-        <BottomNav />
+        <SideNav />
+        <div class="vb-content-area">
+            <main class="vb-main">
+                @Body
+            </main>
+            <BottomNav />
+        </div>
     </div>
 </AuthGuard>

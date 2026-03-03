@@ -1,0 +1,742 @@
+Build started 03-Mar-26 13:35:06.
+     1>Project "H:\Skola\CSAD\FairBank.slnx" on node 1 (Restore target(s)).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Debug|Any CPU".
+       _GetAllRestoreProjectPathItems:
+         Determining projects to restore...
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Shared\FairBank.Web.Shared.csproj" (17:13) on node 17 (_GenerateProjectRestoreGraph target(s)).
+    17>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\FairBank.Accounts.Domain.csproj" (7:8) on node 18 (_GenerateProjectRestoreGraph target(s)).
+     7>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\FairBank.Identity.Domain.csproj" (8:8) on node 10 (_GenerateProjectRestoreGraph target(s)).
+     8>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    17>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     7>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     8>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     7>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\FairBank.Accounts.Infrastructure.csproj" (4:6) on node 14 (_GenerateProjectRestoreGraph target(s)).
+     4>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+     8>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     4>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.SharedKernel\FairBank.SharedKernel.csproj" (6:7) on node 9 (_GenerateProjectRestoreGraph target(s)).
+     6>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\FairBank.Identity.Application.csproj" (2:8) on node 5 (_GenerateProjectRestoreGraph target(s)).
+     2>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.ApiGateway\FairBank.ApiGateway.csproj" (21:5) on node 1 (_GenerateProjectRestoreGraph target(s)).
+    21>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Profile\FairBank.Web.Profile.csproj" (18:6) on node 20 (_GenerateProjectRestoreGraph target(s)).
+    18>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+     2>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    18>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     2>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\FairBank.Identity.Infrastructure.csproj" (11:6) on node 15 (_GenerateProjectRestoreGraph target(s)).
+    11>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+    18>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Investments\FairBank.Web.Investments.csproj" (15:6) on node 3 (_GenerateProjectRestoreGraph target(s)).
+    15>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+     2>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+    15>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    11>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    17>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Shared\FairBank.Web.Shared.csproj" (_GenerateProjectRestoreGraph target(s)).
+     2>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    15>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Overview\FairBank.Web.Overview.csproj" (12:6) on node 11 (_GenerateProjectRestoreGraph target(s)).
+    12>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+    11>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    15>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+    12>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    11>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Auth\FairBank.Web.Auth.csproj" (10:6) on node 8 (_GenerateProjectRestoreGraph target(s)).
+    10>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+    15>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    12>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    10>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    11>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    12>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+    10>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    12>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    10>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     7>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\FairBank.Accounts.Domain.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Payments\FairBank.Web.Payments.csproj" (9:6) on node 19 (_GenerateProjectRestoreGraph target(s)).
+     9>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     4>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\FairBank.Accounts.Infrastructure.csproj" (_GenerateProjectRestoreGraph target(s)).
+     9>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (20:5) on node 6 (_GenerateProjectRestoreGraph target(s)).
+    20>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    21>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    20>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    21>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Savings\FairBank.Web.Savings.csproj" (14:6) on node 13 (_GenerateProjectRestoreGraph target(s)).
+    14>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    18>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Profile\FairBank.Web.Profile.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\FairBank.Accounts.Application.csproj" (3:8) on node 2 (_GenerateProjectRestoreGraph target(s)).
+     3>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+     6>Done Building Project "H:\Skola\CSAD\src\FairBank.SharedKernel\FairBank.SharedKernel.csproj" (_GenerateProjectRestoreGraph target(s)).
+     8>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\FairBank.Identity.Domain.csproj" (_GenerateProjectRestoreGraph target(s)).
+     3>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\FairBank.Accounts.UnitTests.csproj" (13:5) on node 16 (_GenerateProjectRestoreGraph target(s)).
+    13>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+     3>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    13>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+    10>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Auth\FairBank.Web.Auth.csproj" (_GenerateProjectRestoreGraph target(s)).
+    13>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\FairBank.Accounts.Api.csproj" (19:5) on node 7 (_GenerateProjectRestoreGraph target(s)).
+    19>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+    12>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Overview\FairBank.Web.Overview.csproj" (_GenerateProjectRestoreGraph target(s)).
+    19>AddPrunePackageReferences:
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    15>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Investments\FairBank.Web.Investments.csproj" (_GenerateProjectRestoreGraph target(s)).
+    19>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    20>Done Building Project "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\FairBank.Identity.Api.csproj" (16:5) on node 4 (_GenerateProjectRestoreGraph target(s)).
+    16>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\FairBank.Identity.UnitTests.csproj" (5:5) on node 12 (_GenerateProjectRestoreGraph target(s)).
+     5>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+    16>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     5>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+    16>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+     5>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    16>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    14>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Savings\FairBank.Web.Savings.csproj" (_GenerateProjectRestoreGraph target(s)).
+    11>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\FairBank.Identity.Infrastructure.csproj" (_GenerateProjectRestoreGraph target(s)).
+    21>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    19>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\FairBank.Accounts.Api.csproj" (_GenerateProjectRestoreGraph target(s)).
+     3>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\FairBank.Accounts.Application.csproj" (_GenerateProjectRestoreGraph target(s)).
+     5>Done Building Project "H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\FairBank.Identity.UnitTests.csproj" (_GenerateProjectRestoreGraph target(s)).
+     2>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\FairBank.Identity.Application.csproj" (_GenerateProjectRestoreGraph target(s)).
+    16>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\FairBank.Identity.Api.csproj" (_GenerateProjectRestoreGraph target(s)).
+     9>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Payments\FairBank.Web.Payments.csproj" (_GenerateProjectRestoreGraph target(s)).
+    21>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref
+    13>Done Building Project "H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\FairBank.Accounts.UnitTests.csproj" (_GenerateProjectRestoreGraph target(s)).
+    21>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    21>Done Building Project "H:\Skola\CSAD\src\FairBank.ApiGateway\FairBank.ApiGateway.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Project "H:\Skola\CSAD\FairBank.slnx" (1) is building "H:\Skola\CSAD\src\FairBank.Web.Admin\FairBank.Web.Admin.csproj" (22:4) on node 1 (_GenerateProjectRestoreGraph target(s)).
+    22>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\data\PackageOverrides.txt
+    22>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Admin\FairBank.Web.Admin.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Restore:
+         X.509 certificate chain validation will use the default trust store selected by .NET for code signing.
+         X.509 certificate chain validation will use the default trust store selected by .NET for timestamping.
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.ApiGateway\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.SharedKernel\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Payments\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Savings\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Admin\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Overview\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Investments\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Profile\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\FairBank.Web.Auth\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\obj\project.assets.json
+         Restored H:\Skola\CSAD\src\FairBank.Web.Profile\FairBank.Web.Profile.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\FairBank.Identity.UnitTests.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\FairBank.Accounts.Application.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\FairBank.Identity.Infrastructure.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\FairBank.Accounts.Infrastructure.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Shared\FairBank.Web.Shared.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\FairBank.Identity.Domain.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\FairBank.Identity.Application.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\FairBank.Accounts.Api.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Admin\FairBank.Web.Admin.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.ApiGateway\FairBank.ApiGateway.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Auth\FairBank.Web.Auth.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Payments\FairBank.Web.Payments.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\FairBank.Accounts.UnitTests.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Overview\FairBank.Web.Overview.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Investments\FairBank.Web.Investments.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\FairBank.Web.Savings\FairBank.Web.Savings.csproj (in 52 ms).
+         Restored H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\FairBank.Accounts.Domain.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\FairBank.SharedKernel\FairBank.SharedKernel.csproj (in 51 ms).
+         Restored H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\FairBank.Identity.Api.csproj (in 51 ms).
+         
+         NuGet Config files used:
+             C:\Users\adtom\AppData\Roaming\NuGet\NuGet.Config
+         
+         Feeds used:
+             https://api.nuget.org/v3/index.json
+         All projects are up-to-date for restore.
+     1>Done Building Project "H:\Skola\CSAD\FairBank.slnx" (Restore target(s)).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" on node 1 (default targets).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Debug|Any CPU".
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Shared\FairBank.Web.Shared.csproj" (17:14) on node 6 (default targets).
+    17>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Shared.sourcelink.json' is up-to-date.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.SharedKernel\FairBank.SharedKernel.csproj" (6:8) on node 17 (default targets).
+     6>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    17>CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+     6>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+    17>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+     6>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.SharedKernel.sourcelink.json' is up-to-date.
+    17>ResolveBuildCompressedStaticWebAssetsConfiguration:
+         Accepted compressed asset 'H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz' for 'H:\Skola\CSAD\src\FairBank.Web.Shared\wwwroot\css\vabank-theme.css'.
+         Resolved 1 compressed assets for 1 candidate assets.
+     6>CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    17>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+     6>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.SharedKernel -> H:\Skola\CSAD\src\FairBank.SharedKernel\bin\Debug\net10.0\FairBank.SharedKernel.dll
+     6>Done Building Project "H:\Skola\CSAD\src\FairBank.SharedKernel\FairBank.SharedKernel.csproj" (default targets).
+    17>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Web.Shared -> H:\Skola\CSAD\src\FairBank.Web.Shared\bin\Debug\net10.0\FairBank.Web.Shared.dll
+    17>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Shared\FairBank.Web.Shared.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.ApiGateway\FairBank.ApiGateway.csproj" (21:6) on node 9 (default targets).
+    21>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _DiscoverMvcApplicationParts:
+       Skipping target "_DiscoverMvcApplicationParts" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.ApiGateway.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CreateAppHost:
+       Skipping target "_CreateAppHost" because all output files are up-to-date with respect to the input files.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.ApiGateway -> H:\Skola\CSAD\src\FairBank.ApiGateway\bin\Debug\net10.0\FairBank.ApiGateway.dll
+    21>Done Building Project "H:\Skola\CSAD\src\FairBank.ApiGateway\FairBank.ApiGateway.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\FairBank.Accounts.Domain.csproj" (7:9) on node 14 (default targets).
+     7>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Accounts.Domain.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\FairBank.Identity.Domain.csproj" (8:9) on node 15 (default targets).
+     8>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+     7>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Accounts.Domain -> H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\bin\Debug\net10.0\FairBank.Accounts.Domain.dll
+     7>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Domain\FairBank.Accounts.Domain.csproj" (default targets).
+     8>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Identity.Domain.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Investments\FairBank.Web.Investments.csproj" (15:7) on node 11 (default targets).
+    15>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+     8>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Payments\FairBank.Web.Payments.csproj" (9:7) on node 20 (default targets).
+     9>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+     8>CopyFilesToOutputDirectory:
+         FairBank.Identity.Domain -> H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\bin\Debug\net10.0\FairBank.Identity.Domain.dll
+    15>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Auth\FairBank.Web.Auth.csproj" (10:7) on node 3 (default targets).
+    10>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+     9>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+     8>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Domain\FairBank.Identity.Domain.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Profile\FairBank.Web.Profile.csproj" (18:7) on node 13 (default targets).
+    18>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    10>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Overview\FairBank.Web.Overview.csproj" (12:7) on node 19 (default targets).
+    12>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    15>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Investments.sourcelink.json' is up-to-date.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web.Savings\FairBank.Web.Savings.csproj" (14:7) on node 16 (default targets).
+    14>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    15>CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    18>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+     9>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Payments.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    12>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+    14>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+    10>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Auth.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    18>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Profile.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    12>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Overview.sourcelink.json' is up-to-date.
+    14>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Savings.sourcelink.json' is up-to-date.
+    12>CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    14>CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+     9>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    10>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    18>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    10>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    12>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+     9>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    18>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    14>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    10>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    12>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    14>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+    18>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    12>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    14>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    10>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+     9>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+    18>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+     9>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    12>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+    10>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    14>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+    15>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+     9>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    10>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    15>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+     9>CopyFilesToOutputDirectory:
+         FairBank.Web.Payments -> H:\Skola\CSAD\src\FairBank.Web.Payments\bin\Debug\net10.0\FairBank.Web.Payments.dll
+    10>CopyFilesToOutputDirectory:
+         FairBank.Web.Auth -> H:\Skola\CSAD\src\FairBank.Web.Auth\bin\Debug\net10.0\FairBank.Web.Auth.dll
+    14>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    18>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    12>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    14>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    15>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    12>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    14>CopyFilesToOutputDirectory:
+         FairBank.Web.Savings -> H:\Skola\CSAD\src\FairBank.Web.Savings\bin\Debug\net10.0\FairBank.Web.Savings.dll
+    18>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    10>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Auth\FairBank.Web.Auth.csproj" (default targets).
+     9>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Payments\FairBank.Web.Payments.csproj" (default targets).
+    12>CopyFilesToOutputDirectory:
+         FairBank.Web.Overview -> H:\Skola\CSAD\src\FairBank.Web.Overview\bin\Debug\net10.0\FairBank.Web.Overview.dll
+    18>CopyFilesToOutputDirectory:
+         FairBank.Web.Profile -> H:\Skola\CSAD\src\FairBank.Web.Profile\bin\Debug\net10.0\FairBank.Web.Profile.dll
+    14>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Savings\FairBank.Web.Savings.csproj" (default targets).
+    18>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Profile\FairBank.Web.Profile.csproj" (default targets).
+    12>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Overview\FairBank.Web.Overview.csproj" (default targets).
+    15>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Web.Investments -> H:\Skola\CSAD\src\FairBank.Web.Investments\bin\Debug\net10.0\FairBank.Web.Investments.dll
+    15>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Investments\FairBank.Web.Investments.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\FairBank.Accounts.Application.csproj" (3:9) on node 18 (default targets).
+     3>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Accounts.Application.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\FairBank.Identity.Application.csproj" (2:9) on node 10 (default targets).
+     2>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+     3>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+     2>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+     3>CopyFilesToOutputDirectory:
+         FairBank.Accounts.Application -> H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\bin\Debug\net10.0\FairBank.Accounts.Application.dll
+     3>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Application\FairBank.Accounts.Application.csproj" (default targets).
+     2>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Identity.Application.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Identity.Application -> H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\bin\Debug\net10.0\FairBank.Identity.Application.dll
+     2>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Application\FairBank.Identity.Application.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (20:6) on node 7 (default targets).
+  20:6>Project "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (20:6) is building "H:\Skola\CSAD\src\FairBank.Web.Admin\FairBank.Web.Admin.csproj" (22:6) on node 17 (default targets).
+    22>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.Admin.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\FairBank.Identity.Infrastructure.csproj" (11:7) on node 8 (default targets).
+    11>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\FairBank.Accounts.UnitTests.csproj" (13:6) on node 12 (default targets).
+    13>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    11>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\FairBank.Identity.UnitTests.csproj" (5:6) on node 1 (default targets).
+     5>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    22>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\FairBank.Accounts.Infrastructure.csproj" (4:7) on node 4 (default targets).
+     4>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    13>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+    22>ResolveBuildCompressedStaticWebAssets:
+         Processing compressed asset: H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\compressed\don82ueye1-{0}-8reru2ve2o-8reru2ve2o.gz
+    11>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Identity.Infrastructure.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+     4>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+    22>_BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+     4>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Accounts.Infrastructure.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    11>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+    22>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    11>CopyFilesToOutputDirectory:
+         FairBank.Identity.Infrastructure -> H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\bin\Debug\net10.0\FairBank.Identity.Infrastructure.dll
+    22>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Web.Admin -> H:\Skola\CSAD\src\FairBank.Web.Admin\bin\Debug\net10.0\FairBank.Web.Admin.dll
+    11>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Infrastructure\FairBank.Identity.Infrastructure.csproj" (default targets).
+    22>Done Building Project "H:\Skola\CSAD\src\FairBank.Web.Admin\FairBank.Web.Admin.csproj" (default targets).
+     4>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Accounts.Infrastructure -> H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\bin\Debug\net10.0\FairBank.Accounts.Infrastructure.dll
+     4>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Infrastructure\FairBank.Accounts.Infrastructure.csproj" (default targets).
+    13>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Accounts.UnitTests.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Accounts.UnitTests -> H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\bin\Debug\net10.0\FairBank.Accounts.UnitTests.dll
+    13>Done Building Project "H:\Skola\CSAD\tests\FairBank.Accounts.UnitTests\FairBank.Accounts.UnitTests.csproj" (default targets).
+     5>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Identity.UnitTests.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+    20>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+     5>_CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+    20>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _DiscoverMvcApplicationParts:
+       Skipping target "_DiscoverMvcApplicationParts" because all output files are up-to-date with respect to the input files.
+     5>GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Identity.UnitTests -> H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\bin\Debug\net10.0\FairBank.Identity.UnitTests.dll
+    20>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Web.sourcelink.json' is up-to-date.
+       CoreCompile:
+         Setting DOTNET_ROOT to 'C:\Program Files\dotnet'
+         C:\Program Files\dotnet\sdk\10.0.103\Roslyn\bincore\csc.exe /noconfig /unsafe- /checked- /nowarn:1701,1702,IL2121,1701,1702 /fullpaths /nostdlib+ /platform:AnyCPU /errorreport:prompt /warn:10 /define:TRACE;DEBUG;NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER /highentropyva+ /nullable:enable /reference:H:\Skola\CSAD\src\FairBank.Web.Admin\obj\Debug\net10.0\ref\FairBank.Web.Admin.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Auth\obj\Debug\net10.0\ref\FairBank.Web.Auth.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Investments\obj\Debug\net10.0\ref\FairBank.Web.Investments.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Overview\obj\Debug\net10.0\ref\FairBank.Web.Overview.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Payments\obj\Debug\net10.0\ref\FairBank.Web.Payments.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Profile\obj\Debug\net10.0\ref\FairBank.Web.Profile.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Savings\obj\Debug\net10.0\ref\FairBank.Web.Savings.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\ref\FairBank.Web.Shared.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.authorization\10.0.3\lib\net10.0\Microsoft.AspNetCore.Authorization.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.forms\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.Forms.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.web\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.Web.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.webassembly\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.WebAssembly.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.metadata\10.0.3\lib\net10.0\Microsoft.AspNetCore.Metadata.dll /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.CSharp.dll" /reference:C:\Users\adtom\.nuget\packages\microsoft.dotnet.hotreload.webassembly.browser\10.0.103\lib\net10.0\Microsoft.DotNet.HotReload.WebAssembly.Browser.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.binder\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Binder.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.fileextensions\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.FileExtensions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.json\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Json.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.dependencyinjection.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.dependencyinjection\10.0.3\lib\net10.0\Microsoft.Extensions.DependencyInjection.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.diagnostics.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Diagnostics.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.diagnostics\10.0.3\lib\net10.0\Microsoft.Extensions.Diagnostics.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.fileproviders.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.FileProviders.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.fileproviders.physical\10.0.3\lib\net10.0\Microsoft.Extensions.FileProviders.Physical.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.filesystemglobbing\10.0.3\lib\net10.0\Microsoft.Extensions.FileSystemGlobbing.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Logging.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging\10.0.3\lib\net10.0\Microsoft.Extensions.Logging.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.options.configurationextensions\10.0.3\lib\net10.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.options\10.0.3\lib\net10.0\Microsoft.Extensions.Options.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.primitives\10.0.3\lib\net10.0\Microsoft.Extensions.Primitives.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.validation\10.0.3\lib\net10.0\Microsoft.Extensions.Validation.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.jsinterop\10.0.3\lib\net10.0\Microsoft.JSInterop.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.jsinterop.webassembly\10.0.3\lib\net10.0\Microsoft.JSInterop.WebAssembly.dll /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.VisualBasic.Core.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.VisualBasic.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.Win32.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.Win32.Registry.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\mscorlib.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\netstandard.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.AppContext.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Buffers.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Concurrent.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Immutable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.NonGeneric.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Specialized.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.Annotations.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.DataAnnotations.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.EventBasedAsync.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.TypeConverter.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Configuration.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Console.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Core.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.Common.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.DataSetExtensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Contracts.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Debug.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.DiagnosticSource.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.FileVersionInfo.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Process.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.StackTrace.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.TextWriterTraceListener.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Tools.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.TraceSource.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Tracing.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Drawing.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Drawing.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Dynamic.Runtime.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Formats.Asn1.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Formats.Tar.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.Calendars.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.Brotli.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.FileSystem.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.ZipFile.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.DriveInfo.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.Watcher.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.IsolatedStorage.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.MemoryMappedFiles.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipelines.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipes.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipes.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.UnmanagedMemoryStream.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.AsyncEnumerable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Expressions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Parallel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Queryable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Memory.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Http.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Http.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.HttpListener.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Mail.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.NameResolution.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.NetworkInformation.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Ping.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Quic.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Requests.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Security.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.ServerSentEvents.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.ServicePoint.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Sockets.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebClient.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebHeaderCollection.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebProxy.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebSockets.Client.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebSockets.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Numerics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Numerics.Vectors.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ObjectModel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.DispatchProxy.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.ILGeneration.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.Lightweight.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Metadata.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.TypeExtensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.Reader.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.ResourceManager.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.Writer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.CompilerServices.Unsafe.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.CompilerServices.VisualC.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Handles.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.JavaScript.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.RuntimeInformation.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Intrinsics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Loader.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Numerics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Formatters.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Xml.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Claims.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Algorithms.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Cng.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Csp.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Encoding.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.OpenSsl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.X509Certificates.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Principal.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Principal.Windows.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.SecureString.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ServiceModel.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ServiceProcess.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.CodePages.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encodings.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.RegularExpressions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Channels.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Overlapped.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Dataflow.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Parallel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Thread.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.ThreadPool.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Timer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Transactions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Transactions.Local.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ValueTuple.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Web.HttpUtility.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Windows.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.Linq.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.ReaderWriter.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.Serialization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XmlDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XmlSerializer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XPath.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XPath.XDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\WindowsBase.dll" /features:"InterceptorsNamespaces=;Microsoft.AspNetCore.Http.Generated;Microsoft.Extensions.Validation.Generated" /debug+ /debug:portable /filealign:512 /optimize- /out:obj\Debug\net10.0\FairBank.Web.dll /refout:obj\Debug\net10.0\refint\FairBank.Web.dll /target:exe /warnaserror+ /utf8output /deterministic+ /sourcelink:obj\Debug\net10.0\FairBank.Web.sourcelink.json /langversion:14.0 /features:use-roslyn-tokenizer=true /embed:obj\Debug\net10.0\EmbeddedAttribute.cs /embed:obj\Debug\net10.0\ValidatableTypeAttribute.cs /embed:obj\Debug\net10.0\FairBank.Web.GlobalUsings.g.cs /embed:"obj\Debug\net10.0\.NETCoreApp,Version=v10.0.AssemblyAttributes.cs" /embed:obj\Debug\net10.0\FairBank.Web.AssemblyInfo.cs /analyzerconfig:obj\Debug\net10.0\FairBank.Web.GeneratedMSBuildEditorConfig.editorconfig /analyzerconfig:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\analyzers\build\config\analysislevel_10_default.globalconfig" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\targets\..\analyzers\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\targets\..\analyzers\Microsoft.CodeAnalysis.NetAnalyzers.dll" /analyzer:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.analyzers\10.0.3\analyzers\dotnet\cs\Microsoft.AspNetCore.Components.Analyzers.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging.abstractions\10.0.3\analyzers\dotnet\roslyn4.4\cs\Microsoft.Extensions.Logging.Generators.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.options\10.0.3\analyzers\dotnet\roslyn4.4\cs\Microsoft.Extensions.Options.SourceGeneration.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.validation\10.0.3\analyzers\dotnet\cs\Microsoft.Extensions.Validation.ValidationsGenerator.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.net.illink.tasks\10.0.3\analyzers\dotnet\cs\ILLink.CodeFixProvider.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.net.illink.tasks\10.0.3\analyzers\dotnet\cs\ILLink.RoslynAnalyzer.dll /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.ComInterfaceGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.JavaScript.JSImportGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.LibraryImportGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.SourceGeneration.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/System.Text.Json.SourceGeneration.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/System.Text.RegularExpressions.Generator.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.AspNetCore.Razor.Utilities.Shared.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.CodeAnalysis.Razor.Compiler.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.Extensions.ObjectPool.dll" /additionalfile:App.razor /additionalfile:Layout\BottomNav.razor /additionalfile:Layout\LoginLayout.razor /additionalfile:Layout\MainLayout.razor /additionalfile:Layout\SideNav.razor /additionalfile:Pages\Login.razor /additionalfile:_Imports.razor Program.cs obj\Debug\net10.0\EmbeddedAttribute.cs obj\Debug\net10.0\ValidatableTypeAttribute.cs obj\Debug\net10.0\FairBank.Web.GlobalUsings.g.cs "obj\Debug\net10.0\.NETCoreApp,Version=v10.0.AssemblyAttributes.cs" obj\Debug\net10.0\FairBank.Web.AssemblyInfo.cs /warnaserror+:NU1605,SYSLIB0011
+         Compilation request FairBank.Web (net10.0), PathToTool=C:\Program Files\dotnet\sdk\10.0.103\Roslyn\bincore\csc.exe
+         CommandLine = ' /noconfig'
+         BuildResponseFile = '/unsafe- /checked- /nowarn:1701,1702,IL2121,1701,1702 /fullpaths /nostdlib+ /platform:AnyCPU /errorreport:prompt /warn:10 /define:TRACE;DEBUG;NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER /highentropyva+ /nullable:enable /reference:H:\Skola\CSAD\src\FairBank.Web.Admin\obj\Debug\net10.0\ref\FairBank.Web.Admin.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Auth\obj\Debug\net10.0\ref\FairBank.Web.Auth.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Investments\obj\Debug\net10.0\ref\FairBank.Web.Investments.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Overview\obj\Debug\net10.0\ref\FairBank.Web.Overview.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Payments\obj\Debug\net10.0\ref\FairBank.Web.Payments.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Profile\obj\Debug\net10.0\ref\FairBank.Web.Profile.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Savings\obj\Debug\net10.0\ref\FairBank.Web.Savings.dll /reference:H:\Skola\CSAD\src\FairBank.Web.Shared\obj\Debug\net10.0\ref\FairBank.Web.Shared.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.authorization\10.0.3\lib\net10.0\Microsoft.AspNetCore.Authorization.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.forms\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.Forms.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.web\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.Web.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.webassembly\10.0.3\lib\net10.0\Microsoft.AspNetCore.Components.WebAssembly.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.metadata\10.0.3\lib\net10.0\Microsoft.AspNetCore.Metadata.dll /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.CSharp.dll" /reference:C:\Users\adtom\.nuget\packages\microsoft.dotnet.hotreload.webassembly.browser\10.0.103\lib\net10.0\Microsoft.DotNet.HotReload.WebAssembly.Browser.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.binder\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Binder.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.fileextensions\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.FileExtensions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.configuration.json\10.0.3\lib\net10.0\Microsoft.Extensions.Configuration.Json.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.dependencyinjection.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.dependencyinjection\10.0.3\lib\net10.0\Microsoft.Extensions.DependencyInjection.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.diagnostics.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Diagnostics.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.diagnostics\10.0.3\lib\net10.0\Microsoft.Extensions.Diagnostics.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.fileproviders.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.FileProviders.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.fileproviders.physical\10.0.3\lib\net10.0\Microsoft.Extensions.FileProviders.Physical.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.filesystemglobbing\10.0.3\lib\net10.0\Microsoft.Extensions.FileSystemGlobbing.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging.abstractions\10.0.3\lib\net10.0\Microsoft.Extensions.Logging.Abstractions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging\10.0.3\lib\net10.0\Microsoft.Extensions.Logging.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.options.configurationextensions\10.0.3\lib\net10.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.options\10.0.3\lib\net10.0\Microsoft.Extensions.Options.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.primitives\10.0.3\lib\net10.0\Microsoft.Extensions.Primitives.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.extensions.validation\10.0.3\lib\net10.0\Microsoft.Extensions.Validation.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.jsinterop\10.0.3\lib\net10.0\Microsoft.JSInterop.dll /reference:C:\Users\adtom\.nuget\packages\microsoft.jsinterop.webassembly\10.0.3\lib\net10.0\Microsoft.JSInterop.WebAssembly.dll /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.VisualBasic.Core.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.VisualBasic.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.Win32.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\Microsoft.Win32.Registry.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\mscorlib.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\netstandard.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.AppContext.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Buffers.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Concurrent.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Immutable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.NonGeneric.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Collections.Specialized.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.Annotations.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.DataAnnotations.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.EventBasedAsync.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ComponentModel.TypeConverter.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Configuration.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Console.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Core.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.Common.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.DataSetExtensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Data.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Contracts.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Debug.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.DiagnosticSource.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.FileVersionInfo.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Process.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.StackTrace.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.TextWriterTraceListener.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Tools.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.TraceSource.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Diagnostics.Tracing.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Drawing.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Drawing.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Dynamic.Runtime.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Formats.Asn1.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Formats.Tar.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.Calendars.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Globalization.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.Brotli.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.FileSystem.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Compression.ZipFile.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.DriveInfo.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.FileSystem.Watcher.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.IsolatedStorage.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.MemoryMappedFiles.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipelines.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipes.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.Pipes.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.IO.UnmanagedMemoryStream.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.AsyncEnumerable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Expressions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Parallel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Linq.Queryable.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Memory.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Http.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Http.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.HttpListener.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Mail.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.NameResolution.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.NetworkInformation.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Ping.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Quic.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Requests.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Security.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.ServerSentEvents.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.ServicePoint.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.Sockets.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebClient.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebHeaderCollection.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebProxy.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebSockets.Client.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Net.WebSockets.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Numerics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Numerics.Vectors.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ObjectModel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.DispatchProxy.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.ILGeneration.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Emit.Lightweight.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Metadata.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Reflection.TypeExtensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.Reader.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.ResourceManager.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Resources.Writer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.CompilerServices.Unsafe.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.CompilerServices.VisualC.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Handles.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.JavaScript.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.InteropServices.RuntimeInformation.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Intrinsics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Loader.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Numerics.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Formatters.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Runtime.Serialization.Xml.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Claims.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Algorithms.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Cng.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Csp.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Encoding.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.OpenSsl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.Primitives.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Cryptography.X509Certificates.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Principal.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.Principal.Windows.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Security.SecureString.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ServiceModel.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ServiceProcess.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.CodePages.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encoding.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Encodings.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.Json.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Text.RegularExpressions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.AccessControl.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Channels.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Overlapped.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Dataflow.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Extensions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Tasks.Parallel.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Thread.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.ThreadPool.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Threading.Timer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Transactions.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Transactions.Local.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.ValueTuple.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Web.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Web.HttpUtility.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Windows.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.Linq.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.ReaderWriter.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.Serialization.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XmlDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XmlSerializer.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XPath.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\System.Xml.XPath.XDocument.dll" /reference:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\ref\net10.0\WindowsBase.dll" /features:"InterceptorsNamespaces=;Microsoft.AspNetCore.Http.Generated;Microsoft.Extensions.Validation.Generated" /debug+ /debug:portable /filealign:512 /optimize- /out:obj\Debug\net10.0\FairBank.Web.dll /refout:obj\Debug\net10.0\refint\FairBank.Web.dll /target:exe /warnaserror+ /utf8output /deterministic+ /sourcelink:obj\Debug\net10.0\FairBank.Web.sourcelink.json /langversion:14.0 /features:use-roslyn-tokenizer=true /embed:obj\Debug\net10.0\EmbeddedAttribute.cs /embed:obj\Debug\net10.0\ValidatableTypeAttribute.cs /embed:obj\Debug\net10.0\FairBank.Web.GlobalUsings.g.cs /embed:"obj\Debug\net10.0\.NETCoreApp,Version=v10.0.AssemblyAttributes.cs" /embed:obj\Debug\net10.0\FairBank.Web.AssemblyInfo.cs /analyzerconfig:obj\Debug\net10.0\FairBank.Web.GeneratedMSBuildEditorConfig.editorconfig /analyzerconfig:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\analyzers\build\config\analysislevel_10_default.globalconfig" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\targets\..\analyzers\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk\targets\..\analyzers\Microsoft.CodeAnalysis.NetAnalyzers.dll" /analyzer:C:\Users\adtom\.nuget\packages\microsoft.aspnetcore.components.analyzers\10.0.3\analyzers\dotnet\cs\Microsoft.AspNetCore.Components.Analyzers.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.logging.abstractions\10.0.3\analyzers\dotnet\roslyn4.4\cs\Microsoft.Extensions.Logging.Generators.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.options\10.0.3\analyzers\dotnet\roslyn4.4\cs\Microsoft.Extensions.Options.SourceGeneration.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.extensions.validation\10.0.3\analyzers\dotnet\cs\Microsoft.Extensions.Validation.ValidationsGenerator.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.net.illink.tasks\10.0.3\analyzers\dotnet\cs\ILLink.CodeFixProvider.dll /analyzer:C:\Users\adtom\.nuget\packages\microsoft.net.illink.tasks\10.0.3\analyzers\dotnet\cs\ILLink.RoslynAnalyzer.dll /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.ComInterfaceGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.JavaScript.JSImportGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.LibraryImportGenerator.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/Microsoft.Interop.SourceGeneration.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/System.Text.Json.SourceGeneration.dll" /analyzer:"C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.3\analyzers/dotnet/cs/System.Text.RegularExpressions.Generator.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.AspNetCore.Razor.Utilities.Shared.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.CodeAnalysis.Razor.Compiler.dll" /analyzer:"C:\Program Files\dotnet\sdk\10.0.103\Sdks\Microsoft.NET.Sdk.Razor\targets\..\source-generators\Microsoft.Extensions.ObjectPool.dll" /additionalfile:App.razor /additionalfile:Layout\BottomNav.razor /additionalfile:Layout\LoginLayout.razor /additionalfile:Layout\MainLayout.razor /additionalfile:Layout\SideNav.razor /additionalfile:Pages\Login.razor /additionalfile:_Imports.razor Program.cs obj\Debug\net10.0\EmbeddedAttribute.cs obj\Debug\net10.0\ValidatableTypeAttribute.cs obj\Debug\net10.0\FairBank.Web.GlobalUsings.g.cs "obj\Debug\net10.0\.NETCoreApp,Version=v10.0.AssemblyAttributes.cs" obj\Debug\net10.0\FairBank.Web.AssemblyInfo.cs /warnaserror+:NU1605,SYSLIB0011'
+         Attempt to open named pipe '7LL3Qj803wMFRW8rOvZebNnQ1KD0JvqrxMrgDPCiyrg'
+         Attempt to connect named pipe '7LL3Qj803wMFRW8rOvZebNnQ1KD0JvqrxMrgDPCiyrg'
+         Named pipe '7LL3Qj803wMFRW8rOvZebNnQ1KD0JvqrxMrgDPCiyrg' connected
+         Begin writing request for FairBank.Web (net10.0)
+         End writing request for FairBank.Web (net10.0)
+         Begin reading response for FairBank.Web (net10.0)
+     5>Done Building Project "H:\Skola\CSAD\tests\FairBank.Identity.UnitTests\FairBank.Identity.UnitTests.csproj" (default targets).
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\FairBank.Accounts.Api.csproj" (19:6) on node 2 (default targets).
+    19>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _DiscoverMvcApplicationParts:
+       Skipping target "_DiscoverMvcApplicationParts" because all output files are up-to-date with respect to the input files.
+   1:2>Project "H:\Skola\CSAD\FairBank.slnx" (1:2) is building "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\FairBank.Identity.Api.csproj" (16:6) on node 5 (default targets).
+    16>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+    19>_GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Accounts.Api.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CreateAppHost:
+       Skipping target "_CreateAppHost" because all output files are up-to-date with respect to the input files.
+    16>CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _DiscoverMvcApplicationParts:
+       Skipping target "_DiscoverMvcApplicationParts" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\FairBank.Identity.Api.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CreateAppHost:
+       Skipping target "_CreateAppHost" because all output files are up-to-date with respect to the input files.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Identity.Api -> H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\bin\Debug\net10.0\FairBank.Identity.Api.dll
+    19>_ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         FairBank.Accounts.Api -> H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\bin\Debug\net10.0\FairBank.Accounts.Api.dll
+    16>Done Building Project "H:\Skola\CSAD\src\Services\Identity\FairBank.Identity.Api\FairBank.Identity.Api.csproj" (default targets).
+    19>Done Building Project "H:\Skola\CSAD\src\Services\Accounts\FairBank.Accounts.Api\FairBank.Accounts.Api.csproj" (default targets).
+    20>CoreCompile:
+         End reading response for FairBank.Web (net10.0)
+    20>H:\Skola\CSAD\src\FairBank.Web\Pages\Login.razor(69,34): error CS1501: No overload for method 'LoginAsync' takes 2 arguments [H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj]
+         CompilerServer: server - server processed compilation - FairBank.Web (net10.0)
+    20>Done Building Project "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (default targets) -- FAILED.
+     1>Done Building Project "H:\Skola\CSAD\FairBank.slnx" (default targets) -- FAILED.
+
+Build FAILED.
+
+       "H:\Skola\CSAD\FairBank.slnx" (default target) (1:2) ->
+       "H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj" (default target) (20:6) ->
+       (CoreCompile target) -> 
+         H:\Skola\CSAD\src\FairBank.Web\Pages\Login.razor(69,34): error CS1501: No overload for method 'LoginAsync' takes 2 arguments [H:\Skola\CSAD\src\FairBank.Web\FairBank.Web.csproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.07
