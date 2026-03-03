@@ -1,0 +1,100 @@
+@namespace FairBank.Web.Shared.Components
+
+@* SVG Icon component — replaces emojis with proper vector icons *@
+<span class="vb-icon @SizeClass" style="@StyleAttr">
+    @((MarkupString)GetSvg())
+</span>
+
+@code {
+    [Parameter] public string Name { get; set; } = "home";
+    [Parameter] public string Size { get; set; } = "md";
+    [Parameter] public string? Color { get; set; }
+
+    private string SizeClass => Size switch
+    {
+        "xs" => "vb-icon-xs",
+        "sm" => "vb-icon-sm",
+        "lg" => "vb-icon-lg",
+        "xl" => "vb-icon-xl",
+        _ => "vb-icon-md"
+    };
+
+    private string StyleAttr => Color is not null ? $"color: {Color}" : "";
+
+    private string GetSvg() => Name switch
+    {
+        "home" => """<svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "payments" or "card" => """<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/><path d="M6 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "savings" or "target" => """<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>""",
+
+        "investments" or "chart" => """<svg viewBox="0 0 24 24"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="16,7 22,7 22,13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "messages" or "chat" => """<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "profile" or "user" => """<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "send" => """<svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "qr" => """<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="3" height="3" fill="currentColor"/><rect x="18" y="18" width="3" height="3" fill="currentColor"/><rect x="14" y="18" width="3" height="3" fill="currentColor"/><rect x="18" y="14" width="3" height="3" fill="currentColor"/></svg>""",
+
+        "plus" or "add" => """<svg viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "star" => """<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" fill="currentColor"/></svg>""",
+
+        "trophy" => """<svg viewBox="0 0 24 24"><path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2M6 3h12v6a6 6 0 01-12 0V3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 21h6M12 15v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "rocket" => """<svg viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09zM12 15l-3-3M22 2l-7.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 7.5L6 11l-3.5-.5.5-3.5L6.5 3.5 14 2l-4.5 5.5zM14.5 16.5L18 13l3.5.5-.5 3.5-3.5 3.5L10 22l4.5-5.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "settings" or "gear" => """<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "arrow-left" or "back" => """<svg viewBox="0 0 24 24"><path d="M19 12H5m7-7l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "arrow-up" => """<svg viewBox="0 0 24 24"><path d="M12 19V5m-7 7l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "arrow-down" => """<svg viewBox="0 0 24 24"><path d="M12 5v14m7-7l-7 7-7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "transfer" => """<svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "clock" => """<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "wallet" => """<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="14" r="1" fill="currentColor"/><path d="M22 6V4a2 2 0 00-2-2H6a2 2 0 00-2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "shield" => """<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "bell" => """<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "sun" => """<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "moon" => """<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "logout" => """<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "eye" => """<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "eye-off" => """<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 01-4.24-4.24M1 1l22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "shopping" => """<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 10a4 4 0 01-8 0" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "food" or "restaurant" => """<svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 1v3M10 1v3M14 1v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "car" => """<svg viewBox="0 0 24 24"><path d="M16 3H8l-4 6v6a1 1 0 001 1h1a2 2 0 004 0h4a2 2 0 004 0h1a1 1 0 001-1V9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h16" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "travel" or "suitcase" => """<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "utilities" or "zap" => """<svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "dice" => """<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>""",
+
+        "crown" => """<svg viewBox="0 0 24 24"><path d="M2 20h20M4 16l2-12 6 6 6-6 2 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>""",
+
+        "fire" => """<svg viewBox="0 0 24 24"><path d="M12 23c-4.97 0-9-3.58-9-8 0-5.5 4-10 9-14 5 4 9 8.5 9 14 0 4.42-4.03 8-9 8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 23c-2.21 0-4-1.79-4-4 0-2.75 2-5 4-7 2 2 4 4.25 4 7 0 2.21-1.79 4-4 4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>""",
+
+        "piggy" or "pig" => """<svg viewBox="0 0 24 24"><path d="M19 10V7a2 2 0 00-2-2H7a2 2 0 00-2 2v3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v3M8 14h.01M16 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        "gift" => """<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v13M3 12h18v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8c-2-2-4-3-4-3s0-3 2-3 2 3 2 3m0 0c2-2 4-3 4-3s0-3-2-3-2 3-2 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>""",
+
+        _ => """<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/></svg>"""
+    };
+}
