@@ -1870,3 +1870,166 @@ body {
 
 .modal-card h3 { margin-bottom: 1rem; color: var(--vb-green); }
 .modal-card p { margin-bottom: 1.5rem; color: var(--vb-gray-700); }
+
+/* ═══════════════════════════════════════════════════════════
+   Product Applications — List, Cards, Status Badges, Management
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Application List ─────────────────────────────────────── */
+.application-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* ── Application Card ─────────────────────────────────────── */
+.application-card {
+    background: var(--vb-card-bg);
+    border: 1px solid var(--vb-gray-100);
+    border-radius: var(--vb-radius-sm);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--vb-shadow);
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--vb-shadow-lg);
+    border-color: var(--vb-red-light);
+}
+
+.application-type {
+    font-weight: 600;
+    font-size: 1rem;
+    white-space: nowrap;
+    color: var(--vb-black);
+}
+
+.application-details {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--vb-gray-700);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.application-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* ── Status Badges ────────────────────────────────────────── */
+.status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-active {
+    background: rgba(39, 174, 96, 0.12);
+    color: var(--vb-green);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.status-rejected {
+    background: rgba(196, 30, 58, 0.12);
+    color: var(--vb-red);
+    border: 1px solid rgba(196, 30, 58, 0.3);
+}
+
+.status-cancelled {
+    background: rgba(107, 114, 128, 0.12);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* ── Application Note ─────────────────────────────────────── */
+.application-note {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--vb-red-light);
+    background: rgba(196, 30, 58, 0.04);
+    border-radius: 0 var(--vb-radius-sm) var(--vb-radius-sm) 0;
+    font-style: italic;
+    font-size: 0.8rem;
+    color: var(--vb-gray-500);
+}
+
+/* ── Management Detail Modal ──────────────────────────────── */
+.management-detail {
+    max-width: 600px;
+    text-align: left;
+}
+
+.management-detail h3 {
+    color: var(--vb-red);
+    margin-bottom: 1.25rem;
+}
+
+.management-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.management-actions > * {
+    flex: 1;
+}
+
+/* ── Application Parameters Table ─────────────────────────── */
+.application-params {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: var(--vb-gray-100);
+    border-radius: var(--vb-radius-sm);
+    padding: 0.75rem 1rem;
+}
+
+.param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.2rem 0;
+}
+
+.param-label {
+    color: var(--vb-gray-500);
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.param-value {
+    color: var(--vb-black);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* ── Error Message ────────────────────────────────────────── */
+.error-message {
+    color: var(--vb-red);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0.5rem 0;
+}
