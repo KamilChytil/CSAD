@@ -5,13 +5,13 @@
 
 <div class="insurance-subtabs">
     <button class="insurance-subtab @(_subTab == "travel" ? "active" : "")"
-            @onclick='() => _subTab = "travel"'>✈️ Cestovní</button>
+            @onclick='() => _subTab = "travel"'><VbIcon Name="travel" Size="sm" /> Cestovní</button>
     <button class="insurance-subtab @(_subTab == "property" ? "active" : "")"
-            @onclick='() => _subTab = "property"'>🏠 Nemovitost</button>
+            @onclick='() => _subTab = "property"'><VbIcon Name="home" Size="sm" /> Nemovitost</button>
     <button class="insurance-subtab @(_subTab == "life" ? "active" : "")"
-            @onclick='() => _subTab = "life"'>❤️ Životní</button>
+            @onclick='() => _subTab = "life"'><VbIcon Name="heart" Size="sm" /> Životní</button>
     <button class="insurance-subtab @(_subTab == "protection" ? "active" : "")"
-            @onclick='() => _subTab = "protection"'>🔒 Ochrana splátek</button>
+            @onclick='() => _subTab = "protection"'><VbIcon Name="lock" Size="sm" /> Ochrana splátek</button>
 </div>
 
 @switch (_subTab)
@@ -24,10 +24,10 @@
                         <label class="form-label">Destinace</label>
                         <div class="radio-group">
                             <label class="radio-option @(_travelDest == "europe" ? "active" : "")">
-                                <input type="radio" name="dest" value="europe" @onchange='() => _travelDest = "europe"' checked="@(_travelDest == "europe")" /> 🇪🇺 Evropa
+                                <input type="radio" name="dest" value="europe" @onchange='() => _travelDest = "europe"' checked="@(_travelDest == "europe")" /> <VbIcon Name="travel" Size="sm" /> Evropa
                             </label>
                             <label class="radio-option @(_travelDest == "world" ? "active" : "")">
-                                <input type="radio" name="dest" value="world" @onchange='() => _travelDest = "world"' checked="@(_travelDest == "world")" /> 🌍 Svět
+                                <input type="radio" name="dest" value="world" @onchange='() => _travelDest = "world"' checked="@(_travelDest == "world")" /> <VbIcon Name="travel" Size="sm" /> Svět
                             </label>
                         </div>
                     </div>
@@ -87,10 +87,10 @@
                         <label class="form-label">Typ nemovitosti</label>
                         <div class="radio-group">
                             <label class="radio-option @(_propType == "apartment" ? "active" : "")">
-                                <input type="radio" name="ptype" value="apartment" @onchange='() => _propType = "apartment"' checked="@(_propType == "apartment")" /> 🏢 Byt
+                                <input type="radio" name="ptype" value="apartment" @onchange='() => _propType = "apartment"' checked="@(_propType == "apartment")" /> <VbIcon Name="building" Size="sm" /> Byt
                             </label>
                             <label class="radio-option @(_propType == "house" ? "active" : "")">
-                                <input type="radio" name="ptype" value="house" @onchange='() => _propType = "house"' checked="@(_propType == "house")" /> 🏡 Dům
+                                <input type="radio" name="ptype" value="house" @onchange='() => _propType = "house"' checked="@(_propType == "house")" /> <VbIcon Name="home" Size="sm" /> Dům
                             </label>
                         </div>
                     </div>
