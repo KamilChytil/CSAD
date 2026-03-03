@@ -1,2 +1,5 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
+  </Folder>
 </Solution>
