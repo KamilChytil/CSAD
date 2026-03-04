@@ -22,6 +22,10 @@
             <span class="side-nav-icon"><VbIcon Name="payments" Size="sm" /></span>
             <span class="side-nav-label">Platby</span>
         </NavLink>
+        <NavLink class="side-nav-item" href="karty">
+            <span class="side-nav-icon"><VbIcon Name="credit-card" Size="sm" /></span>
+            <span class="side-nav-label">Karty</span>
+        </NavLink>
         @if (Auth.CurrentSession?.Role != "Child")
         {
             <NavLink class="side-nav-item" href="sporeni">
@@ -46,9 +50,9 @@
         }
         @if (Auth.CurrentSession?.Role == "Client")
         {
-            <NavLink class="side-nav-item" href="deti">
+            <NavLink class="side-nav-item" href="rodina">
                 <span class="side-nav-icon"><VbIcon Name="users" Size="sm" /></span>
-                <span class="side-nav-label">Děti</span>
+                <span class="side-nav-label">Rodina</span>
             </NavLink>
         }
         <NavLink class="side-nav-item" href="zpravy">
