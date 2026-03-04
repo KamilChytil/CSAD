@@ -40,6 +40,7 @@ public sealed class CreateChildCommandHandler(
 
         return new UserResponse(
             child.Id, child.FirstName, child.LastName,
-            child.Email.Value, child.Role, child.IsActive, child.CreatedAt);
+            child.Email.Value, child.Role, child.IsActive, child.CreatedAt,
+            ParentId: child.ParentId);
     }
 }

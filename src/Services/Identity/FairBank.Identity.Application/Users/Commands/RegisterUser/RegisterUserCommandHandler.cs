@@ -1,3 +1,4 @@
+using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
@@ -9,6 +10,7 @@ namespace FairBank.Identity.Application.Users.Commands.RegisterUser;
 
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
+    IEmailSender emailSender,
     IUnitOfWork unitOfWork)
     : IRequestHandler<RegisterUserCommand, UserResponse>
 {
@@ -21,15 +23,38 @@ public sealed class RegisterUserCommandHandler(
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
 
+        var phoneNumber = !string.IsNullOrWhiteSpace(request.Phone)
+            ? PhoneNumber.Create(request.Phone)
+            : null;
+
+        var address = !string.IsNullOrWhiteSpace(request.Street)
+            ? Address.Create(request.Street!, request.City!, request.ZipCode!, request.Country!)
+            : null;
+
         var user = User.Create(
             request.FirstName,
             request.LastName,
             email,
             passwordHash,
-            request.Role);
+            request.Role,
+            personalIdNumber: request.PersonalIdNumber,
+            dateOfBirth: request.DateOfBirth,
+            phoneNumber: phoneNumber,
+            address: address);
+
+        user.GenerateEmailVerificationToken();
 
         await userRepository.AddAsync(user, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        // Send verification email (fire-and-forget — failures logged but don't block registration)
+        if (user.EmailVerificationToken is not null)
+        {
+            await emailSender.SendEmailVerificationAsync(
+                user.Email.Value,
+                user.EmailVerificationToken,
+                ct);
+        }
 
         return new UserResponse(
             user.Id,
@@ -38,6 +63,15 @@ public sealed class RegisterUserCommandHandler(
             user.Email.Value,
             user.Role,
             user.IsActive,
-            user.CreatedAt);
+            user.CreatedAt,
+            user.PersonalIdNumber,
+            user.DateOfBirth,
+            user.PhoneNumber?.Value,
+            user.Address?.Street,
+            user.Address?.City,
+            user.Address?.ZipCode,
+            user.Address?.Country,
+            user.IsEmailVerified,
+            user.ParentId);
     }
 }

@@ -7,4 +7,7 @@ public sealed record AccountResponse(
     decimal Balance,
     string Currency,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    bool RequiresApproval = false,
+    decimal? ApprovalThreshold = null,
+    decimal? SpendingLimit = null);

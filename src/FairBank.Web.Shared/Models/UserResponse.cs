@@ -7,4 +7,13 @@ public sealed record UserResponse(
     string Email,
     string Role,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? PersonalIdNumber = null,
+    DateOnly? DateOfBirth = null,
+    string? PhoneNumber = null,
+    string? Street = null,
+    string? City = null,
+    string? ZipCode = null,
+    string? Country = null,
+    bool IsEmailVerified = false,
+    Guid? ParentId = null);

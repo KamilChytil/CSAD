@@ -13,6 +13,7 @@ public sealed class GetChildrenQueryHandler(IUserRepository userRepository)
 
         return children.Select(c => new UserResponse(
             c.Id, c.FirstName, c.LastName,
-            c.Email.Value, c.Role, c.IsActive, c.CreatedAt)).ToList();
+            c.Email.Value, c.Role, c.IsActive, c.CreatedAt,
+            ParentId: c.ParentId)).ToList();
     }
 }
