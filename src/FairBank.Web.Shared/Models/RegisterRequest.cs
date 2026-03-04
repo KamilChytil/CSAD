@@ -7,7 +7,7 @@ public sealed record RegisterRequest(
     string Password,
     string PasswordConfirm,
     string Phone,
-    DateTime DateOfBirth,
+    string DateOfBirth,
     string PersonalIdNumber,
     string Street,
     string City,

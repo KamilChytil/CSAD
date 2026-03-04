@@ -580,6 +580,9 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "view")]
+    public string? View { get; set; }
+
     private string _pageView = "platby";
     private string _activeTab = "payment";
     private bool _isLoading;
@@ -711,6 +714,10 @@
         {
             // Silently handle – data will be empty
         }
+
+        // Apply view from query parameter (e.g. ?view=pohyby from Overview)
+        if (!string.IsNullOrWhiteSpace(View))
+            _pageView = View;
 
         // Build contacts from templates
         _contacts = _templates.Select(t => new ContactVm(

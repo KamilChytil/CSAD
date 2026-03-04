@@ -217,7 +217,7 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
 
     public async Task<int> GetUnreadNotificationCountAsync(Guid userId)
     {
-        var result = await http.GetFromJsonAsync<UnreadCountDto>($"api/v1/notifications/count?userId={userId}");
+        var result = await http.GetFromJsonAsync<UnreadCountDto>($"api/v1/notifications/unread-count?userId={userId}");
         return result?.Count ?? 0;
     }
 

@@ -78,7 +78,7 @@
     @* ── RECENT TRANSACTIONS ──────────────────── *@
     <ContentCard Title="NEDÁVNÉ TRANSAKCE">
         <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-red)" /></Icon>
-        <HeaderAction><a class="link-action" href="platby">Vše</a></HeaderAction>
+        <HeaderAction><a class="link-action" href="platby?view=pohyby">Vše</a></HeaderAction>
         <ChildContent>
             @foreach (var tx in _transactions)
             {
