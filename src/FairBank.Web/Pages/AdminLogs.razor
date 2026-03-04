@@ -15,7 +15,7 @@
     <div class="filters-card">
         <div class="filters-grid">
             <div class="form-group mb-0">
-                <input type="text" class="form-input" @bind="_filterUserId" placeholder="ID uživatele (Guid)" />
+                <input type="text" class="form-input" @bind="_filterUserIdText" placeholder="ID uživatele (Guid)" />
             </div>
             <div class="form-group mb-0">
                 <input type="text" class="form-input" @bind="_filterAction" placeholder="Akce" />
@@ -27,9 +27,9 @@
                 <input type="text" class="form-input" @bind="_filterDetails" placeholder="Detaily" />
             </div>
             <div class="form-group mb-0 date-range">
-                <input type="datetime-local" class="form-input date-input" @bind="_filterStartDate" title="Od" />
+                <input type="datetime-local" class="form-input date-input" @bind="_filterStartDate" @bind:format="yyyy-MM-ddTHH:mm" title="Od" />
                 <span>-</span>
-                <input type="datetime-local" class="form-input date-input" @bind="_filterEndDate" title="Do" />
+                <input type="datetime-local" class="form-input date-input" @bind="_filterEndDate" @bind:format="yyyy-MM-ddTHH:mm" title="Do" />
             </div>
         </div>
         <div class="filters-actions">
@@ -292,7 +292,7 @@
     private int _page = 1;
     private int _pageSize = 20;
 
-    private Guid? _filterUserId;
+    private string? _filterUserIdText;
     private string? _filterAction;
     private string? _filterEntityName;
     private string? _filterDetails;
@@ -320,7 +320,8 @@
 
         try
         {
-            _logs = await Api.GetAuditLogsAsync(_page, _pageSize, _filterUserId, _filterAction, _filterEntityName, _filterDetails, _filterStartDate, _filterEndDate, _sortBy, _sortDesc);
+            Guid? parsedUserId = Guid.TryParse(_filterUserIdText, out var g) ? g : null;
+            _logs = await Api.GetAuditLogsAsync(_page, _pageSize, parsedUserId, _filterAction, _filterEntityName, _filterDetails, _filterStartDate, _filterEndDate, _sortBy, _sortDesc);
         }
         catch (Exception ex)
         {
@@ -365,7 +366,7 @@
 
     private async Task ClearFilters()
     {
-        _filterUserId = null;
+        _filterUserIdText = null;
         _filterAction = null;
         _filterEntityName = null;
         _filterDetails = null;
