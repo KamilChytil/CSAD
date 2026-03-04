@@ -9,4 +9,7 @@ public interface IAccountEventStore
     Task<IReadOnlyList<Account>> LoadByOwnerAsync(Guid ownerId, CancellationToken ct = default);
     Task StartStreamAsync(Account account, CancellationToken ct = default);
     Task AppendEventsAsync(Account account, CancellationToken ct = default);
+
+    // Used by reporting/statement generation to read the raw event stream
+    Task<IReadOnlyList<object>> GetStreamEventsAsync(Guid accountId, CancellationToken ct = default);
 }

@@ -28,6 +28,10 @@ public interface IFairBankApi
     // Account queries
     Task<List<AccountResponse>> GetAccountsByOwnerAsync(Guid ownerId);
 
+    // Account history/exports
+    Task<List<TransactionDto>> GetAccountTransactionsAsync(Guid accountId, DateTime? from = null, DateTime? to = null);
+    Task<byte[]> DownloadStatementAsync(Guid accountId, DateTime? from, DateTime? to, string format);
+
     // Pending transactions
     Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId);
     Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId);
