@@ -185,12 +185,16 @@
                     _checkingAccountNumber = _account.AccountNumber;
 
                     // Load recent transactions from ALL accounts so cross-account transfers show on both sides
-                    var allPaymentTasks = accounts.Select(a => Api.GetPaymentsByAccountAsync(a.Id)).ToList();
-                    await Task.WhenAll(allPaymentTasks);
+                    // Fetch each account individually so a 404 (no transactions yet) doesn't abort the whole load
+                    var allRawPayments = new List<FairBank.Web.Shared.Models.PaymentDto>();
+                    foreach (var acc in accounts)
+                    {
+                        try { allRawPayments.AddRange(await Api.GetPaymentsByAccountAsync(acc.Id)); } catch { }
+                    }
                     var myAccountIds = accounts.Select(a => a.Id).ToHashSet();
                     var myAccountNumbers = accounts.Select(a => a.AccountNumber).ToHashSet();
-                    _transactions = allPaymentTasks
-                        .SelectMany(t => t.Result)
+                    _transactions = allRawPayments
+                        .AsEnumerable()
                         .GroupBy(p => p.Id)
                         .Select(g => g.First())
                         .OrderByDescending(p => p.CreatedAt)
