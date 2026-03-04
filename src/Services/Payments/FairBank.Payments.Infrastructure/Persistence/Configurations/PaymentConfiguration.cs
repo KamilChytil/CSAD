@@ -48,6 +48,12 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(p => p.Category)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .HasDefaultValue(PaymentCategory.Other)
+            .IsRequired();
+
         builder.Property(p => p.FailureReason).HasMaxLength(500);
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.CompletedAt);
@@ -59,5 +65,6 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasIndex(p => p.RecipientAccountId);
         builder.HasIndex(p => p.CreatedAt).IsDescending();
         builder.HasIndex(p => p.Status);
+        builder.HasIndex(p => p.Category);
     }
 }

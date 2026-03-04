@@ -1,177 +1,653 @@
 @page "/sporeni"
 @namespace FairBank.Web.Savings.Pages
+@inject IFairBankApi Api
+@inject IAuthService Auth
 
 <PageHeader Title="FINANČNÍ VÝZVY A CÍLE" ShowChip="false">
     <Actions>
-        <VbButton Variant="outline" Size="sm" IconName="plus" OnClick="@(() => { })">Nová výzva</VbButton>
+        <VbButton Variant="outline" Size="sm" IconName="plus" OnClick="@(() => _showNewGoalForm = true)">Nový cíl</VbButton>
+        <VbButton Variant="outline" Size="sm" IconName="plus" OnClick="@(() => _showNewRuleForm = true)">Nové pravidlo</VbButton>
     </Actions>
 </PageHeader>
 
 <div class="page-content savings-page">
 
-    @* ── Savings Goals with poker-chip milestones ── *@
-    @foreach (var goal in _goals)
+    @if (_loading)
     {
-        <ContentCard Title="@goal.Name" CssClass="section-goal">
-            <Icon><VbIcon Name="@goal.Icon" Size="sm" Color="var(--vb-gold)" /></Icon>
+        <ContentCard>
             <ChildContent>
-                <div class="goal-card-content">
-                    <div class="goal-header-row">
-                        <span class="goal-progress-label">@goal.Description</span>
-                        <span class="goal-percentage @(goal.ProgressPercent >= 75 ? "positive" : "")">@goal.ProgressPercent%</span>
-                    </div>
-                    <div class="chips-row">
-                        @foreach (var milestone in goal.Milestones)
-                        {
-                            <div class="milestone">
-                                <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
-                            </div>
-                        }
-                    </div>
-                    <div class="progress-bar-track">
-                        <div class="progress-bar-fill" style="width: @(goal.ProgressPercent)%"></div>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Naspořeno</span>
-                        <span class="stat-value">@goal.CurrentAmount.ToString("N0") Kč</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Cíl</span>
-                        <span class="stat-value">@goal.TargetAmount.ToString("N0") Kč</span>
-                    </div>
+                <div class="savings-loading">
+                    <VbIcon Name="target" Size="md" Color="var(--vb-text-muted)" />
+                    <span style="color:var(--vb-text-muted);margin-top:8px;">Načítám spoření...</span>
                 </div>
             </ChildContent>
         </ContentCard>
     }
-
-    @* ── Automatic Savings with Roulette Visual ── *@
-    <ContentCard Title="Automatické spoření" CssClass="section-auto-savings">
-        <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-red)" /></Icon>
-        <ChildContent>
-            <div class="auto-savings-content">
-                <div class="auto-savings-toggle">
-                    <ToggleSwitch Label="Zaokrouhlování plateb" @bind-IsOn="_roundUpEnabled" />
-                    <p class="rule-description">
-                        Zaokrouhlování plateb na celé koruny. Rozdíl jde na spoření.
-                    </p>
+    else if (_error is not null)
+    {
+        <ContentCard>
+            <ChildContent>
+                <div class="savings-loading">
+                    <VbIcon Name="warning" Size="sm" Color="var(--vb-red)" />
+                    <span style="color:var(--vb-red);margin-top:4px;">@_error</span>
                 </div>
-
-                <div class="auto-savings-visual">
-                    <div class="savings-roulette">
-                        @foreach (var entry in _savingsHistory.Take(3))
+            </ChildContent>
+        </ContentCard>
+    }
+    else
+    {
+        @* ── New Goal Form ── *@
+        @if (_showNewGoalForm)
+        {
+            <ContentCard Title="Nový spořicí cíl" CssClass="section-new-goal">
+                <Icon><VbIcon Name="plus" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    <div class="new-goal-form">
+                        <div class="form-group">
+                            <label class="form-label">Název</label>
+                            <input class="form-input" @bind="_newGoalName" placeholder="Dovolená, Nové auto..." />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Popis (volitelný)</label>
+                            <input class="form-input" @bind="_newGoalDescription" placeholder="Popis cíle..." />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cílová částka</label>
+                            <input class="form-input" type="number" min="1" @bind="_newGoalTargetAmount" placeholder="50000" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Měna</label>
+                            <select class="form-input" @bind="_newGoalCurrency">
+                                <option value="CZK">CZK</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_formError))
                         {
-                            <div class="savings-entry">
-                                <TransactionItem
-                                    Description="@entry.Description"
-                                    Date="@entry.Date"
-                                    Amount="@entry.Amount"
-                                    Currency="Kč"
-                                    Type="@entry.Type"
-                                    Category="savings" />
-                            </div>
+                            <div class="field-error">@_formError</div>
                         }
-                    </div>
-                    <div class="savings-summary">
-                        <div class="stat-row">
-                            <span class="stat-label">Tento měsíc</span>
-                            <span class="stat-value positive">+2 700 Kč</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Celkem naspořeno</span>
-                            <span class="stat-value">155 700 Kč</span>
+                        <div class="form-actions">
+                            <VbButton Variant="primary" OnClick="CreateGoal" Disabled="@_saving">
+                                @(_saving ? "Vytvářím..." : "Vytvořit cíl")
+                            </VbButton>
+                            <VbButton Variant="ghost" OnClick="@(() => { _showNewGoalForm = false; _formError = ""; })">Zrušit</VbButton>
                         </div>
                     </div>
-                </div>
-            </div>
-        </ChildContent>
-    </ContentCard>
+                </ChildContent>
+            </ContentCard>
+        }
 
-    @* ── Savings Rules ── *@
-    <ContentCard Title="Pravidla spoření">
-        <Icon><VbIcon Name="settings" Size="sm" Color="var(--vb-red)" /></Icon>
-        <ChildContent>
-            <p class="rule-description">
-                Nastavte si vlastní pravidla automatického spoření.
-            </p>
-            @foreach (var rule in _rules)
+        @* ── New Rule Form ── *@
+        @if (_showNewRuleForm)
+        {
+            <ContentCard Title="Nové pravidlo spoření" CssClass="section-new-rule">
+                <Icon><VbIcon Name="plus" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    <div class="new-goal-form">
+                        <div class="form-group">
+                            <label class="form-label">Název</label>
+                            <input class="form-input" @bind="_newRuleName" placeholder="Týdenní spoření..." />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Popis (volitelný)</label>
+                            <input class="form-input" @bind="_newRuleDescription" placeholder="Popis pravidla..." />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Typ</label>
+                            <select class="form-input" @bind="_newRuleType">
+                                <option value="RoundUp">Zaokrouhlování</option>
+                                <option value="Weekly">Týdenní</option>
+                                <option value="Monthly">Měsíční</option>
+                                <option value="Percentage">Procento</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Částka</label>
+                            <input class="form-input" type="number" min="1" @bind="_newRuleAmount" placeholder="500" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <div class="field-error">@_formError</div>
+                        }
+                        <div class="form-actions">
+                            <VbButton Variant="primary" OnClick="CreateRule" Disabled="@_saving">
+                                @(_saving ? "Vytvářím..." : "Vytvořit pravidlo")
+                            </VbButton>
+                            <VbButton Variant="ghost" OnClick="@(() => { _showNewRuleForm = false; _formError = ""; })">Zrušit</VbButton>
+                        </div>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── Savings Goals with poker-chip milestones ── *@
+        @if (_goals.Any())
+        {
+            @foreach (var goal in _goals)
             {
-                <div class="savings-rule">
-                    <ToggleSwitch Label="@rule.Name" @bind-IsOn="rule.IsEnabled" />
-                    <span class="rule-desc">@rule.Description</span>
-                </div>
-            }
-        </ChildContent>
-    </ContentCard>
+                var milestones = GenerateMilestones(goal);
+                var icon = goal.ProgressPercent >= 100 ? "trophy" : goal.ProgressPercent >= 50 ? "star" : "target";
+                <ContentCard Title="@goal.Name" CssClass="section-goal">
+                    <Icon><VbIcon Name="@icon" Size="sm" Color="var(--vb-gold)" /></Icon>
+                    <ChildContent>
+                        <div class="goal-card-content">
+                            <div class="goal-header-row">
+                                <span class="goal-progress-label">@(goal.Description ?? "Spořicí cíl")</span>
+                                <span class="goal-percentage @(goal.ProgressPercent >= 75 ? "positive" : "")">@goal.ProgressPercent%</span>
+                            </div>
+                            <div class="chips-row">
+                                @foreach (var milestone in milestones)
+                                {
+                                    <div class="milestone">
+                                        <PokerChip Value="@milestone.Label" IsActive="@milestone.IsReached" Size="sm" />
+                                    </div>
+                                }
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill" style="width: @(Math.Min(100, goal.ProgressPercent))%"></div>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Naspořeno</span>
+                                <span class="stat-value">@goal.CurrentAmount.ToString("N0") @goal.Currency</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Cíl</span>
+                                <span class="stat-value">@goal.TargetAmount.ToString("N0") @goal.Currency</span>
+                            </div>
 
-    @* ── Tip Card ── *@
-    <div class="tip-card">
-        <div class="tip-icon"><VbIcon Name="fire" Size="sm" /></div>
-        <div class="tip-content">
-            <span class="tip-title">Tip pro spoření</span>
-            <span class="tip-text">Pravidlo 50/30/20: 50% příjmů na potřeby, 30% na přání, 20% na spoření a investice.</span>
+                            @* ── Deposit / Withdraw ── *@
+                            @if (!goal.IsCompleted)
+                            {
+                                <div class="goal-actions">
+                                    @if (_depositGoalId == goal.Id)
+                                    {
+                                        <div class="goal-action-form">
+                                            <input class="form-input amount-input" type="number" min="1" @bind="_depositAmount" placeholder="Částka" />
+                                            <VbButton Variant="primary" Size="sm" OnClick="@(() => DepositToGoal(goal.Id))" Disabled="@_saving">
+                                                @(_saving ? "..." : "Potvrdit")
+                                            </VbButton>
+                                            <VbButton Variant="ghost" Size="sm" OnClick="@(() => _depositGoalId = null)">Zrušit</VbButton>
+                                        </div>
+                                    }
+                                    else if (_withdrawGoalId == goal.Id)
+                                    {
+                                        <div class="goal-action-form">
+                                            <input class="form-input amount-input" type="number" min="1" @bind="_withdrawAmount" placeholder="Částka" />
+                                            <VbButton Variant="primary" Size="sm" OnClick="@(() => WithdrawFromGoal(goal.Id))" Disabled="@_saving">
+                                                @(_saving ? "..." : "Potvrdit")
+                                            </VbButton>
+                                            <VbButton Variant="ghost" Size="sm" OnClick="@(() => _withdrawGoalId = null)">Zrušit</VbButton>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <VbButton Variant="primary" Size="sm" IconName="plus" OnClick="@(() => { _depositGoalId = goal.Id; _depositAmount = 0; })">Vložit</VbButton>
+                                        <VbButton Variant="outline" Size="sm" IconName="arrow-down" OnClick="@(() => { _withdrawGoalId = goal.Id; _withdrawAmount = 0; })">Vybrat</VbButton>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="goal-completed-badge">
+                                    <VbIcon Name="check" Size="xs" Color="var(--vb-green)" />
+                                    <span>Cíl splněn!</span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(_goalActionError) && (_depositGoalId == goal.Id || _withdrawGoalId == goal.Id))
+                            {
+                                <div class="field-error">@_goalActionError</div>
+                            }
+                        </div>
+                    </ChildContent>
+                </ContentCard>
+            }
+        }
+        else
+        {
+            <ContentCard>
+                <ChildContent>
+                    <div class="savings-empty">
+                        <PokerChip Value="?" Size="lg" />
+                        <span class="empty-title">Zatím nemáte žádné spořicí cíle</span>
+                        <span class="empty-desc">Vytvořte si svůj první spořicí cíl a začněte šetřit na to, co opravdu chcete.</span>
+                        <VbButton Variant="outline" IconName="plus" OnClick="@(() => _showNewGoalForm = true)">Vytvořit první cíl</VbButton>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── Savings Rules ── *@
+        <ContentCard Title="Pravidla spoření">
+            <Icon><VbIcon Name="settings" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                <p class="rule-description">
+                    Nastavte si vlastní pravidla automatického spoření.
+                </p>
+                @if (_rules.Any())
+                {
+                    @foreach (var rule in _rules)
+                    {
+                        <div class="savings-rule">
+                            <ToggleSwitch Label="@rule.Name" IsOn="@rule.IsEnabled" IsOnChanged="@(_ => ToggleRule(rule.Id))" />
+                            <span class="rule-desc">@(rule.Description ?? GetRuleTypeLabel(rule.Type))</span>
+                            <span class="rule-amount">@rule.Amount.ToString("N0") Kč</span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="rules-empty">
+                        <span class="empty-text">Zatím nemáte žádná pravidla spoření.</span>
+                    </div>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        @* ── Tip Card ── *@
+        <div class="tip-card">
+            <div class="tip-icon"><VbIcon Name="fire" Size="sm" /></div>
+            <div class="tip-content">
+                <span class="tip-title">Tip pro spoření</span>
+                <span class="tip-text">Pravidlo 50/30/20: 50% příjmů na potřeby, 30% na přání, 20% na spoření a investice.</span>
+            </div>
         </div>
-    </div>
+    }
 </div>
 
-@code {
-    private bool _roundUpEnabled = true;
-
-    private List<SavingsGoalViewModel> _goals = [];
-    private List<TransactionDto> _savingsHistory = [];
-    private List<SavingsRuleViewModel> _rules = [];
-
-    protected override void OnInitialized()
-    {
-        _goals =
-        [
-            new("Dovolená", "Středomořská dovolená", 60_000m, 42_000m, 70,
-            [
-                new("10k", true),
-                new("20k", true),
-                new("30k", true),
-                new("Va-bank", false),
-            ], "travel"),
-            new("Nové auto", "Fond na nové auto", 450_000m, 120_000m, 27,
-            [
-                new("50k", true),
-                new("100k", true),
-                new("200k", false),
-                new("Va-bank", false),
-            ], "car"),
-            new("Nouzový fond", "6 měsíčních výdajů", 180_000m, 95_000m, 53,
-            [
-                new("30k", true),
-                new("60k", true),
-                new("90k", true),
-                new("Va-bank", false),
-            ], "shield"),
-        ];
-
-        _savingsHistory =
-        [
-            new(Guid.NewGuid(), "Zaokrouhlení nákupu", DateTime.Now.AddDays(-1), 12m, "deposit"),
-            new(Guid.NewGuid(), "Týdenní spoření", DateTime.Now.AddDays(-3), 500m, "deposit"),
-            new(Guid.NewGuid(), "Bonus za výzvu", DateTime.Now.AddDays(-5), 200m, "deposit"),
-        ];
-
-        _rules =
-        [
-            new("Zaokrouhlování nákupů", true, "Každý nákup zaokrouhlen nahoru, rozdíl jde do spoření"),
-            new("Týdenní spoření", true, "Každý týden automaticky odeslat 500 Kč na spoření"),
-            new("Výzvové bonusy", false, "Dostávejte bonusy za splnění výzev"),
-        ];
+<style>
+    .savings-loading, .savings-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        gap: 8px;
+        text-align: center;
     }
 
-    private sealed record SavingsGoalViewModel(
-        string Name, string Description, decimal TargetAmount, decimal CurrentAmount,
-        int ProgressPercent, List<MilestoneVm> Milestones, string Icon);
+    .empty-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        margin-top: 8px;
+    }
+
+    .empty-desc {
+        font-size: 0.85rem;
+        color: var(--vb-text-muted);
+        max-width: 280px;
+        margin-bottom: 12px;
+    }
+
+    .rules-empty {
+        padding: 12px 0;
+    }
+
+    .empty-text {
+        font-size: 0.85rem;
+        color: var(--vb-text-muted);
+    }
+
+    .new-goal-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-input {
+        padding: 10px 14px;
+        border: 1px solid var(--vb-input-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-input-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        font-family: var(--vb-font);
+        transition: border-color var(--vb-transition);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-gold);
+        box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.15);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .field-error {
+        font-size: 0.8rem;
+        color: var(--vb-red);
+    }
+
+    .goal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--vb-divider);
+    }
+
+    .goal-action-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .amount-input {
+        width: 120px;
+        padding: 6px 10px;
+    }
+
+    .goal-completed-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: rgba(39, 174, 96, 0.08);
+        border-radius: var(--vb-radius-sm);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--vb-green);
+    }
+
+    .rule-amount {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        margin-left: auto;
+    }
+</style>
+
+@code {
+    private AuthSession? _session;
+    private Guid? _accountId;
+
+    private bool _loading = true;
+    private string? _error;
+    private string _formError = "";
+    private bool _saving;
+
+    private List<SavingsGoalDto> _goals = [];
+    private List<SavingsRuleDto> _rules = [];
+
+    // New goal form
+    private bool _showNewGoalForm;
+    private string _newGoalName = "";
+    private string _newGoalDescription = "";
+    private decimal _newGoalTargetAmount;
+    private string _newGoalCurrency = "CZK";
+
+    // New rule form
+    private bool _showNewRuleForm;
+    private string _newRuleName = "";
+    private string _newRuleDescription = "";
+    private string _newRuleType = "RoundUp";
+    private decimal _newRuleAmount;
+
+    // Goal deposit/withdraw
+    private Guid? _depositGoalId;
+    private Guid? _withdrawGoalId;
+    private decimal _depositAmount;
+    private decimal _withdrawAmount;
+    private string _goalActionError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _session = Auth.CurrentSession;
+            if (_session is null)
+            {
+                _error = "Nejste přihlášeni.";
+                _loading = false;
+                return;
+            }
+
+            var accounts = await Api.GetAccountsByOwnerAsync(_session.UserId);
+            if (accounts.Any())
+            {
+                _accountId = accounts[0].Id;
+                await LoadData();
+            }
+            else
+            {
+                _goals = [];
+                _rules = [];
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba při načítání: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadData()
+    {
+        if (_accountId is null) return;
+        try
+        {
+            var goalsTask = Api.GetSavingsGoalsByAccountAsync(_accountId.Value);
+            var rulesTask = Api.GetSavingsRulesByAccountAsync(_accountId.Value);
+            await Task.WhenAll(goalsTask, rulesTask);
+            _goals = goalsTask.Result;
+            _rules = rulesTask.Result;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba při načítání dat: {ex.Message}";
+        }
+    }
+
+    private async Task CreateGoal()
+    {
+        if (_accountId is null) return;
+        if (string.IsNullOrWhiteSpace(_newGoalName))
+        {
+            _formError = "Zadejte název cíle.";
+            return;
+        }
+        if (_newGoalTargetAmount <= 0)
+        {
+            _formError = "Zadejte cílovou částku.";
+            return;
+        }
+
+        _saving = true;
+        _formError = "";
+        try
+        {
+            await Api.CreateSavingsGoalAsync(
+                _accountId.Value,
+                _newGoalName.Trim(),
+                string.IsNullOrWhiteSpace(_newGoalDescription) ? null : _newGoalDescription.Trim(),
+                _newGoalTargetAmount,
+                _newGoalCurrency);
+
+            _showNewGoalForm = false;
+            _newGoalName = "";
+            _newGoalDescription = "";
+            _newGoalTargetAmount = 0;
+            _newGoalCurrency = "CZK";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _formError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task CreateRule()
+    {
+        if (_accountId is null) return;
+        if (string.IsNullOrWhiteSpace(_newRuleName))
+        {
+            _formError = "Zadejte název pravidla.";
+            return;
+        }
+        if (_newRuleAmount <= 0)
+        {
+            _formError = "Zadejte částku.";
+            return;
+        }
+
+        _saving = true;
+        _formError = "";
+        try
+        {
+            await Api.CreateSavingsRuleAsync(
+                _accountId.Value,
+                _newRuleName.Trim(),
+                string.IsNullOrWhiteSpace(_newRuleDescription) ? null : _newRuleDescription.Trim(),
+                _newRuleType,
+                _newRuleAmount);
+
+            _showNewRuleForm = false;
+            _newRuleName = "";
+            _newRuleDescription = "";
+            _newRuleType = "RoundUp";
+            _newRuleAmount = 0;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _formError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ToggleRule(Guid ruleId)
+    {
+        try
+        {
+            await Api.ToggleSavingsRuleAsync(ruleId);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba: {ex.Message}";
+        }
+    }
+
+    private async Task DepositToGoal(Guid goalId)
+    {
+        if (_depositAmount <= 0)
+        {
+            _goalActionError = "Zadejte částku.";
+            return;
+        }
+
+        _saving = true;
+        _goalActionError = "";
+        try
+        {
+            await Api.DepositToSavingsGoalAsync(goalId, _depositAmount);
+            _depositGoalId = null;
+            _depositAmount = 0;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _goalActionError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task WithdrawFromGoal(Guid goalId)
+    {
+        if (_withdrawAmount <= 0)
+        {
+            _goalActionError = "Zadejte částku.";
+            return;
+        }
+
+        _saving = true;
+        _goalActionError = "";
+        try
+        {
+            await Api.WithdrawFromSavingsGoalAsync(goalId, _withdrawAmount);
+            _withdrawGoalId = null;
+            _withdrawAmount = 0;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _goalActionError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static List<MilestoneVm> GenerateMilestones(SavingsGoalDto goal)
+    {
+        var milestones = new List<MilestoneVm>();
+        var target = goal.TargetAmount;
+        if (target <= 0) return milestones;
+
+        var steps = new[] { 0.25m, 0.50m, 0.75m, 1.0m };
+        foreach (var step in steps)
+        {
+            var stepAmount = target * step;
+            var label = stepAmount >= 1_000_000
+                ? $"{stepAmount / 1_000_000:0.#}M"
+                : stepAmount >= 1_000
+                    ? $"{stepAmount / 1_000:0.#}k"
+                    : $"{stepAmount:0}";
+            var isReached = goal.CurrentAmount >= stepAmount;
+
+            if (step == 1.0m)
+                milestones.Add(new MilestoneVm("Va-bank", isReached));
+            else
+                milestones.Add(new MilestoneVm(label, isReached));
+        }
+
+        return milestones;
+    }
+
+    private static string GetRuleTypeLabel(string type) => type switch
+    {
+        "RoundUp" => "Zaokrouhlování plateb",
+        "Weekly" => "Týdenní spoření",
+        "Monthly" => "Měsíční spoření",
+        "Percentage" => "Procentuální spoření",
+        _ => type
+    };
 
     private sealed record MilestoneVm(string Label, bool IsReached);
-
-    private sealed class SavingsRuleViewModel(string name, bool isEnabled, string description)
-    {
-        public string Name { get; set; } = name;
-        public bool IsEnabled { get; set; } = isEnabled;
-        public string Description { get; set; } = description;
-    }
 }

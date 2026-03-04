@@ -1,5 +1,5 @@
 @using Microsoft.AspNetCore.Components.Routing
-@inject AuthStateService Auth
+@inject IAuthService Auth
 @inject ThemeService Theme
 @implements IDisposable
 
@@ -22,22 +22,57 @@
             <span class="side-nav-icon"><VbIcon Name="payments" Size="sm" /></span>
             <span class="side-nav-label">Platby</span>
         </NavLink>
-        <NavLink class="side-nav-item" href="sporeni">
-            <span class="side-nav-icon"><VbIcon Name="target" Size="sm" /></span>
-            <span class="side-nav-label">Spoření</span>
+        <NavLink class="side-nav-item" href="karty">
+            <span class="side-nav-icon"><VbIcon Name="credit-card" Size="sm" /></span>
+            <span class="side-nav-label">Karty</span>
         </NavLink>
-        <NavLink class="side-nav-item" href="investice">
-            <span class="side-nav-icon"><VbIcon Name="investments" Size="sm" /></span>
-            <span class="side-nav-label">Investice</span>
-        </NavLink>
-        <NavLink class="side-nav-item" href="kurzy">
-            <span class="side-nav-icon">💱</span>
-            <span class="side-nav-label">Kurzy</span>
-        </NavLink>
+        @if (Auth.CurrentSession?.Role != "Child")
+        {
+            <NavLink class="side-nav-item" href="sporeni">
+                <span class="side-nav-icon"><VbIcon Name="target" Size="sm" /></span>
+                <span class="side-nav-label">Spoření</span>
+            </NavLink>
+            <NavLink class="side-nav-item" href="investice">
+                <span class="side-nav-icon"><VbIcon Name="investments" Size="sm" /></span>
+                <span class="side-nav-label">Investice</span>
+            </NavLink>
+            <NavLink class="side-nav-item" href="kurzy">
+                <span class="side-nav-icon"><VbIcon Name="exchange" Size="sm" /></span>
+                <span class="side-nav-label">Kurzy</span>
+            </NavLink>
+        }
+        @if (Auth.CurrentSession?.Role != "Child")
+        {
+            <NavLink class="side-nav-item" href="produkty">
+                <span class="side-nav-icon"><VbIcon Name="bank" Size="sm" /></span>
+                <span class="side-nav-label">Produkty</span>
+            </NavLink>
+        }
+        @if (Auth.CurrentSession?.Role == "Client")
+        {
+            <NavLink class="side-nav-item" href="rodina">
+                <span class="side-nav-icon"><VbIcon Name="users" Size="sm" /></span>
+                <span class="side-nav-label">Rodina</span>
+            </NavLink>
+        }
         <NavLink class="side-nav-item" href="zpravy">
             <span class="side-nav-icon"><VbIcon Name="chat" Size="sm" /></span>
             <span class="side-nav-label">Zprávy</span>
         </NavLink>
+        @if (Auth.CurrentSession?.Role == "Banker")
+        {
+            <NavLink class="side-nav-item" href="sprava">
+                <span class="side-nav-icon"><VbIcon Name="clipboard" Size="sm" /></span>
+                <span class="side-nav-label">Správa</span>
+            </NavLink>
+        }
+        @if (Auth.CurrentSession?.Role == "Admin")
+        {
+            <NavLink class="side-nav-item" href="admin">
+                <span class="side-nav-icon"><VbIcon Name="settings" Size="sm" /></span>
+                <span class="side-nav-label">Admin</span>
+            </NavLink>
+        }
         <NavLink class="side-nav-item" href="profil">
             <span class="side-nav-icon"><VbIcon Name="user" Size="sm" /></span>
             <span class="side-nav-label">Profil</span>
@@ -56,7 +91,7 @@
 @code {
     protected override void OnInitialized()
     {
-        Auth.OnChanged += HandleAuthChanged;
+        Auth.AuthStateChanged += HandleAuthChanged;
         Theme.OnThemeChanged += HandleAuthChanged;
     }
 
@@ -66,7 +101,7 @@
 
     public void Dispose()
     {
-        Auth.OnChanged -= HandleAuthChanged;
+        Auth.AuthStateChanged -= HandleAuthChanged;
         Theme.OnThemeChanged -= HandleAuthChanged;
     }
 }

@@ -1,0 +1,583 @@
+@page "/deti/{ChildId:guid}"
+@using FairBank.Web.Shared.Models
+@using FairBank.Web.Shared.Services
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Navigation
+
+<PageHeader Title="@_pageTitle" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="arrow-left" OnClick="GoBack">Zpet</VbButton>
+    </Actions>
+</PageHeader>
+
+<div class="page-content child-detail-page">
+    @if (_loading)
+    {
+        <div class="detail-empty">Nacitani...</div>
+    }
+    else if (_child == null)
+    {
+        <div class="detail-empty">Dite nebylo nalezeno.</div>
+    }
+    else
+    {
+        @* ── ACCOUNT INFO ────────────────────── *@
+        <ContentCard Title="UCET" CssClass="section-account">
+            <Icon><VbIcon Name="bank" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                @if (_account != null)
+                {
+                    <div class="account-info-grid">
+                        <div class="account-stat">
+                            <span class="stat-label">Zustatek</span>
+                            <span class="stat-value">@_account.Balance.ToString("N2") @_account.Currency</span>
+                        </div>
+                        <div class="account-stat">
+                            <span class="stat-label">Cislo uctu</span>
+                            <span class="stat-value mono">@_account.AccountNumber</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="empty-state">Ucet nebyl nalezen.</p>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        @* ── SPENDING LIMIT ────────────────────── *@
+        <ContentCard Title="LIMIT UTRATY" CssClass="section-limit">
+            <Icon><VbIcon Name="shield" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                @if (_account != null)
+                {
+                    <div class="limit-form">
+                        <div class="limit-input-wrap">
+                            <input type="number" @bind="_spendingLimit" min="0" step="100"
+                                   placeholder="Denni limit v CZK" class="form-input limit-input" />
+                            <span class="limit-currency">CZK</span>
+                        </div>
+                        <VbButton Variant="primary" Size="sm" OnClick="SaveLimit" Disabled="_savingLimit">
+                            @(_savingLimit ? "Ukladam..." : "Ulozit limit")
+                        </VbButton>
+                    </div>
+                    @if (_limitSaved)
+                    {
+                        <div class="limit-success">Limit byl ulozen.</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_limitError))
+                    {
+                        <div class="limit-error">@_limitError</div>
+                    }
+                }
+                else
+                {
+                    <p class="empty-state">Pro nastaveni limitu je potreba ucet.</p>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        @* ── PENDING TRANSACTIONS ────────────────── *@
+        <ContentCard Title="CEKAJICI TRANSAKCE" CssClass="section-pending">
+            <Icon><VbIcon Name="clock" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                @if (!_pendingTransactions.Any())
+                {
+                    <p class="empty-state">Zadne cekajici transakce.</p>
+                }
+                else
+                {
+                    <div class="pending-list">
+                        @foreach (var tx in _pendingTransactions)
+                        {
+                            <div class="pending-item">
+                                <div class="pending-info">
+                                    <div class="pending-desc">@tx.Description</div>
+                                    <div class="pending-meta">
+                                        @tx.Amount.ToString("N2") @tx.Currency &middot; @tx.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                    </div>
+                                </div>
+                                <div class="pending-actions">
+                                    <VbButton Variant="primary" Size="sm" OnClick="() => ApproveTx(tx.Id)">Schvalit</VbButton>
+                                    <VbButton Variant="danger" Size="sm" OnClick="() => OpenRejectModal(tx.Id)">Zamitnout</VbButton>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </ChildContent>
+        </ContentCard>
+
+        @* ── RECENT TRANSACTIONS ────────────────── *@
+        <ContentCard Title="POSLEDNI TRANSAKCE" CssClass="section-recent">
+            <Icon><VbIcon Name="payments" Size="sm" Color="var(--vb-red)" /></Icon>
+            <ChildContent>
+                @if (!_recentPayments.Any())
+                {
+                    <p class="empty-state">Zadne transakce.</p>
+                }
+                else
+                {
+                    <div class="recent-list">
+                        @foreach (var p in _recentPayments)
+                        {
+                            <div class="recent-item">
+                                <div class="recent-icon">
+                                    <VbIcon Name="@(p.SenderAccountId == _account?.Id ? "arrow-up" : "arrow-down")" Size="sm" />
+                                </div>
+                                <div class="recent-info">
+                                    <div class="recent-desc">@(p.Description ?? p.RecipientAccountNumber)</div>
+                                    <div class="recent-date">@p.CreatedAt.ToString("dd.MM.yyyy")</div>
+                                </div>
+                                <div class="recent-amount @(p.SenderAccountId == _account?.Id ? "negative" : "positive")">
+                                    @(p.SenderAccountId == _account?.Id ? "-" : "+")@p.Amount.ToString("N2") @p.Currency
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </ChildContent>
+        </ContentCard>
+    }
+</div>
+
+@* ── REJECT MODAL ────────────────────── *@
+@if (_showRejectModal)
+{
+    <div class="modal-overlay" @onclick="CloseRejectModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Duvod zamitnutí</h3>
+                <button class="modal-close" @onclick="CloseRejectModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Duvod</label>
+                    <textarea @bind="_rejectReason" rows="3" class="form-input" placeholder="Napiste duvod zamitnutí..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <VbButton Variant="ghost" OnClick="CloseRejectModal">Zrusit</VbButton>
+                <VbButton Variant="danger" OnClick="ConfirmReject">Zamitnout</VbButton>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .child-detail-page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .detail-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        font-style: italic;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: var(--vb-text-muted);
+        font-style: italic;
+        margin: 0.5rem 0;
+    }
+
+    /* Account info */
+    .account-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .account-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--vb-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .stat-value.mono {
+        font-family: monospace;
+        font-size: 0.95rem;
+    }
+
+    /* Limit form */
+    .limit-form {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .limit-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 160px;
+    }
+
+    .limit-input {
+        flex: 1;
+    }
+
+    .limit-currency {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+    }
+
+    .limit-success {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #16a34a;
+        font-weight: 500;
+    }
+
+    .limit-error {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--vb-red);
+        font-weight: 500;
+    }
+
+    /* Pending transactions */
+    .pending-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pending-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: var(--vb-bg);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm);
+    }
+
+    .pending-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pending-desc {
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+    }
+
+    .pending-meta {
+        font-size: 0.8rem;
+        color: var(--vb-text-secondary);
+        margin-top: 2px;
+    }
+
+    .pending-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    /* Recent transactions */
+    .recent-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .recent-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .recent-item:last-child {
+        border-bottom: none;
+    }
+
+    .recent-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        color: var(--vb-text-muted);
+    }
+
+    .recent-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .recent-desc {
+        font-weight: 500;
+        color: var(--vb-text-primary);
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .recent-date {
+        font-size: 0.75rem;
+        color: var(--vb-text-muted);
+        margin-top: 1px;
+    }
+
+    .recent-amount {
+        font-weight: 700;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .recent-amount.negative {
+        color: var(--vb-red);
+    }
+
+    .recent-amount.positive {
+        color: #16a34a;
+    }
+
+    /* Form */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .form-input {
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        transition: var(--vb-transition);
+        font-family: inherit;
+        resize: vertical;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-red);
+        box-shadow: 0 0 0 2px var(--vb-red-glow);
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .modal-content {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow);
+        width: 100%;
+        max-width: 440px;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        color: var(--vb-text-primary);
+    }
+
+    .modal-body {
+        padding: 1.25rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--vb-divider);
+    }
+</style>
+
+@code {
+    [Parameter] public Guid ChildId { get; set; }
+
+    private UserResponse? _child;
+    private AccountResponse? _account;
+    private List<PendingTransactionDto> _pendingTransactions = new();
+    private List<PaymentDto> _recentPayments = new();
+    private bool _loading = true;
+    private string _pageTitle = "DETAIL DITETE";
+
+    // Spending limit
+    private decimal _spendingLimit;
+    private bool _savingLimit;
+    private bool _limitSaved;
+    private string? _limitError;
+
+    // Reject modal
+    private bool _showRejectModal;
+    private Guid _rejectingTxId;
+    private string _rejectReason = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = Auth.CurrentSession;
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+        if (session.Role != "Client") { Navigation.NavigateTo("/prehled"); return; }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _child = await Api.GetUserAsync(ChildId);
+            if (_child != null)
+            {
+                _pageTitle = $"{_child.FirstName} {_child.LastName}".ToUpperInvariant();
+
+                var accounts = await Api.GetAccountsByOwnerAsync(ChildId);
+                _account = accounts.FirstOrDefault();
+
+                if (_account != null)
+                {
+                    _pendingTransactions = await Api.GetPendingTransactionsAsync(_account.Id);
+                    _recentPayments = (await Api.GetPaymentsByAccountAsync(_account.Id, 10)).ToList();
+                }
+            }
+        }
+        catch
+        {
+            // Keep defaults
+        }
+        _loading = false;
+    }
+
+    private async Task SaveLimit()
+    {
+        if (_account == null) return;
+
+        _savingLimit = true;
+        _limitSaved = false;
+        _limitError = null;
+
+        try
+        {
+            await Api.SetSpendingLimitAsync(_account.Id, _spendingLimit, _account.Currency);
+            _limitSaved = true;
+        }
+        catch (Exception ex)
+        {
+            _limitError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _savingLimit = false;
+        }
+    }
+
+    private async Task ApproveTx(Guid txId)
+    {
+        try
+        {
+            var session = Auth.CurrentSession!;
+            await Api.ApproveTransactionAsync(txId, session.UserId);
+            await LoadData();
+        }
+        catch
+        {
+            // Silently handle
+        }
+    }
+
+    private void OpenRejectModal(Guid txId)
+    {
+        _rejectingTxId = txId;
+        _rejectReason = "";
+        _showRejectModal = true;
+    }
+
+    private void CloseRejectModal()
+    {
+        _showRejectModal = false;
+        _rejectReason = "";
+    }
+
+    private async Task ConfirmReject()
+    {
+        try
+        {
+            var session = Auth.CurrentSession!;
+            await Api.RejectTransactionAsync(_rejectingTxId, session.UserId, _rejectReason);
+            _showRejectModal = false;
+            await LoadData();
+        }
+        catch
+        {
+            // Silently handle
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/deti");
+}

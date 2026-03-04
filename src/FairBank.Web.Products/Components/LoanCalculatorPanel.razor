@@ -1,0 +1,146 @@
+@namespace FairBank.Web.Products.Pages
+@using FairBank.Web.Products.Services
+@inject IFairBankApi Api
+@inject IAuthService Auth
+
+<ContentCard Title="Kalkulačka osobního úvěru">
+    <ChildContent>
+        <div class="calculator-form">
+            <div class="form-group">
+                <label class="form-label">Částka úvěru</label>
+                <input class="form-input" type="range" min="10000" max="2000000" step="10000"
+                       @bind="_amount" @bind:event="oninput" />
+                <div class="range-value">@_amount.ToString("N0") Kč</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Doba splácení (měsíce)</label>
+                <input class="form-input" type="range" min="6" max="96" step="6"
+                       @bind="_months" @bind:event="oninput" />
+                <div class="range-value">@_months měsíců (@(_months / 12) let @(_months % 12 > 0 ? $"a {_months % 12} měs." : ""))</div>
+            </div>
+        </div>
+
+        <div class="calc-results">
+            <div class="calc-result-primary">
+                <span class="result-label">Měsíční splátka</span>
+                <span class="result-value">@_result.MonthlyPayment.ToString("N0") Kč</span>
+            </div>
+            <div class="calc-results-grid">
+                <div class="calc-result-item">
+                    <span class="result-label">Úroková sazba</span>
+                    <span class="result-value-sm">@_result.InterestRate.ToString("F1") % p.a.</span>
+                </div>
+                <div class="calc-result-item">
+                    <span class="result-label">RPSN</span>
+                    <span class="result-value-sm">@_result.Rpsn.ToString("F1") %</span>
+                </div>
+                <div class="calc-result-item">
+                    <span class="result-label">Celkem zaplatíte</span>
+                    <span class="result-value-sm">@_result.TotalCost.ToString("N0") Kč</span>
+                </div>
+            </div>
+        </div>
+
+        @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+        {
+            <VbButton OnClick="ShowModal">Požádat o úvěr</VbButton>
+        }
+
+        <div class="representative-example">
+            <strong>Reprezentativní příklad:</strong>
+            Výše úvěru @_amount.ToString("N0") Kč, doba splácení @_months měsíců,
+            úroková sazba @_result.InterestRate.ToString("F1") % p.a. (fixní),
+            RPSN @_result.Rpsn.ToString("F1") %, měsíční splátka @_result.MonthlyPayment.ToString("N0") Kč,
+            celková částka splatná @_result.TotalCost.ToString("N0") Kč.
+        </div>
+
+        @if (_showModal)
+        {
+            <div class="modal-overlay" @onclick="HideModal">
+                <div class="modal-card" @onclick:stopPropagation>
+                    @if (_submitSuccess)
+                    {
+                        <h3>Žádost odeslána!</h3>
+                        <p>Vaše žádost byla přijata a čeká na schválení bankéřem. Stav můžete sledovat v záložce "Moje produkty".</p>
+                        <VbButton OnClick="HideModal">Zavřít</VbButton>
+                    }
+                    else if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <h3>Chyba</h3>
+                        <p>@_errorMessage</p>
+                        <VbButton OnClick="HideModal">Zavřít</VbButton>
+                    }
+                    else
+                    {
+                        <h3>Potvrdit žádost o úvěr</h3>
+                        <div class="modal-summary">
+                            <div class="summary-row"><span>Částka úvěru:</span> <strong>@_amount.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Doba splácení:</span> <strong>@_months měsíců</strong></div>
+                            <div class="summary-row"><span>Úroková sazba:</span> <strong>@_result.InterestRate.ToString("F1") % p.a.</strong></div>
+                            <div class="summary-row"><span>RPSN:</span> <strong>@_result.Rpsn.ToString("F1") %</strong></div>
+                            <div class="summary-row"><span>Měsíční splátka:</span> <strong>@_result.MonthlyPayment.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Celkem zaplatíte:</span> <strong>@_result.TotalCost.ToString("N0") Kč</strong></div>
+                        </div>
+                        <div class="modal-actions">
+                            <VbButton OnClick="SubmitApplication" Disabled="@_isSubmitting">
+                                @(_isSubmitting ? "Odesílání..." : "Odeslat žádost")
+                            </VbButton>
+                            <VbButton OnClick="HideModal">Zrušit</VbButton>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </ChildContent>
+</ContentCard>
+
+@code {
+    private decimal _amount = 200_000m;
+    private int _months = 60;
+    private bool _showModal;
+    private bool _isSubmitting;
+    private bool _submitSuccess;
+    private string _errorMessage = "";
+
+    private LoanCalculator.LoanResult _result => LoanCalculator.Calculate(_amount, _months);
+
+    private void ShowModal()
+    {
+        _showModal = true;
+        _submitSuccess = false;
+        _errorMessage = "";
+    }
+
+    private void HideModal()
+    {
+        _showModal = false;
+        _isSubmitting = false;
+    }
+
+    private async Task SubmitApplication()
+    {
+        _isSubmitting = true;
+        try
+        {
+            var parameters = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                amount = _amount,
+                months = _months,
+                interestRate = _result.InterestRate,
+                rpsn = _result.Rpsn,
+                totalCost = _result.TotalCost
+            });
+            await Api.SubmitProductApplicationAsync(Auth.CurrentSession!.UserId, "PersonalLoan", parameters, _result.MonthlyPayment);
+            _submitSuccess = true;
+        }
+        catch
+        {
+            _errorMessage = "Žádost se nepodařilo odeslat. Zkuste to prosím později.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

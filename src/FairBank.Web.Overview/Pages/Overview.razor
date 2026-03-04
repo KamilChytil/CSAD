@@ -21,6 +21,35 @@
         </div>
     </BalanceCard>
 
+    @* ── CHILD ROLE: SPENDING LIMIT & PENDING ─── *@
+    @if (_session?.Role == "Child" && _account is not null)
+    {
+        @if (_account.SpendingLimit is not null)
+        {
+            <ContentCard Title="MŮJ LIMIT">
+                <ChildContent>
+                    <div class="limit-info" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                        <span style="color:var(--vb-text-secondary);">Denní limit:</span>
+                        <strong style="color:var(--vb-text-primary);font-size:1.1rem;">
+                            @_account.SpendingLimit.Value.ToString("N0") @_account.Currency
+                        </strong>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @if (_pendingCount > 0)
+        {
+            <ContentCard Title="ČEKAJÍCÍ PLATBY">
+                <ChildContent>
+                    <div style="color:var(--vb-gold);padding:8px 0;">
+                        <strong>@_pendingCount</strong> @(_pendingCount == 1 ? "platba čeká" : "platby čekají") na schválení rodičem
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+    }
+
     @* ── CHALLENGES / VÝZVY ───────────────────── *@
     <ContentCard Title="MOJE VÝZVY" CssClass="section-challenges">
         <Icon><VbIcon Name="rocket" Size="sm" Color="var(--vb-red)" /></Icon>
@@ -111,8 +140,11 @@
 @code {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
+    private FairBank.Web.Shared.Models.AuthSession? _session;
+    private FairBank.Web.Shared.Models.AccountResponse? _account;
     private decimal _balance = 0m;
     private string _accountNumber = "---";
+    private int _pendingCount;
     private List<TransactionVm> _transactions = [];
     private List<ChallengeVm> _challenges = [];
     private List<MilestoneVm> _savingsMilestones = [];
@@ -122,23 +154,32 @@
         // Load real account data if available
         try
         {
-            if (Auth.CurrentSession is { } session)
+            _session = Auth.CurrentSession;
+            if (_session is { } session)
             {
                 var accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
                 if (accounts.Any())
                 {
+                    _account = accounts[0];
                     _balance = accounts.Sum(a => a.Balance);
-                    _accountNumber = accounts[0].AccountNumber;
+                    _accountNumber = _account.AccountNumber;
 
                     // Load real transactions
-                    var payments = await Api.GetPaymentsByAccountAsync(accounts[0].Id);
+                    var payments = await Api.GetPaymentsByAccountAsync(_account.Id);
                     _transactions = payments.Select(p => new TransactionVm(
                         p.Description ?? p.RecipientAccountNumber,
                         p.CreatedAt,
-                        p.SenderAccountId == accounts[0].Id ? -p.Amount : p.Amount,
-                        p.SenderAccountId == accounts[0].Id ? "withdrawal" : "deposit",
+                        p.SenderAccountId == _account.Id ? -p.Amount : p.Amount,
+                        p.SenderAccountId == _account.Id ? "withdrawal" : "deposit",
                         ""
                     )).Take(5).ToList();
+
+                    // Load pending transaction count for Child role
+                    if (_session.Role == "Child")
+                    {
+                        var pending = await Api.GetPendingTransactionsAsync(_account.Id);
+                        _pendingCount = pending.Count;
+                    }
                 }
             }
         }

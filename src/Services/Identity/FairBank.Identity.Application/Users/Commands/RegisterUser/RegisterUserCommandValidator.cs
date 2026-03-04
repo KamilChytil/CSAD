@@ -25,5 +25,22 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
             .Matches(@"[a-z]").WithMessage("Password must contain a lowercase letter.")
             .Matches(@"\d").WithMessage("Password must contain a digit.")
             .Matches(@"[^a-zA-Z\d]").WithMessage("Password must contain a special character.");
+
+        RuleFor(x => x.PersonalIdNumber)
+            .MinimumLength(9).When(x => !string.IsNullOrEmpty(x.PersonalIdNumber))
+            .WithMessage("Personal ID number must be at least 9 characters.");
+
+        RuleFor(x => x.DateOfBirth)
+            .Must(dob => dob == null || dob.Value.AddYears(15) <= DateOnly.FromDateTime(DateTime.UtcNow))
+            .When(x => x.DateOfBirth.HasValue)
+            .WithMessage("User must be at least 15 years old.");
+
+        RuleFor(x => x.Phone)
+            .MinimumLength(9).When(x => !string.IsNullOrEmpty(x.Phone))
+            .WithMessage("Phone number must be at least 9 digits.");
+
+        RuleFor(x => x.ZipCode)
+            .MinimumLength(5).When(x => !string.IsNullOrEmpty(x.ZipCode))
+            .WithMessage("ZIP code must be at least 5 characters.");
     }
 }

@@ -2,11 +2,15 @@ using FairBank.Chat.Application;
 using FairBank.Chat.Application.Conversations.Queries;
 using FairBank.Chat.Application.Hubs;
 using FairBank.Chat.Application.Messages.Queries.GetConversation;
+using FairBank.Chat.Application.Messages.Queries.SearchMessages;
+using FairBank.Chat.Domain.Entities;
+using FairBank.Chat.Domain.Enums;
 using FairBank.Chat.Infrastructure;
 using FairBank.Chat.Infrastructure.Persistence;
 using MediatR;
-using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +122,71 @@ app.MapPost("/api/v1/chat/conversations/{id:guid}/transfer", async (ISender send
 {
     await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId));
     return Results.NoContent();
+});
+
+// ── Unique clients for a specific banker ─────────────────────────────────
+// GET /api/v1/chat/conversations/banker/{bankerId}/clients
+app.MapGet("/api/v1/chat/conversations/banker/{bankerId:guid}/clients", async (Guid bankerId, ChatDbContext db) =>
+{
+    var clients = await db.Conversations
+        .Where(c => c.BankerOrParentId == bankerId && c.Type == ConversationType.Support)
+        .GroupBy(c => c.ClientOrChildId)
+        .Select(g => new
+        {
+            ClientId = g.Key,
+            ClientLabel = g.First().Label,
+            ActiveChatsCount = g.Count(c => c.Status == ConversationStatus.Active),
+            LastActivity = g.Max(c => c.LastClientMessageAt)
+        })
+        .ToListAsync();
+    return Results.Ok(clients);
+}).WithTags("Chat");
+
+// ── Message search ────────────────────────────────────────────────────────
+app.MapGet("/api/v1/chat/conversations/{id:guid}/messages/search", async (
+    Guid id, string query, int? page, int? pageSize, IMediator mediator) =>
+{
+    var result = await mediator.Send(new SearchMessagesQuery(id, query, page ?? 1, pageSize ?? 20));
+    return Results.Ok(result);
+});
+
+// ── Attachment upload ─────────────────────────────────────────────────────
+app.MapPost("/api/v1/chat/messages/{messageId:guid}/attachments", async (
+    Guid messageId,
+    IFormFile file,
+    ChatDbContext db) =>
+{
+    var uploadsDir = "/data/chat-attachments";
+    Directory.CreateDirectory(uploadsDir);
+
+    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+    var filePath = Path.Combine(uploadsDir, fileName);
+
+    await using var stream = new FileStream(filePath, FileMode.Create);
+    await file.CopyToAsync(stream);
+
+    var attachment = ChatAttachment.Create(
+        messageId, file.FileName, file.ContentType, file.Length, filePath);
+
+    db.Set<ChatAttachment>().Add(attachment);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/api/v1/chat/attachments/{attachment.Id}", new
+    {
+        attachment.Id, attachment.FileName, attachment.ContentType, attachment.FileSize
+    });
+})
+.DisableAntiforgery();
+
+// ── Attachment download ───────────────────────────────────────────────────
+app.MapGet("/api/v1/chat/attachments/{id:guid}/download", async (Guid id, ChatDbContext db) =>
+{
+    var attachment = await db.Set<ChatAttachment>().FindAsync(id);
+    if (attachment is null) return Results.NotFound();
+
+    if (!File.Exists(attachment.StoragePath)) return Results.NotFound();
+
+    return Results.File(attachment.StoragePath, attachment.ContentType, attachment.FileName);
 });
 
 // ── SignalR Hub ────────────────────────────────────────────────────────────

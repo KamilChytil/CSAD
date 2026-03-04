@@ -9,4 +9,8 @@ public sealed record AccountResponse(
     decimal Balance,
     Currency Currency,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? Alias = null,
+    bool RequiresApproval = false,
+    decimal? ApprovalThreshold = null,
+    decimal? SpendingLimit = null);

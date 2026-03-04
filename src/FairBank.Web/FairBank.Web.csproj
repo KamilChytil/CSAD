@@ -13,6 +13,8 @@
     <ProjectReference Include="../FairBank.Web.Investments/FairBank.Web.Investments.csproj" />
     <ProjectReference Include="../FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
     <ProjectReference Include="../FairBank.Web.Exchange/FairBank.Web.Exchange.csproj" />
+    <ProjectReference Include="../FairBank.Web.Products/FairBank.Web.Products.csproj" />
+    <ProjectReference Include="../FairBank.Web.Cards/FairBank.Web.Cards.csproj" />
   </ItemGroup>
 
 </Project>

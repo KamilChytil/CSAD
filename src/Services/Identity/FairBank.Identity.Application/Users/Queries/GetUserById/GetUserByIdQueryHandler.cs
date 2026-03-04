@@ -20,6 +20,15 @@ public sealed class GetUserByIdQueryHandler(IUserRepository userRepository)
             user.Email.Value,
             user.Role,
             user.IsActive,
-            user.CreatedAt);
+            user.CreatedAt,
+            user.PersonalIdNumber,
+            user.DateOfBirth,
+            user.PhoneNumber?.Value,
+            user.Address?.Street,
+            user.Address?.City,
+            user.Address?.ZipCode,
+            user.Address?.Country,
+            user.IsEmailVerified,
+            user.ParentId);
     }
 }

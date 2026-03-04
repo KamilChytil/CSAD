@@ -20,7 +20,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var accountsApiUrl = builder.Configuration["Services:AccountsApi"]
     ?? "http://accounts-api:8080";
 
-builder.Services.AddPaymentsInfrastructure(connectionString, accountsApiUrl);
+var identityApiUrl = builder.Configuration["Services:IdentityApi"]
+    ?? "http://identity-api:8080";
+
+builder.Services.AddPaymentsInfrastructure(connectionString, accountsApiUrl, identityApiUrl);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

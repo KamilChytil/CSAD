@@ -1,13 +1,20 @@
 using FairBank.Accounts.Application.Commands.ApproveTransaction;
+using FairBank.Accounts.Application.Commands.CloseAccount;
 using FairBank.Accounts.Application.Commands.CreateAccount;
+using FairBank.Accounts.Application.Commands.CreatePendingTransaction;
 using FairBank.Accounts.Application.Commands.DepositMoney;
 using FairBank.Accounts.Application.Commands.RejectTransaction;
+using FairBank.Accounts.Application.Commands.RenameAccount;
+using FairBank.Accounts.Application.Commands.SetAccountLimits;
 using FairBank.Accounts.Application.Commands.SetSpendingLimit;
 using FairBank.Accounts.Application.Commands.WithdrawMoney;
+using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Queries.GetAccountById;
 using FairBank.Accounts.Application.Queries.GetAccountByNumber;
+using FairBank.Accounts.Application.Queries.GetAccountLimits;
 using FairBank.Accounts.Application.Queries.GetAccountsByOwner;
 using FairBank.Accounts.Application.Queries.GetPendingTransactions;
+using FairBank.Accounts.Domain.Enums;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -73,13 +80,47 @@ public static class AccountEndpoints
         .Produces(StatusCodes.Status200OK);
 
         // Spending limits
-        group.MapPost("/{id:guid}/limits", async (Guid id, SetSpendingLimitCommand command, ISender sender) =>
+        group.MapPost("/{id:guid}/spending-limit", async (Guid id, SetSpendingLimitCommand command, ISender sender) =>
         {
             var result = await sender.Send(command with { AccountId = id });
             return Results.Ok(result);
         })
         .WithName("SetSpendingLimit")
         .Produces(StatusCodes.Status200OK);
+
+        // Granular account limits
+        group.MapPut("/{id:guid}/limits", async (Guid id, SetAccountLimitsCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { AccountId = id });
+            return Results.Ok(result);
+        })
+        .WithName("SetAccountLimits")
+        .Produces<AccountResponse>(StatusCodes.Status200OK);
+
+        group.MapGet("/{id:guid}/limits", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new GetAccountLimitsQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetAccountLimits")
+        .Produces<AccountLimitsResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/close", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new CloseAccountCommand(id));
+            return Results.Ok(result);
+        })
+        .WithName("CloseAccount")
+        .Produces<AccountResponse>(StatusCodes.Status200OK);
+
+        group.MapPut("/{id:guid}/alias", async (Guid id, RenameAccountCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { AccountId = id });
+            return Results.Ok(result);
+        })
+        .WithName("RenameAccount")
+        .Produces<AccountResponse>(StatusCodes.Status200OK);
 
         // Pending transactions
         group.MapGet("/{id:guid}/pending", async (Guid id, ISender sender) =>
@@ -93,6 +134,15 @@ public static class AccountEndpoints
         // Approve/Reject pending transactions
         var pendingGroup = app.MapGroup("/api/v1/accounts/pending")
             .WithTags("PendingTransactions");
+
+        pendingGroup.MapPost("/", async (CreatePendingTransactionRequest req, ISender sender) =>
+        {
+            if (!Enum.TryParse<Currency>(req.Currency, true, out var currency))
+                return Results.BadRequest("Invalid currency.");
+            var result = await sender.Send(new CreatePendingTransactionCommand(
+                req.AccountId, req.Amount, currency, req.Description, req.RequestedBy));
+            return Results.Created($"/api/v1/accounts/pending/{result.Id}", result);
+        }).WithName("CreatePendingTransaction");
 
         pendingGroup.MapPost("/{id:guid}/approve", async (Guid id, ApproveTransactionCommand command, ISender sender) =>
         {
@@ -113,3 +163,6 @@ public static class AccountEndpoints
         return group;
     }
 }
+
+public sealed record CreatePendingTransactionRequest(
+    Guid AccountId, decimal Amount, string Currency, string Description, Guid RequestedBy);

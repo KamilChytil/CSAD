@@ -1,7 +1,6 @@
 using FairBank.Web.Shared.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -17,15 +16,9 @@ builder.Services.AddScoped(sp => new FairBank.Web.Shared.Services.Chat.ChatServi
     sp.GetRequiredService<HttpClient>(), 
     builder.HostEnvironment.BaseAddress));
 
-builder.Services.AddSingleton<AuthStateService>();
 builder.Services.AddScoped<ThemeService>();
 
 var host = builder.Build();
-
-// Obnovit stav přihlášení z localStorage před prvním vykreslením
-var authState = host.Services.GetRequiredService<AuthStateService>();
-var js = host.Services.GetRequiredService<IJSRuntime>();
-await authState.InitializeAsync(js);
 
 // Inicializovat theme service
 var themeService = host.Services.GetRequiredService<ThemeService>();
