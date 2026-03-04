@@ -755,27 +755,27 @@
     private async Task LoadData()
     {
         if (_selectedAccountId is null) return;
-        try
+
+        // Load each account's history independently so one 404/error doesn't wipe everything
+        var allPayments = new List<PaymentDto>();
+        foreach (var account in _accounts)
         {
-            // Load history for ALL user accounts and merge (so cross-account transfers show on both sides)
-            var historyTasks = _accounts.Select(a => Api.GetPaymentsByAccountAsync(a.Id)).ToList();
-            var standingTask = Api.GetStandingOrdersByAccountAsync(_selectedAccountId.Value);
-            var templatesTask = Api.GetPaymentTemplatesByAccountAsync(_selectedAccountId.Value);
-            await Task.WhenAll(historyTasks.Cast<Task>().Concat([standingTask, templatesTask]));
-            // Deduplicate by Id (a transfer appears in both sender and recipient queries)
-            _history = historyTasks
-                .SelectMany(t => t.Result)
-                .GroupBy(p => p.Id)
-                .Select(g => g.First())
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-            _standingOrders = standingTask.Result;
-            _templates = templatesTask.Result;
+            try
+            {
+                var payments = await Api.GetPaymentsByAccountAsync(account.Id);
+                allPayments.AddRange(payments);
+            }
+            catch { /* account has no transactions yet, skip */ }
         }
-        catch
-        {
-            // Keep existing data on failure
-        }
+        // Deduplicate by Id (internal transfers appear in both sender and recipient query results)
+        _history = allPayments
+            .GroupBy(p => p.Id)
+            .Select(g => g.First())
+            .OrderByDescending(p => p.CreatedAt)
+            .ToList();
+
+        try { _standingOrders = await Api.GetStandingOrdersByAccountAsync(_selectedAccountId.Value); } catch { }
+        try { _templates = await Api.GetPaymentTemplatesByAccountAsync(_selectedAccountId.Value); } catch { }
     }
 
     private void SetTab(string tab)
@@ -802,8 +802,9 @@
                 _accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
                 if (_accounts.Any())
                 {
-                    _selectedAccountId = _accounts[0].Id;
-                    _accountBalance = _accounts[0].Balance;
+                    _myAccountIds = _accounts.Select(a => a.Id).ToHashSet();
+                    _selectedAccountId = _accounts.FirstOrDefault(a => a.AccountType == "Checking")?.Id ?? _accounts[0].Id;
+                    _accountBalance = _accounts.Sum(a => a.Balance);
                 }
             }
             await LoadData();
@@ -976,7 +977,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Platba se nezdařila. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Platba se nezdařila. Zkuste to znovu.";
             _showConfirmModal = false;
         }
         finally
@@ -1020,7 +1023,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Převod se nezdařil. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Převod se nezdařil. Zkuste to znovu.";
         }
         finally
         {
@@ -1050,8 +1055,10 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : ex.Message.Contains("nezdaři") ? ex.Message : "Vytvoření trvalého příkazu se nezdařilo.";
-        }
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : ex.Message.Contains("nezdaři") ? ex.Message
+                : "Vytvoření trvalého příkazu se nezdařilo.";        }
         finally
         {
             _isLoading = false;
@@ -1143,7 +1150,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Zahraniční platba se nezdařila. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Zahraniční platba se nezdařila. Zkuste to znovu.";
         }
         finally
         {
