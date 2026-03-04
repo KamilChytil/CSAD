@@ -452,5 +452,80 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
             new { CurrentPassword = currentPassword, NewPassword = newPassword });
     }
 
+    // ── 2FA ──────────────────────────────────────────────────
+    public async Task<TwoFactorSetupResponse?> SetupTwoFactorAsync(Guid userId)
+    {
+        var response = await http.PostAsync($"api/v1/users/2fa/setup?userId={userId}", null);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<TwoFactorSetupResponse>();
+    }
+
+    public async Task<string[]?> EnableTwoFactorAsync(Guid userId, string code)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/users/2fa/enable",
+            new { UserId = userId, Code = code });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<string[]>();
+    }
+
+    public async Task DisableTwoFactorAsync(Guid userId, string code)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/users/2fa/disable",
+            new { UserId = userId, Code = code });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<LoginResponse?> VerifyTwoFactorAsync(Guid userId, string code)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/users/2fa/verify",
+            new { UserId = userId, Code = code });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<LoginResponse>();
+    }
+
+    // ── Devices ─────────────────────────────────────────────
+    public async Task<List<DeviceDto>> GetDevicesAsync(Guid userId)
+    {
+        return await http.GetFromJsonAsync<List<DeviceDto>>($"api/v1/users/{userId}/devices") ?? [];
+    }
+
+    public async Task RevokeDeviceAsync(Guid deviceId)
+    {
+        await http.DeleteAsync($"api/v1/users/devices/{deviceId}");
+    }
+
+    public async Task TrustDeviceAsync(Guid deviceId)
+    {
+        await http.PostAsync($"api/v1/users/devices/{deviceId}/trust", null);
+    }
+
+    // ── Cards (extended) ────────────────────────────────────
+    public async Task SetCardPinAsync(Guid cardId, string pin)
+    {
+        await http.PutAsJsonAsync($"api/v1/cards/{cardId}/pin",
+            new { Pin = pin });
+    }
+
+    // ── Notification preferences ────────────────────────────
+    public async Task<NotificationPreferenceDto?> GetNotificationPreferencesAsync(Guid userId)
+    {
+        var response = await http.GetAsync($"api/v1/notifications/preferences?userId={userId}");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<NotificationPreferenceDto>();
+    }
+
+    public async Task UpdateNotificationPreferencesAsync(Guid userId, NotificationPreferenceDto prefs)
+    {
+        await http.PutAsJsonAsync($"api/v1/notifications/preferences?userId={userId}", prefs);
+    }
+
+    // ── Banker clients ─────────────────────────────────────
+    public async Task<List<BankerClientDto>> GetBankerClientsAsync(Guid bankerId)
+    {
+        var response = await http.GetAsync($"api/v1/chat/conversations/banker/{bankerId}/clients");
+        if (!response.IsSuccessStatusCode) return [];
+        return await response.Content.ReadFromJsonAsync<List<BankerClientDto>>() ?? [];
+    }
+
     private sealed record UnreadCountDto(int Count);
 }

@@ -4,71 +4,170 @@
 @inject IAuthService Auth
 @inject NavigationManager Nav
 
-<PageHeader Title="SPRÁVA ŽÁDOSTÍ" />
+<PageHeader Title="SPRAVA" />
 
-<div class="page-content">
-    @if (_isLoading)
+<div class="page-content management-page">
+
+    @* ── TABS ────────────────────── *@
+    <div class="mgmt-tabs">
+        <button class="mgmt-tab @(_currentTab == "overview" ? "active" : "")" @onclick="@(() => _currentTab = "overview")">
+            Prehled
+        </button>
+        <button class="mgmt-tab @(_currentTab == "applications" ? "active" : "")" @onclick="@(() => _currentTab = "applications")">
+            Zadosti
+            @if (_applications.Any()) { <span class="mgmt-badge">@_applications.Count</span> }
+        </button>
+        <button class="mgmt-tab @(_currentTab == "clients" ? "active" : "")" @onclick="@(() => _currentTab = "clients")">
+            Klienti
+            @if (_bankerClients.Any()) { <span class="mgmt-badge">@_bankerClients.Count</span> }
+        </button>
+    </div>
+
+    @* ── TAB: PREHLED ────────────── *@
+    @if (_currentTab == "overview")
     {
-        <ContentCard Title="Správa žádostí">
-            <ChildContent>
-                <p>Načítání žádostí...</p>
-            </ChildContent>
-        </ContentCard>
+        <div class="overview-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><VbIcon Name="clock" Size="sm" /></div>
+                <div class="stat-body">
+                    <div class="stat-number">@_applications.Count</div>
+                    <div class="stat-label">Cekajicich zadosti</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><VbIcon Name="users" Size="sm" /></div>
+                <div class="stat-body">
+                    <div class="stat-number">@_bankerClients.Count</div>
+                    <div class="stat-label">Klientu</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overview-actions">
+            <h3>Rychle akce</h3>
+            <div class="quick-actions">
+                <VbButton Variant="primary" IconName="clipboard" OnClick="@(() => _currentTab = "applications")">
+                    Zobrazit zadosti
+                </VbButton>
+                <VbButton Variant="outline" IconName="users" OnClick="@(() => _currentTab = "clients")">
+                    Zobrazit klienty
+                </VbButton>
+                <VbButton Variant="outline" IconName="chat" OnClick="@(() => Nav.NavigateTo("/zpravy"))">
+                    Otevrit zpravy
+                </VbButton>
+            </div>
+        </div>
     }
-    else if (!_applications.Any())
+
+    @* ── TAB: ZADOSTI (existing) ──── *@
+    @if (_currentTab == "applications")
     {
-        <ContentCard Title="Žádné čekající žádosti">
-            <ChildContent>
-                <p class="empty-state"><VbIcon Name="check" Size="sm" /> Všechny žádosti byly zpracovány.</p>
-            </ChildContent>
-        </ContentCard>
-    }
-    else
-    {
-        <ContentCard Title="@($"Čekající žádosti ({_applications.Count})")">
-            <ChildContent>
-                <div class="application-list">
-                    @foreach (var app in _applications)
-                    {
-                        <div class="application-card" @onclick="() => SelectApplication(app)">
-                            <div class="application-type">
-                                <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
+        @if (_isLoading)
+        {
+            <ContentCard Title="Sprava zadosti">
+                <ChildContent>
+                    <p>Nacitani zadosti...</p>
+                </ChildContent>
+            </ContentCard>
+        }
+        else if (!_applications.Any())
+        {
+            <ContentCard Title="Zadne cekajici zadosti">
+                <ChildContent>
+                    <p class="empty-state"><VbIcon Name="check" Size="sm" /> Vsechny zadosti byly zpracovany.</p>
+                </ChildContent>
+            </ContentCard>
+        }
+        else
+        {
+            <ContentCard Title="@($"Cekajici zadosti ({_applications.Count})")">
+                <ChildContent>
+                    <div class="application-list">
+                        @foreach (var app in _applications)
+                        {
+                            <div class="application-card" @onclick="() => SelectApplication(app)">
+                                <div class="application-type">
+                                    <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
+                                </div>
+                                <div class="application-details">
+                                    <div>
+                                        <span class="status-badge status-pending"><VbIcon Name="clock" Size="sm" /> Ceka na schvaleni</span>
+                                    </div>
+                                    <div>
+                                        <strong>@app.MonthlyPayment.ToString("N0") Kc/mesic</strong>
+                                    </div>
+                                    <div>
+                                        Podano: @app.CreatedAt.ToString("d. M. yyyy")
+                                    </div>
+                                    <div>
+                                        Zadatel: @app.UserId.ToString()[..8]...
+                                    </div>
+                                </div>
                             </div>
-                            <div class="application-details">
-                                <div>
-                                    <span class="status-badge status-pending"><VbIcon Name="clock" Size="sm" /> Čeká na schválení</span>
-                                </div>
-                                <div>
-                                    <strong>@app.MonthlyPayment.ToString("N0") Kč/měsíc</strong>
-                                </div>
-                                <div>
-                                    Podáno: @app.CreatedAt.ToString("d. M. yyyy")
-                                </div>
-                                <div>
-                                    Žadatel: @app.UserId.ToString()[..8]...
-                                </div>
+                        }
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @if (_successMessage is not null)
+        {
+            <ContentCard Title="Vysledek">
+                <ChildContent>
+                    <p class="empty-state">@_successMessage</p>
+                </ChildContent>
+            </ContentCard>
+        }
+    }
+
+    @* ── TAB: KLIENTI ────────────── *@
+    @if (_currentTab == "clients")
+    {
+        @if (_isLoadingClients)
+        {
+            <div class="mgmt-empty">Nacitani klientu...</div>
+        }
+        else if (!_bankerClients.Any())
+        {
+            <div class="mgmt-empty">
+                <VbIcon Name="users" Size="sm" />
+                <p>Zatim zadni klienti.</p>
+            </div>
+        }
+        else
+        {
+            <div class="clients-grid">
+                @foreach (var client in _bankerClients)
+                {
+                    <div class="client-card" @onclick='() => Nav.NavigateTo("/zpravy")'>
+                        <div class="client-avatar">
+                            <VbIcon Name="user" Size="sm" />
+                        </div>
+                        <div class="client-info">
+                            <div class="client-name">@client.ClientLabel</div>
+                            <div class="client-meta">
+                                Aktivnich chatu: @client.ActiveChatsCount
+                                @if (client.LastActivity.HasValue)
+                                {
+                                    <span>&middot; Posledni aktivita: @client.LastActivity.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                                }
                             </div>
                         </div>
-                    }
-                </div>
-            </ChildContent>
-        </ContentCard>
+                        <div class="client-arrow">
+                            <VbIcon Name="chevron-right" Size="sm" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
     }
 
-    @if (_successMessage is not null)
-    {
-        <ContentCard Title="Výsledek">
-            <ChildContent>
-                <p class="empty-state">@_successMessage</p>
-            </ChildContent>
-        </ContentCard>
-    }
-
+    @* ── APPLICATION DETAIL MODAL ── *@
     @if (_selectedApp is not null)
     {
         <div class="modal-overlay" @onclick="CloseDetail">
             <div class="modal-card management-detail" @onclick:stopPropagation>
-                <h3>Detail žádosti</h3>
+                <h3>Detail zadosti</h3>
 
                 <div class="form-group">
                     <label class="form-label">Typ produktu</label>
@@ -76,22 +175,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Měsíční platba</label>
-                    <p><strong>@_selectedApp.MonthlyPayment.ToString("N0") Kč/měsíc</strong></p>
+                    <label class="form-label">Mesicni platba</label>
+                    <p><strong>@_selectedApp.MonthlyPayment.ToString("N0") Kc/mesic</strong></p>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Datum podání</label>
+                    <label class="form-label">Datum podani</label>
                     <p>@_selectedApp.CreatedAt.ToString("d. M. yyyy HH:mm")</p>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Žadatel (UserId)</label>
+                    <label class="form-label">Zadatel (UserId)</label>
                     <p>@_selectedApp.UserId</p>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Parametry žádosti</label>
+                    <label class="form-label">Parametry zadosti</label>
                     <div class="application-params">
                         @foreach (var param in ParseParameters(_selectedApp.Parameters))
                         {
@@ -104,8 +203,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Poznámka (volitelné)</label>
-                    <textarea class="form-input" @bind="_reviewNote" rows="3" placeholder="Důvod schválení/zamítnutí..."></textarea>
+                    <label class="form-label">Poznamka (volitelne)</label>
+                    <textarea class="form-input" @bind="_reviewNote" rows="3" placeholder="Duvod schvaleni/zamitnutí..."></textarea>
                 </div>
 
                 @if (_errorMessage is not null)
@@ -115,13 +214,13 @@
 
                 <div class="management-actions">
                     <VbButton OnClick="ApproveSelected" Disabled="@_isProcessing">
-                        <VbIcon Name="check" Size="sm" /> Schválit
+                        <VbIcon Name="check" Size="sm" /> Schvalit
                     </VbButton>
                     <VbButton OnClick="RejectSelected" Variant="danger" Disabled="@_isProcessing">
-                        <VbIcon Name="x-circle" Size="sm" /> Zamítnout
+                        <VbIcon Name="x-circle" Size="sm" /> Zamitnout
                     </VbButton>
                     <VbButton OnClick="CloseDetail" Variant="outline">
-                        Zavřít
+                        Zavrit
                     </VbButton>
                 </div>
             </div>
@@ -129,11 +228,210 @@
     }
 </div>
 
+<style>
+    .management-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    /* Tabs */
+    .mgmt-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .mgmt-tab {
+        background: none;
+        border: none;
+        padding: 0.75rem 0.5rem;
+        font-weight: 600;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--vb-transition);
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+
+    .mgmt-tab:hover {
+        color: var(--vb-text-secondary);
+    }
+
+    .mgmt-tab.active {
+        color: var(--vb-red);
+        border-bottom-color: var(--vb-red);
+    }
+
+    .mgmt-badge {
+        background: var(--vb-gray-200);
+        color: var(--vb-text-secondary);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: var(--vb-radius-full);
+        font-weight: 700;
+    }
+
+    .mgmt-tab.active .mgmt-badge {
+        background: var(--vb-red);
+        color: white;
+    }
+
+    .mgmt-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        font-style: italic;
+    }
+
+    /* Overview stats */
+    .overview-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        color: var(--vb-red);
+        flex-shrink: 0;
+    }
+
+    .stat-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--vb-text-primary);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--vb-text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-top: 0.25rem;
+    }
+
+    .overview-actions {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        padding: 1.25rem;
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .overview-actions h3 {
+        margin: 0 0 1rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Clients grid */
+    .clients-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .client-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
+        cursor: pointer;
+        transition: var(--vb-transition);
+    }
+
+    .client-card:hover {
+        box-shadow: var(--vb-shadow);
+        transform: translateY(-1px);
+        border-color: var(--vb-red-glow);
+    }
+
+    .client-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--vb-radius-full);
+        background: var(--vb-gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        color: var(--vb-text-secondary);
+    }
+
+    .client-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .client-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--vb-text-primary);
+    }
+
+    .client-meta {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+        margin-top: 2px;
+    }
+
+    .client-arrow {
+        flex-shrink: 0;
+        color: var(--vb-text-muted);
+    }
+</style>
+
 @code {
+    private string _currentTab = "overview";
     private List<ProductApplicationDto> _applications = [];
+    private List<BankerClientDto> _bankerClients = [];
     private ProductApplicationDto? _selectedApp;
     private string _reviewNote = string.Empty;
     private bool _isLoading = true;
+    private bool _isLoadingClients = true;
     private bool _isProcessing;
     private string? _successMessage;
     private string? _errorMessage;
@@ -146,7 +444,7 @@
             return;
         }
 
-        await LoadApplications();
+        await Task.WhenAll(LoadApplications(), LoadClients());
     }
 
     private async Task LoadApplications()
@@ -163,6 +461,24 @@
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadClients()
+    {
+        _isLoadingClients = true;
+        try
+        {
+            var bankerId = Auth.CurrentSession!.UserId;
+            _bankerClients = await Api.GetBankerClientsAsync(bankerId);
+        }
+        catch
+        {
+            _bankerClients = [];
+        }
+        finally
+        {
+            _isLoadingClients = false;
         }
     }
 
@@ -191,13 +507,13 @@
         {
             var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
             await Api.ApproveApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
-            _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla schválena.";
+            _successMessage = $"Zadost {GetProductLabel(_selectedApp.ProductType)} byla schvalena.";
             CloseDetail();
             await LoadApplications();
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Chyba při schvalování: {ex.Message}";
+            _errorMessage = $"Chyba pri schvalovani: {ex.Message}";
         }
         finally
         {
@@ -215,13 +531,13 @@
         {
             var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
             await Api.RejectApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
-            _successMessage = $"Žádost {GetProductLabel(_selectedApp.ProductType)} byla zamítnuta.";
+            _successMessage = $"Zadost {GetProductLabel(_selectedApp.ProductType)} byla zamitnuta.";
             CloseDetail();
             await LoadApplications();
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Chyba při zamítání: {ex.Message}";
+            _errorMessage = $"Chyba pri zamitani: {ex.Message}";
         }
         finally
         {
@@ -256,30 +572,30 @@
 
     private static string GetParamLabel(string key) => key switch
     {
-        "amount" => "Částka",
-        "months" => "Doba splácení (měsíce)",
-        "interestRate" => "Úroková sazba",
+        "amount" => "Castka",
+        "months" => "Doba splaceni (mesice)",
+        "interestRate" => "Urokova sazba",
         "rpsn" => "RPSN",
-        "totalCost" => "Celkové náklady",
+        "totalCost" => "Celkove naklady",
         "propertyPrice" => "Cena nemovitosti",
-        "loanAmount" => "Výše úvěru",
-        "years" => "Doba splácení (roky)",
+        "loanAmount" => "Vyse uveru",
+        "years" => "Doba splaceni (roky)",
         "fixation" => "Fixace (roky)",
         "ltv" => "LTV",
-        "monthlyPayment" => "Měsíční platba",
+        "monthlyPayment" => "Mesicni platba",
         "destination" => "Destinace",
         "variant" => "Varianta",
-        "days" => "Počet dnů",
-        "persons" => "Počet osob",
-        "totalPrice" => "Celková cena",
+        "days" => "Pocet dnu",
+        "persons" => "Pocet osob",
+        "totalPrice" => "Celkova cena",
         "propertyType" => "Typ nemovitosti",
         "propertyValue" => "Hodnota nemovitosti",
-        "includesContents" => "Včetně vybavení",
-        "annualPremium" => "Roční pojistné",
-        "monthlyPremium" => "Měsíční pojistné",
-        "age" => "Věk",
-        "coverageAmount" => "Výše krytí",
-        "loanPayment" => "Splátka úvěru",
+        "includesContents" => "Vcetne vybaveni",
+        "annualPremium" => "Rocni pojistne",
+        "monthlyPremium" => "Mesicni pojistne",
+        "age" => "Vek",
+        "coverageAmount" => "Vyse kryti",
+        "loanPayment" => "Splatka uveru",
         _ => key
     };
 
@@ -296,12 +612,12 @@
 
     private static string GetProductLabel(string productType) => productType switch
     {
-        "PersonalLoan" => "Osobní úvěr",
-        "Mortgage" => "Hypotéka",
-        "TravelInsurance" => "Cestovní pojištění",
-        "PropertyInsurance" => "Pojištění nemovitosti",
-        "LifeInsurance" => "Životní pojištění",
-        "PaymentProtection" => "Pojištění splátek",
+        "PersonalLoan" => "Osobni uver",
+        "Mortgage" => "Hypoteka",
+        "TravelInsurance" => "Cestovni pojisteni",
+        "PropertyInsurance" => "Pojisteni nemovitosti",
+        "LifeInsurance" => "Zivotni pojisteni",
+        "PaymentProtection" => "Pojisteni splatek",
         _ => productType
     };
 }

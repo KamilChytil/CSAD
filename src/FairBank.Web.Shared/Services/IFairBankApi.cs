@@ -103,4 +103,25 @@ public interface IFairBankApi
     // Profile
     Task ChangeEmailAsync(Guid userId, string newEmail);
     Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
+    // 2FA
+    Task<TwoFactorSetupResponse?> SetupTwoFactorAsync(Guid userId);
+    Task<string[]?> EnableTwoFactorAsync(Guid userId, string code);
+    Task DisableTwoFactorAsync(Guid userId, string code);
+    Task<LoginResponse?> VerifyTwoFactorAsync(Guid userId, string code);
+
+    // Devices
+    Task<List<DeviceDto>> GetDevicesAsync(Guid userId);
+    Task RevokeDeviceAsync(Guid deviceId);
+    Task TrustDeviceAsync(Guid deviceId);
+
+    // Cards (extended)
+    Task SetCardPinAsync(Guid cardId, string pin);
+
+    // Notification preferences
+    Task<NotificationPreferenceDto?> GetNotificationPreferencesAsync(Guid userId);
+    Task UpdateNotificationPreferencesAsync(Guid userId, NotificationPreferenceDto prefs);
+
+    // Banker clients
+    Task<List<BankerClientDto>> GetBankerClientsAsync(Guid bankerId);
 }
