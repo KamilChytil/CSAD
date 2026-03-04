@@ -34,7 +34,8 @@ public sealed class ChatHub(ISender sender) : Hub
                 saved.SenderId,
                 saved.SenderName,
                 saved.Content,
-                saved.SentAt
+                saved.SentAt,
+                saved.IsSystem
             });
     }
 }

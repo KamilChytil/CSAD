@@ -15,8 +15,9 @@ public interface IChatService
     Task SendMessageAsync(Guid conversationId, Guid senderId, string senderName, string content);
     
     // Banker tool methods
-    Task AssignConversationAsync(Guid conversationId, Guid bankerId);
+    Task AssignConversationAsync(Guid conversationId, Guid bankerId, string? bankerName = null);
     Task UpdateConversationNotesAsync(Guid conversationId, string notes);
+    Task TransferChatAsync(Guid conversationId, Guid targetBankerId, string? targetBankerName = null);
     Task CloseConversationAsync(Guid conversationId);
     Task ReopenConversationAsync(Guid conversationId);
     Task<IEnumerable<BankerDto>> GetBankersAsync();
@@ -70,9 +71,12 @@ public sealed class ChatService : IChatService, IAsyncDisposable
     }
 
     // Banker tool methods implementations
-    public async Task AssignConversationAsync(Guid conversationId, Guid bankerId)
+    public async Task AssignConversationAsync(Guid conversationId, Guid bankerId, string? bankerName = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/assign?bankerId={bankerId}");
+        var url = $"/api/v1/chat/conversations/{conversationId}/assign?bankerId={bankerId}";
+        if (!string.IsNullOrEmpty(bankerName)) url += $"&bankerName={Uri.EscapeDataString(bankerName)}";
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
         if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
         await _httpClient.SendAsync(request);
     }
@@ -85,9 +89,12 @@ public sealed class ChatService : IChatService, IAsyncDisposable
         await _httpClient.SendAsync(request);
     }
 
-    public async Task TransferChatAsync(Guid conversationId, Guid targetBankerId)
+    public async Task TransferChatAsync(Guid conversationId, Guid targetBankerId, string? targetBankerName = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/chat/conversations/{conversationId}/transfer?bankerId={targetBankerId}");
+        var url = $"/api/v1/chat/conversations/{conversationId}/transfer?bankerId={targetBankerId}";
+        if (!string.IsNullOrEmpty(targetBankerName)) url += $"&bankerName={Uri.EscapeDataString(targetBankerName)}";
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
         if (_token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
         await _httpClient.SendAsync(request);
     }

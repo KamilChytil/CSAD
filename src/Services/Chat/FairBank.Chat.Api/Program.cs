@@ -90,9 +90,9 @@ app.MapGet("/api/v1/chat/conversations/{id:guid}/messages", async (Guid id, IMed
 });
 
 // ── BANKER TOOLS ────────────────────────────────────────────────────────
-app.MapPost("/api/v1/chat/conversations/{id:guid}/assign", async (ISender sender, Guid id, [FromQuery] Guid bankerId) =>
+app.MapPost("/api/v1/chat/conversations/{id:guid}/assign", async (ISender sender, Guid id, [FromQuery] Guid bankerId, [FromQuery] string? bankerName) =>
 {
-    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId));
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId, bankerName));
     return Results.NoContent();
 });
 
@@ -114,9 +114,9 @@ app.MapPost("/api/v1/chat/conversations/{id:guid}/reopen", async (ISender sender
     return Results.NoContent();
 });
 
-app.MapPost("/api/v1/chat/conversations/{id:guid}/transfer", async (ISender sender, Guid id, [FromQuery] Guid bankerId) =>
+app.MapPost("/api/v1/chat/conversations/{id:guid}/transfer", async (ISender sender, Guid id, [FromQuery] Guid bankerId, [FromQuery] string? bankerName) =>
 {
-    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId));
+    await sender.Send(new FairBank.Chat.Application.Conversations.Commands.AssignBanker.AssignConversationCommand(id, bankerId, bankerName));
     return Results.NoContent();
 });
 

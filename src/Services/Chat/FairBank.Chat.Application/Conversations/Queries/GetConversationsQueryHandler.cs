@@ -60,7 +60,8 @@ public sealed class GetConversationsQueryHandler(
                     conv.Id, "Support", conv.Label,
                     last?.Content, last?.SentAt,
                     conv.Status.ToString(), conv.ClosedAt,
-                    effectiveBankerId, conv.InternalNotes));
+                    effectiveBankerId, conv.InternalNotes,
+                    conv.ClientOrChildId));
             }
         }
         else
@@ -76,7 +77,8 @@ public sealed class GetConversationsQueryHandler(
                     s.Id, "Support", "Banker support",
                     lastSupport?.Content, lastSupport?.SentAt,
                     s.Status.ToString(), s.ClosedAt,
-                    s.BankerOrParentId, s.InternalNotes));
+                    s.BankerOrParentId, s.InternalNotes,
+                    s.ClientOrChildId));
             }
 
             // If the user is a child, also return their family conversation
@@ -89,7 +91,8 @@ public sealed class GetConversationsQueryHandler(
                     family.Id, "Family", "Parent",
                     lastFamily?.Content, lastFamily?.SentAt,
                     family.Status.ToString(), family.ClosedAt,
-                    family.BankerOrParentId, family.InternalNotes));
+                    family.BankerOrParentId, family.InternalNotes,
+                    family.ClientOrChildId));
             }
         }
 

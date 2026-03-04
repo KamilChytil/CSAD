@@ -6,5 +6,6 @@ public sealed record ChatMessageResponse(
     Guid SenderId,
     string SenderName,
     string Content,
-    DateTime SentAt
+    DateTime SentAt,
+    bool IsSystem = false
 );
