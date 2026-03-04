@@ -48,6 +48,7 @@ using (var scope = app.Services.CreateScope())
             // Replace CREATE TABLE with CREATE TABLE IF NOT EXISTS to safely handle
             // partially-created schemas (e.g. after a failed or partial migration).
             var script = db.Database.GenerateCreateScript()
+                .Replace("CREATE SCHEMA ", "CREATE SCHEMA IF NOT EXISTS ", StringComparison.Ordinal)
                 .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal);
             await using var createCmd = conn.CreateCommand();
             createCmd.CommandText = script;

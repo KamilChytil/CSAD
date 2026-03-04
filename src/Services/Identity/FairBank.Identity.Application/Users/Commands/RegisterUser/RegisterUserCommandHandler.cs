@@ -46,7 +46,9 @@ public sealed class RegisterUserCommandHandler(
             phoneNumber: phoneNumber,
             address: address);
 
+        // Generate token and immediately auto-verify (no email server in demo environment)
         user.GenerateEmailVerificationToken();
+        user.VerifyEmail(user.EmailVerificationToken!);
         await userRepository.AddAsync(user, ct);
 
         auditLogger.LogSecurityEvent("Register", "Success", user.Id, details: $"Email={user.Email.Value}");
@@ -57,15 +59,6 @@ public sealed class RegisterUserCommandHandler(
             EntityId: user.Id.ToString(),
             Details: $"{user.Email.Value} ({user.Role})"
         ), ct);
-
-        // Send verification email (fire-and-forget — failures logged but don't block registration)
-        if (user.EmailVerificationToken is not null)
-        {
-            await emailSender.SendEmailVerificationAsync(
-                user.Email.Value,
-                user.EmailVerificationToken,
-                ct);
-        }
 
         await unitOfWork.SaveChangesAsync(ct);
 

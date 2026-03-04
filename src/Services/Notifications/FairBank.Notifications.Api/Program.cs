@@ -60,6 +60,7 @@ using (var scope = app.Services.CreateScope())
         if (!exists)
         {
             var script = db.Database.GenerateCreateScript()
+                .Replace("CREATE SCHEMA ", "CREATE SCHEMA IF NOT EXISTS ", StringComparison.Ordinal)
                 .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal);
             await using var createCmd = conn.CreateCommand();
             createCmd.CommandText = script;

@@ -70,10 +70,9 @@ public sealed class LoginUserCommandHandler(
             return null;
         }
 
-        // Email verification check — only enforce for users who have a pending verification token
-        // (users created before this feature have no token and are allowed in)
-        if (!user.IsEmailVerified && user.EmailVerificationToken is not null)
-            throw new InvalidOperationException("Email address has not been verified.");
+        // Email verification — skipped in demo environment (auto-verified on register)
+        // if (!user.IsEmailVerified && user.EmailVerificationToken is not null)
+        //     throw new InvalidOperationException("Email address has not been verified.");
 
         // Two-factor authentication check — if enabled, return partial response
         // so the client can prompt for the TOTP code
