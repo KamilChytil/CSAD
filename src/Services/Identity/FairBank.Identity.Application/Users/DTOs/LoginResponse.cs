@@ -8,4 +8,7 @@ public sealed record LoginResponse(
     string LastName,
     string Role,
     Guid SessionId,
-    DateTime ExpiresAt);
+    DateTime ExpiresAt)
+{
+    public bool RequiresTwoFactor { get; init; }
+}

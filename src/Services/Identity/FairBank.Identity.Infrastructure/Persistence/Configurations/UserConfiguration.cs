@@ -67,6 +67,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.RequireApprovalAbove)
             .HasPrecision(18, 2);
 
+        // ── Two-Factor Authentication ────────────────────────
+        builder.Property(u => u.IsTwoFactorEnabled)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // Security — login lockout & single-session
         builder.Property(u => u.FailedLoginAttempts)
             .IsRequired()

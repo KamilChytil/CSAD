@@ -10,4 +10,6 @@ public interface IUserRepository : IRepository<User, Guid>
     Task<bool> ExistsWithEmailAsync(Email email, CancellationToken ct = default);
     Task<IReadOnlyList<User>> GetChildrenAsync(Guid parentId, CancellationToken ct = default);
     Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default);
+    Task<User?> GetByEmailVerificationTokenAsync(string token, CancellationToken ct = default);
+    Task<User?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default);
 }

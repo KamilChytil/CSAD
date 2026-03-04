@@ -114,4 +114,83 @@ public class AccountTests
         account.NeedsApproval(Money.Create(600, Currency.CZK)).Should().BeTrue();
         account.NeedsApproval(Money.Create(400, Currency.CZK)).Should().BeFalse();
     }
+
+    [Fact]
+    public void SetAccountLimits_ShouldSetLimitsProperty()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        var limits = AccountLimits.Create(50000, 200000, 25000, 30, 15000);
+        account.ClearUncommittedEvents();
+
+        account.SetAccountLimits(limits);
+
+        account.Limits.Should().NotBeNull();
+        account.Limits!.DailyTransactionLimit.Should().Be(50000);
+        account.Limits.MonthlyTransactionLimit.Should().Be(200000);
+        account.Limits.SingleTransactionLimit.Should().Be(25000);
+        account.Limits.DailyTransactionCount.Should().Be(30);
+        account.Limits.OnlinePaymentLimit.Should().Be(15000);
+    }
+
+    [Fact]
+    public void SetAccountLimits_ShouldRaiseAccountLimitsSetEvent()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        var limits = AccountLimits.Create(50000, 200000, 25000, 30, 15000);
+        account.ClearUncommittedEvents();
+
+        account.SetAccountLimits(limits);
+
+        var events = account.GetUncommittedEvents();
+        events.Should().HaveCount(1);
+        events[0].Should().BeOfType<AccountLimitsSet>();
+
+        var evt = (AccountLimitsSet)events[0];
+        evt.AccountId.Should().Be(account.Id);
+        evt.DailyTransactionLimit.Should().Be(50000);
+        evt.MonthlyTransactionLimit.Should().Be(200000);
+        evt.SingleTransactionLimit.Should().Be(25000);
+        evt.DailyTransactionCount.Should().Be(30);
+        evt.OnlinePaymentLimit.Should().Be(15000);
+    }
+
+    [Fact]
+    public void SetAccountLimits_OnInactiveAccount_ShouldThrow()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+        account.Deactivate();
+        var limits = AccountLimits.Create();
+
+        var act = () => account.SetAccountLimits(limits);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*not active*");
+    }
+
+    [Fact]
+    public void Create_ShouldHaveNullLimitsInitially()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+
+        account.Limits.Should().BeNull();
+    }
+
+    [Fact]
+    public void Apply_AccountLimitsSet_ShouldRehydrateLimits()
+    {
+        var account = Account.Create(Guid.NewGuid(), Currency.CZK);
+
+        var evt = new AccountLimitsSet(
+            account.Id,
+            75000, 300000, 40000, 25, 20000,
+            DateTime.UtcNow);
+
+        account.Apply(evt);
+
+        account.Limits.Should().NotBeNull();
+        account.Limits!.DailyTransactionLimit.Should().Be(75000);
+        account.Limits.MonthlyTransactionLimit.Should().Be(300000);
+        account.Limits.SingleTransactionLimit.Should().Be(40000);
+        account.Limits.DailyTransactionCount.Should().Be(25);
+        account.Limits.OnlinePaymentLimit.Should().Be(20000);
+    }
 }

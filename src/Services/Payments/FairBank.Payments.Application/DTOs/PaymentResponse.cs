@@ -11,6 +11,7 @@ public sealed record PaymentResponse(
     string? Description,
     string Type,
     string Status,
+    string Category,
     DateTime CreatedAt,
     DateTime? CompletedAt,
     string? FailureReason);

@@ -98,7 +98,7 @@
                                         Aktivovat
                                     </VbButton>
                                 }
-                                <VbButton Variant="danger" Size="sm" OnClick="@(() => ConfirmDelete(user.Id, user.FirstName + " " + user.LastName))">
+                                <VbButton Variant="danger" Size="sm" OnClick="@(() => ConfirmDelete(user.Id, string.Concat(user.FirstName, " ", user.LastName)))">
                                     Smazat
                                 </VbButton>
                             </td>

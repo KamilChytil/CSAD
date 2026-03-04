@@ -45,6 +45,21 @@ public sealed class AccountsServiceHttpClient(HttpClient httpClient) : IAccounts
         return dto is null ? null : new SpendingLimitInfo(dto.RequiresApproval, dto.ApprovalThreshold, dto.Currency);
     }
 
+    public async Task<AccountLimitsInfo?> GetAccountLimitsAsync(Guid accountId, CancellationToken ct = default)
+    {
+        var response = await httpClient.GetAsync($"api/v1/accounts/{accountId}/limits", ct);
+        if (!response.IsSuccessStatusCode) return null;
+        var dto = await response.Content.ReadFromJsonAsync<AccountLimitsApiDto>(ct);
+        return dto is null
+            ? null
+            : new AccountLimitsInfo(
+                dto.DailyTransactionLimit,
+                dto.MonthlyTransactionLimit,
+                dto.SingleTransactionLimit,
+                dto.DailyTransactionCount,
+                dto.OnlinePaymentLimit);
+    }
+
     public async Task<PendingTransactionInfo?> CreatePendingTransactionAsync(
         Guid accountId, decimal amount, string currency, string description, Guid requestedBy, CancellationToken ct = default)
     {
@@ -57,5 +72,8 @@ public sealed class AccountsServiceHttpClient(HttpClient httpClient) : IAccounts
 
     private sealed record AccountApiDto(Guid Id, Guid OwnerId, string AccountNumber, decimal Balance, string Currency, bool IsActive, DateTime CreatedAt);
     private sealed record SpendingLimitApiDto(bool RequiresApproval, decimal? ApprovalThreshold, string? Currency, decimal? SpendingLimit);
+    private sealed record AccountLimitsApiDto(
+        decimal DailyTransactionLimit, decimal MonthlyTransactionLimit, decimal SingleTransactionLimit,
+        int DailyTransactionCount, decimal OnlinePaymentLimit, decimal DailyUsed, decimal MonthlyUsed, int DailyCountUsed);
     private sealed record PendingTxApiDto(Guid Id, string Status);
 }

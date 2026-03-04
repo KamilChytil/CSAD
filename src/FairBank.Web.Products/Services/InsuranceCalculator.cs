@@ -39,7 +39,7 @@ public static class InsuranceCalculator
 
     public static decimal CalculateLifeMonthly(int age, decimal coverageAmount, string variant)
     {
-        var baseRate = variant.ToLowerInvariant() == "investment" ? 0.0004m : 0.0003m;
+        var baseRate = variant.ToLowerInvariant() == "investment" ? 0.0048m : 0.0036m;
         var ageCoef = GetAgeCoefficient(age);
         return Math.Round(coverageAmount * baseRate * ageCoef / 12m, 0);
     }

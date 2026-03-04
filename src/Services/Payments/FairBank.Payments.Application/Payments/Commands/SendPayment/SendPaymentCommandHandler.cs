@@ -33,6 +33,28 @@ public sealed class SendPaymentCommandHandler(
         if (senderAccount.Balance < request.Amount)
             throw new InvalidOperationException("Insufficient funds.");
 
+        // 3a. Enforce financial & security limits
+        var accountLimits = await accountsClient.GetAccountLimitsAsync(request.SenderAccountId, ct);
+        if (accountLimits is not null)
+        {
+            // Night restriction (23:00–06:00 UTC)
+            LimitEnforcementService.EnforceNightRestriction(nightEnabled: false);
+
+            // Single transaction limit
+            LimitEnforcementService.EnforceSingleTransactionLimit(request.Amount, accountLimits.SingleTransactionLimit);
+
+            // Calculate daily and monthly totals from payment history
+            var today = DateTime.UtcNow.Date;
+            var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var (dailyTotal, dailyCount) = await paymentRepository.GetSentTotalsAsync(request.SenderAccountId, today, ct);
+            var (monthlyTotal, _) = await paymentRepository.GetSentTotalsAsync(request.SenderAccountId, monthStart, ct);
+
+            LimitEnforcementService.EnforceDailyLimit(dailyTotal, request.Amount, accountLimits.DailyTransactionLimit);
+            LimitEnforcementService.EnforceMonthlyLimit(monthlyTotal, request.Amount, accountLimits.MonthlyTransactionLimit);
+            LimitEnforcementService.EnforceDailyCount(dailyCount, accountLimits.DailyTransactionCount);
+        }
+
         // 3b. Check spending limits (child account protection)
         var limits = await accountsClient.GetSpendingLimitAsync(request.SenderAccountId, ct);
         if (limits is { RequiresApproval: true, ApprovalThreshold: not null }

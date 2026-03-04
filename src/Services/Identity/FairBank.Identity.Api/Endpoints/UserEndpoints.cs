@@ -18,11 +18,15 @@ using FairBank.Identity.Application.Users.Commands.EnableTwoFactor;
 using FairBank.Identity.Application.Users.Commands.DisableTwoFactor;
 using FairBank.Identity.Application.Users.Commands.VerifyTwoFactor;
 using FairBank.Identity.Application.Users.Commands.VerifyEmail;
+using FairBank.Identity.Application.Users.Commands.RegisterDevice;
+using FairBank.Identity.Application.Users.Commands.RevokeDevice;
+using FairBank.Identity.Application.Users.Commands.TrustDevice;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Application.Users.Queries.GetAllUsers;
 using FairBank.Identity.Application.Users.Queries.GetChildren;
 using FairBank.Identity.Application.Users.Queries.GetBankers;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
+using FairBank.Identity.Application.Users.Queries.GetDevices;
 using FairBank.Identity.Application.Users.Queries.GetSecuritySettings;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
 using FairBank.Identity.Domain.Entities;
@@ -316,6 +320,74 @@ public static class UserEndpoints
         })
         .WithName("DeleteUser")
         .Produces(StatusCodes.Status204NoContent);
+
+        // ── Device Management ────────────────────────────────
+
+        group.MapGet("/{userId:guid}/devices", async (Guid userId, ISender sender) =>
+        {
+            var result = await sender.Send(new GetDevicesQuery(userId));
+            return Results.Ok(result);
+        })
+        .WithName("GetDevices")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/devices", async (RegisterDeviceCommand command, ISender sender) =>
+        {
+            try
+            {
+                var result = await sender.Send(command);
+                return Results.Created($"/api/v1/users/devices/{result.Id}", result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("RegisterDevice")
+        .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapDelete("/devices/{id:guid}", async (Guid id, HttpContext ctx, ISender sender) =>
+        {
+            var token = ExtractBearerToken(ctx);
+            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out _))
+                return Results.Unauthorized();
+
+            try
+            {
+                await sender.Send(new RevokeDeviceCommand(id, userId));
+                return Results.NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("RevokeDevice")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapPut("/devices/{id:guid}/trust", async (Guid id, HttpContext ctx, ISender sender) =>
+        {
+            var token = ExtractBearerToken(ctx);
+            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out _))
+                return Results.Unauthorized();
+
+            try
+            {
+                await sender.Send(new TrustDeviceCommand(id, userId));
+                return Results.Ok(new { trusted = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("TrustDevice")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         return group;
     }
