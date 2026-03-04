@@ -1,4 +1,5 @@
 using FairBank.Chat.Application.Hubs;
+using FairBank.Chat.Domain.Aggregates;
 using FairBank.Chat.Domain.Ports;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
@@ -9,6 +10,7 @@ public sealed record AssignConversationCommand(Guid ConversationId, Guid BankerI
 
 public sealed class AssignConversationCommandHandler(
     IConversationRepository repo, 
+    IChatRepository chatRepo,
     IHubContext<ChatHub> hubContext) : IRequestHandler<AssignConversationCommand>
 {
     public async Task Handle(AssignConversationCommand request, CancellationToken ct)
@@ -25,16 +27,25 @@ public sealed class AssignConversationCommandHandler(
             ? $"Chat byl předán bankéři {request.BankerName ?? "kolegovi"}."
             : $"Bankéř {request.BankerName ?? "podpory"} se připojil k chatu.";
 
+        var systemMsg = ChatMessage.Create(
+            request.ConversationId,
+            Guid.Empty,
+            "Systém",
+            systemText,
+            isSystem: true);
+
+        await chatRepo.SaveMessageAsync(systemMsg, ct);
+
         await hubContext.Clients.Group($"conv-{request.ConversationId}")
             .SendAsync("ReceiveMessage", new
             {
-                Id = Guid.NewGuid(),
-                ConversationId = request.ConversationId,
-                SenderId = Guid.Empty,
-                SenderName = "Systém",
-                Content = systemText,
-                SentAt = DateTime.UtcNow,
-                IsSystem = true
+                systemMsg.Id,
+                systemMsg.ConversationId,
+                systemMsg.SenderId,
+                systemMsg.SenderName,
+                systemMsg.Content,
+                systemMsg.SentAt,
+                systemMsg.IsSystem
             }, cancellationToken: ct);
     }
 }
