@@ -2,6 +2,7 @@ using FairBank.Accounts.Application.Ports;
 using FairBank.Accounts.Domain.Aggregates;
 using FairBank.Accounts.Infrastructure.HttpClients;
 using FairBank.Accounts.Infrastructure.Persistence;
+using FairBank.SharedKernel.Security;
 using Marten;
 using Marten.Events.Projections;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,11 +46,14 @@ public static class DependencyInjection
         services.AddSingleton<IAccountNumberGenerator>(
             new PostgresAccountNumberGenerator(connectionString));
 
+        services.AddTransient<ApiKeyDelegatingHandler>();
+
         services.AddHttpClient<INotificationClient, NotificationHttpClient>(client =>
         {
             client.BaseAddress = new Uri(identityApiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(5);
-        });
+        })
+        .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 
         return services;
     }

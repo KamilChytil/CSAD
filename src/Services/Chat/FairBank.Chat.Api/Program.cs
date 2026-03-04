@@ -93,6 +93,9 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(options => { options.Title = "FairBank Chat API"; });
 }
 
+// Validate X-Internal-Api-Key on every inbound request (gateway → service auth)
+app.UseMiddleware<ApiKeyMiddleware>();
+
 app.UseCors("AllowSpecificOrigins");
 
 app.UseSerilogRequestLogging();

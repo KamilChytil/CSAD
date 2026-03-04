@@ -3,6 +3,7 @@ using FairBank.Products.Application;
 using FairBank.Products.Infrastructure;
 using FairBank.Products.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using FairBank.SharedKernel.Security;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -34,6 +35,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+// Validate X-Internal-Api-Key on every inbound request (gateway → service auth)
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseSerilogRequestLogging();
 

@@ -4,6 +4,7 @@ using FairBank.Notifications.Application.Hubs;
 using FairBank.Notifications.Infrastructure;
 using FairBank.Notifications.Infrastructure.Persistence;
 using FairBank.SharedKernel;
+using FairBank.SharedKernel.Security;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -71,6 +72,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(options => { options.Title = "FairBank Notifications API"; });
 }
+
+// Validate X-Internal-Api-Key on every inbound request (gateway → service auth)
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseCors("AllowSpecificOrigins");
 

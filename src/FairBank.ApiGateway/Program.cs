@@ -4,6 +4,7 @@ using FairBank.ApiGateway.Middleware;
 using FairBank.SharedKernel;
 using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
+using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,8 +130,29 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddHealthChecks();
 
+// ── Internal API key injected into all YARP-forwarded requests ──
+var internalApiKey = builder.Configuration["Security:InternalApiKey"] ?? string.Empty;
+
 builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .AddTransforms(transformContext =>
+    {
+        // Custom request transform:
+        // 1. Strip any client-supplied X-Internal-Api-Key (prevent spoofing)
+        // 2. Inject the real key so downstream services can verify the request
+        //    genuinely originated from this gateway.
+        transformContext.AddRequestTransform(ctx =>
+        {
+            // Strip any client-supplied internal API key to prevent spoofing.
+            ctx.ProxyRequest.Headers.Remove("X-Internal-Api-Key");
+            if (!string.IsNullOrEmpty(internalApiKey))
+            {
+                ctx.ProxyRequest.Headers.TryAddWithoutValidation(
+                    "X-Internal-Api-Key", internalApiKey);
+            }
+            return ValueTask.CompletedTask;
+        });
+    });
 
 // In-memory cache for session validation results (30s TTL, avoids per-request Identity calls)
 builder.Services.AddMemoryCache();
@@ -141,6 +163,12 @@ builder.Services.AddHttpClient("IdentityService", client =>
     var identityBaseUrl = builder.Configuration["IdentityService:BaseUrl"] ?? "http://identity-api:8080";
     client.BaseAddress = new Uri(identityBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(5);
+
+    // Attach internal API key so Identity service accepts requests from the gateway
+    if (!string.IsNullOrEmpty(internalApiKey))
+    {
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Internal-Api-Key", internalApiKey);
+    }
 });
 
 builder.Services.AddCors(options =>

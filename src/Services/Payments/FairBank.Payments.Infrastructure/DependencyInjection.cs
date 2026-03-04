@@ -6,6 +6,7 @@ using FairBank.Payments.Infrastructure.Persistence;
 using FairBank.Payments.Infrastructure.Persistence.Repositories;
 using FairBank.Payments.Infrastructure.Services;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,24 +35,28 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<PaymentsDbContext>());
 
         services.AddTransient<AuthHeaderForwardingHandler>();
+        services.AddTransient<ApiKeyDelegatingHandler>();
         services.AddHttpClient<IAccountsServiceClient, AccountsServiceHttpClient>(client =>
         {
             client.BaseAddress = new Uri(accountsApiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(10);
         })
-        .AddHttpMessageHandler<AuthHeaderForwardingHandler>();
+        .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
+        .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 
         services.AddHttpClient<INotificationClient, NotificationHttpClient>(client =>
         {
             client.BaseAddress = new Uri(identityApiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(5);
-        });
+        })
+        .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 
         services.AddHttpClient<IIdentityClient, IdentityHttpClient>(client =>
         {
             client.BaseAddress = new Uri(identityApiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(5);
-        });
+        })
+        .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 
         services.AddMemoryCache();
         services.AddHttpClient<IExchangeRateService, ExchangeRateService>(client =>

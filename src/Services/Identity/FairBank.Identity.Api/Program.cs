@@ -6,6 +6,7 @@ using FairBank.Identity.Infrastructure;
 using FairBank.Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using FairBank.SharedKernel;
+using FairBank.SharedKernel.Security;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Text.Json.Serialization;
@@ -37,11 +38,13 @@ builder.Services.ConfigureHttpJsonOptions(opts =>
     opts.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // HTTP client for accounts-api (to auto-provision account on registration)
+builder.Services.AddTransient<FairBank.SharedKernel.Security.ApiKeyDelegatingHandler>();
 builder.Services.AddHttpClient("accounts-api", client =>
 {
     var url = builder.Configuration["Services:AccountsApi"] ?? "http://accounts-api:8080";
     client.BaseAddress = new Uri(url);
-});
+})
+.AddHttpMessageHandler<FairBank.SharedKernel.Security.ApiKeyDelegatingHandler>();
 
 // OpenAPI
 builder.Services.AddOpenApi();
@@ -61,6 +64,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+// Validate X-Internal-Api-Key on every inbound request (gateway → service auth)
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseSerilogRequestLogging();
 
