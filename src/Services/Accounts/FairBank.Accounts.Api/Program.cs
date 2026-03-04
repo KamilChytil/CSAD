@@ -40,6 +40,7 @@ if (app.Environment.IsDevelopment())
 app.UseSerilogRequestLogging();
 
 app.MapAccountEndpoints();
+app.MapCardEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Accounts" }))
     .WithTags("Health");

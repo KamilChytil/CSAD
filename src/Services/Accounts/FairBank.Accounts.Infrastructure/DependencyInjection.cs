@@ -25,11 +25,13 @@ public static class DependencyInjection
 
             // Register aggregates for event sourcing
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<Card>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
         })
         .UseLightweightSessions();
 
         services.AddScoped<IAccountEventStore, MartenAccountEventStore>();
+        services.AddScoped<ICardEventStore, MartenCardEventStore>();
         services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
 
         return services;
