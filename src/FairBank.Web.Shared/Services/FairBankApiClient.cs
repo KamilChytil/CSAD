@@ -454,9 +454,25 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         await http.DeleteAsync($"api/v1/users/{userId}");
     }
 
-    public async Task<PagedAuditLogsResponse> GetAuditLogsAsync(int page = 1, int pageSize = 20)
+    public async Task<PagedAuditLogsResponse> GetAuditLogsAsync(
+        int page = 1, 
+        int pageSize = 20, 
+        Guid? userId = null, 
+        string? action = null, 
+        string? entityName = null, 
+        DateTime? startDate = null, 
+        DateTime? endDate = null,
+        string sortBy = "Timestamp",
+        bool sortDesc = true)
     {
-        var url = $"api/v1/users/admin/audit-logs?page={page}&pageSize={pageSize}";
+        var url = $"api/v1/users/admin/audit-logs?page={page}&pageSize={pageSize}&sortBy={Uri.EscapeDataString(sortBy)}&sortDesc={sortDesc.ToString().ToLowerInvariant()}";
+        
+        if (userId.HasValue) url += $"&userId={userId.Value}";
+        if (!string.IsNullOrEmpty(action)) url += $"&action={Uri.EscapeDataString(action)}";
+        if (!string.IsNullOrEmpty(entityName)) url += $"&entityName={Uri.EscapeDataString(entityName)}";
+        if (startDate.HasValue) url += $"&startDate={Uri.EscapeDataString(startDate.Value.ToString("O"))}";
+        if (endDate.HasValue) url += $"&endDate={Uri.EscapeDataString(endDate.Value.ToString("O"))}";
+
         var response = await http.GetAsync(url);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PagedAuditLogsResponse>())!;

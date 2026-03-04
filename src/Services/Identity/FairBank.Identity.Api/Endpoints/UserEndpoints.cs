@@ -420,8 +420,10 @@ public static class UserEndpoints
             string? action = null,
             string? entityName = null,
             DateTime? startDate = null,
-            DateTime? endDate = null) =>
-            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize, userId, action, entityName, startDate, endDate))))
+            DateTime? endDate = null,
+            string sortBy = "Timestamp",
+            bool sortDesc = true) =>
+            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize, userId, action, entityName, startDate, endDate, sortBy, sortDesc))))
         .WithName("GetAuditLogs")
         .Produces<PagedAuditLogsResponse>(StatusCodes.Status200OK);
 

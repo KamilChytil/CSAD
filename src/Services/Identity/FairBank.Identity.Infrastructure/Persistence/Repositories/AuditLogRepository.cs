@@ -30,7 +30,9 @@ public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogReposito
         string? entityName,
         DateTime? startDate,
         DateTime? endDate,
-        CancellationToken ct)
+        string sortBy = "Timestamp",
+        bool sortDesc = true,
+        CancellationToken ct = default)
     {
         var query = db.AuditLogs.AsNoTracking();
 
@@ -49,9 +51,17 @@ public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogReposito
         if (endDate.HasValue)
             query = query.Where(l => l.Timestamp <= endDate.Value);
 
+        // Apply Sorting
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "action" => sortDesc ? query.OrderByDescending(l => l.Action) : query.OrderBy(l => l.Action),
+            "entityname" => sortDesc ? query.OrderByDescending(l => l.EntityName) : query.OrderBy(l => l.EntityName),
+            "userid" => sortDesc ? query.OrderByDescending(l => l.UserId) : query.OrderBy(l => l.UserId),
+            _ => sortDesc ? query.OrderByDescending(l => l.Timestamp) : query.OrderBy(l => l.Timestamp)
+        };
+
         var totalCount = await query.CountAsync(ct);
         var items = await query
-            .OrderByDescending(l => l.Timestamp)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

@@ -11,7 +11,9 @@ public sealed record GetAuditLogsQuery(
     string? Action = null,
     string? EntityName = null,
     DateTime? StartDate = null,
-    DateTime? EndDate = null) : IRequest<PagedAuditLogsResponse>;
+    DateTime? EndDate = null,
+    string SortBy = "Timestamp",
+    bool SortDesc = true) : IRequest<PagedAuditLogsResponse>;
 
 public sealed record PagedAuditLogsResponse(
     IEnumerable<AuditLogResponse> Items,
@@ -42,6 +44,8 @@ public sealed class GetAuditLogsQueryHandler(IAuditLogRepository repo) : IReques
             request.EntityName,
             request.StartDate,
             request.EndDate,
+            request.SortBy,
+            request.SortDesc,
             ct);
 
         var dtos = items.Select(l => new AuditLogResponse(

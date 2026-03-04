@@ -13,5 +13,7 @@ public interface IAuditLogRepository : IRepository<AuditLog, Guid>
         string? entityName,
         DateTime? startDate,
         DateTime? endDate,
-        CancellationToken ct);
+        string sortBy = "Timestamp",
+        bool sortDesc = true,
+        CancellationToken ct = default);
 }
