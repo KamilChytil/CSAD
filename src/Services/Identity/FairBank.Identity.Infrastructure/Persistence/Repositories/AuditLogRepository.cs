@@ -28,6 +28,7 @@ public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogReposito
         Guid? userId,
         string? action,
         string? entityName,
+        string? details,
         DateTime? startDate,
         DateTime? endDate,
         string sortBy = "Timestamp",
@@ -40,10 +41,13 @@ public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogReposito
             query = query.Where(l => l.UserId == userId.Value);
 
         if (!string.IsNullOrWhiteSpace(action))
-            query = query.Where(l => l.Action == action);
+            query = query.Where(l => l.Action.ToLower().Contains(action.ToLower()));
 
         if (!string.IsNullOrWhiteSpace(entityName))
-            query = query.Where(l => l.EntityName == entityName);
+            query = query.Where(l => l.EntityName != null && l.EntityName.ToLower().Contains(entityName.ToLower()));
+
+        if (!string.IsNullOrWhiteSpace(details))
+            query = query.Where(l => l.Details != null && l.Details.ToLower().Contains(details.ToLower()));
 
         if (startDate.HasValue)
             query = query.Where(l => l.Timestamp >= startDate.Value);

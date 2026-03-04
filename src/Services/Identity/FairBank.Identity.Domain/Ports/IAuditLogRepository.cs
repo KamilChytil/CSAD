@@ -11,6 +11,7 @@ public interface IAuditLogRepository : IRepository<AuditLog, Guid>
         Guid? userId,
         string? action,
         string? entityName,
+        string? details,
         DateTime? startDate,
         DateTime? endDate,
         string sortBy = "Timestamp",

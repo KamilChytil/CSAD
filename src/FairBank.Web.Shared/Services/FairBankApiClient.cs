@@ -459,7 +459,8 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         int pageSize = 20, 
         Guid? userId = null, 
         string? action = null, 
-        string? entityName = null, 
+        string? entityName = null,
+        string? details = null,
         DateTime? startDate = null, 
         DateTime? endDate = null,
         string sortBy = "Timestamp",
@@ -470,8 +471,9 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         if (userId.HasValue) url += $"&userId={userId.Value}";
         if (!string.IsNullOrEmpty(action)) url += $"&action={Uri.EscapeDataString(action)}";
         if (!string.IsNullOrEmpty(entityName)) url += $"&entityName={Uri.EscapeDataString(entityName)}";
-        if (startDate.HasValue) url += $"&startDate={Uri.EscapeDataString(startDate.Value.ToString("O"))}";
-        if (endDate.HasValue) url += $"&endDate={Uri.EscapeDataString(endDate.Value.ToString("O"))}";
+        if (!string.IsNullOrEmpty(details)) url += $"&details={Uri.EscapeDataString(details)}";
+        if (startDate.HasValue) url += $"&startDate={Uri.EscapeDataString(startDate.Value.ToString("s"))}";
+        if (endDate.HasValue) url += $"&endDate={Uri.EscapeDataString(endDate.Value.ToString("s"))}";
 
         var response = await http.GetAsync(url);
         response.EnsureSuccessStatusCode();

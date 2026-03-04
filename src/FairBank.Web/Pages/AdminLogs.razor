@@ -14,13 +14,22 @@
 
     <div class="filters-card">
         <div class="filters-grid">
-            <input type="text" class="vb-input" @bind="_filterUserId" placeholder="ID uživatele (Guid)" />
-            <input type="text" class="vb-input" @bind="_filterAction" placeholder="Akce" />
-            <input type="text" class="vb-input" @bind="_filterEntityName" placeholder="Entita" />
-            <div class="date-range">
-                <input type="date" class="vb-input date-input" @bind="_filterStartDate" />
+            <div class="form-group mb-0">
+                <input type="text" class="form-input" @bind="_filterUserId" placeholder="ID uživatele (Guid)" />
+            </div>
+            <div class="form-group mb-0">
+                <input type="text" class="form-input" @bind="_filterAction" placeholder="Akce" />
+            </div>
+            <div class="form-group mb-0">
+                <input type="text" class="form-input" @bind="_filterEntityName" placeholder="Entita" />
+            </div>
+            <div class="form-group mb-0">
+                <input type="text" class="form-input" @bind="_filterDetails" placeholder="Detaily" />
+            </div>
+            <div class="form-group mb-0 date-range">
+                <input type="datetime-local" class="form-input date-input" @bind="_filterStartDate" title="Od" />
                 <span>-</span>
-                <input type="date" class="vb-input date-input" @bind="_filterEndDate" />
+                <input type="datetime-local" class="form-input date-input" @bind="_filterEndDate" title="Do" />
             </div>
         </div>
         <div class="filters-actions">
@@ -164,11 +173,11 @@
 
     .date-input {
         flex: 1;
-        padding: 0.5rem;
-        border: 1px solid var(--vb-input-border);
-        border-radius: var(--vb-radius-sm);
-        background: var(--vb-bg-elevated);
-        color: var(--vb-text-primary);
+        min-width: 0;
+    }
+
+    .mb-0 {
+        margin-bottom: 0 !important;
     }
 
     .sortable {
@@ -286,6 +295,7 @@
     private Guid? _filterUserId;
     private string? _filterAction;
     private string? _filterEntityName;
+    private string? _filterDetails;
     private DateTime? _filterStartDate;
     private DateTime? _filterEndDate;
     private string _sortBy = "Timestamp";
@@ -310,7 +320,7 @@
 
         try
         {
-            _logs = await Api.GetAuditLogsAsync(_page, _pageSize, _filterUserId, _filterAction, _filterEntityName, _filterStartDate, _filterEndDate, _sortBy, _sortDesc);
+            _logs = await Api.GetAuditLogsAsync(_page, _pageSize, _filterUserId, _filterAction, _filterEntityName, _filterDetails, _filterStartDate, _filterEndDate, _sortBy, _sortDesc);
         }
         catch (Exception ex)
         {
@@ -358,6 +368,7 @@
         _filterUserId = null;
         _filterAction = null;
         _filterEntityName = null;
+        _filterDetails = null;
         _filterStartDate = null;
         _filterEndDate = null;
         _page = 1;
