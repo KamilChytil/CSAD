@@ -126,6 +126,26 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         return await http.GetFromJsonAsync<List<AccountResponse>>($"api/v1/accounts?ownerId={ownerId}") ?? [];
     }
 
+    public async Task<List<TransactionDto>> GetAccountTransactionsAsync(Guid accountId, DateTime? from = null, DateTime? to = null)
+    {
+        var url = $"api/v1/accounts/{accountId}/transactions";
+        var query = new List<string>();
+        if (from.HasValue) query.Add("from=" + Uri.EscapeDataString(from.Value.ToString("o")));
+        if (to.HasValue) query.Add("to=" + Uri.EscapeDataString(to.Value.ToString("o")));
+        if (query.Count > 0) url += "?" + string.Join("&", query);
+        return await http.GetFromJsonAsync<List<TransactionDto>>(url) ?? [];
+    }
+
+    public async Task<byte[]> DownloadStatementAsync(Guid accountId, DateTime? from, DateTime? to, string format)
+    {
+        var url = $"api/v1/documents/statements/{accountId}?format={Uri.EscapeDataString(format)}";
+        if (from.HasValue) url += "&from=" + Uri.EscapeDataString(from.Value.ToString("o"));
+        if (to.HasValue) url += "&to=" + Uri.EscapeDataString(to.Value.ToString("o"));
+        var response = await http.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
     // ── Pending transactions ────────────────────────────────────
     public async Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId)
     {

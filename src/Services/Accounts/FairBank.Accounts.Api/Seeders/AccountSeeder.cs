@@ -1,6 +1,7 @@
 using FairBank.Accounts.Application.Commands.CreateAccount;
 using FairBank.Accounts.Application.Commands.CreateInvestment;
 using FairBank.Accounts.Application.Commands.DepositMoney;
+using FairBank.Accounts.Application.Commands.WithdrawMoney;
 using FairBank.Accounts.Domain.Aggregates;
 using FairBank.Accounts.Domain.Enums;
 using Marten;
@@ -57,6 +58,26 @@ public static class AccountSeeder
                     amount,
                     Currency.CZK,
                     description));
+
+                // Add a few extra transactions for the admin user so history isn't empty
+                if (ownerId == AdminSeedId)
+                {
+                    await sender.Send(new DepositMoneyCommand(
+                        account.Id,
+                        5000m,
+                        Currency.CZK,
+                        "Bonus payment"));
+                    await sender.Send(new DepositMoneyCommand(
+                        account.Id,
+                        2500m,
+                        Currency.CZK,
+                        "Salary"));
+                    await sender.Send(new WithdrawMoneyCommand(
+                        account.Id,
+                        1200m,
+                        Currency.CZK,
+                        "Groceries"));
+                }
             }
 
             // Seed demo investments for the Client account
