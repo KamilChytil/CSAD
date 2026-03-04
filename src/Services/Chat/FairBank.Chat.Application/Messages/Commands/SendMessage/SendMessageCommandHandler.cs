@@ -46,6 +46,7 @@ public sealed class SendMessageCommandHandler(IChatRepository msgRepo, IConversa
             message.SenderId,
             message.SenderName,
             message.Content,
-            message.SentAt);
+            message.SentAt,
+            message.ReadAt);
     }
 }

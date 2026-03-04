@@ -1,3 +1,4 @@
+using FairBank.Chat.Application.Messages.Commands.MarkMessageRead;
 using FairBank.Chat.Application.Messages.Commands.SendMessage;
 using FairBank.Chat.Application.Messages.DTOs;
 using MediatR;
@@ -36,5 +37,29 @@ public sealed class ChatHub(ISender sender) : Hub
                 saved.Content,
                 saved.SentAt
             });
+    }
+
+    /// <summary>Notify other participants that a user started typing.</summary>
+    public async Task StartTyping(Guid conversationId, Guid userId, string userName)
+    {
+        await Clients.OthersInGroup($"conv-{conversationId}")
+            .SendAsync("UserTyping", new { userId, userName });
+    }
+
+    /// <summary>Notify other participants that a user stopped typing.</summary>
+    public async Task StopTyping(Guid conversationId, Guid userId)
+    {
+        await Clients.OthersInGroup($"conv-{conversationId}")
+            .SendAsync("UserStoppedTyping", new { userId });
+    }
+
+    /// <summary>Mark a message as read and notify other participants.</summary>
+    public async Task MarkMessageAsRead(Guid conversationId, Guid messageId, Guid userId)
+    {
+        var command = new MarkMessageReadCommand(messageId);
+        await sender.Send(command);
+
+        await Clients.OthersInGroup($"conv-{conversationId}")
+            .SendAsync("MessageRead", new { messageId, userId, readAt = DateTime.UtcNow });
     }
 }

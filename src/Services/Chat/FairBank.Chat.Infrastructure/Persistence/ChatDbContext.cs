@@ -1,4 +1,5 @@
 using FairBank.Chat.Domain.Aggregates;
+using FairBank.Chat.Domain.Entities;
 using FairBank.Chat.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ public sealed class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbC
 {
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
+    public DbSet<ChatAttachment> Attachments => Set<ChatAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,9 +39,25 @@ public sealed class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbC
         msg.Property(m => m.SenderName).IsRequired().HasMaxLength(200);
         msg.Property(m => m.Content).IsRequired().HasMaxLength(2000);
         msg.Property(m => m.SentAt).IsRequired();
+        msg.Property(m => m.ReadAt);
         msg.HasOne<Conversation>()
            .WithMany()
            .HasForeignKey(m => m.ConversationId)
+           .OnDelete(DeleteBehavior.Cascade);
+
+        // ── ChatAttachment ────────────────────────────────────────────────
+        var att = modelBuilder.Entity<ChatAttachment>();
+        att.ToTable("attachments");
+        att.HasKey(a => a.Id);
+        att.Property(a => a.MessageId).IsRequired();
+        att.Property(a => a.FileName).IsRequired().HasMaxLength(500);
+        att.Property(a => a.ContentType).IsRequired().HasMaxLength(100);
+        att.Property(a => a.FileSize).IsRequired();
+        att.Property(a => a.StoragePath).IsRequired().HasMaxLength(1000);
+        att.Property(a => a.CreatedAt).IsRequired();
+        att.HasOne<ChatMessage>()
+           .WithMany()
+           .HasForeignKey(a => a.MessageId)
            .OnDelete(DeleteBehavior.Cascade);
     }
 }
