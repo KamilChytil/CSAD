@@ -1,0 +1,436 @@
+@namespace FairBank.Web.Products.Pages
+@using FairBank.Web.Products.Services
+@inject IFairBankApi Api
+@inject IAuthService Auth
+
+<div class="insurance-subtabs">
+    <button class="insurance-subtab @(_subTab == "travel" ? "active" : "")"
+            @onclick='() => _subTab = "travel"'><VbIcon Name="travel" Size="sm" /> Cestovní</button>
+    <button class="insurance-subtab @(_subTab == "property" ? "active" : "")"
+            @onclick='() => _subTab = "property"'><VbIcon Name="home" Size="sm" /> Nemovitost</button>
+    <button class="insurance-subtab @(_subTab == "life" ? "active" : "")"
+            @onclick='() => _subTab = "life"'><VbIcon Name="heart" Size="sm" /> Životní</button>
+    <button class="insurance-subtab @(_subTab == "protection" ? "active" : "")"
+            @onclick='() => _subTab = "protection"'><VbIcon Name="lock" Size="sm" /> Ochrana splátek</button>
+</div>
+
+@switch (_subTab)
+{
+    case "travel":
+        <ContentCard Title="Cestovní pojištění">
+            <ChildContent>
+                <div class="calculator-form">
+                    <div class="form-group">
+                        <label class="form-label">Destinace</label>
+                        <div class="radio-group">
+                            <label class="radio-option @(_travelDest == "europe" ? "active" : "")">
+                                <input type="radio" name="dest" value="europe" @onchange='() => _travelDest = "europe"' checked="@(_travelDest == "europe")" /> <VbIcon Name="travel" Size="sm" /> Evropa
+                            </label>
+                            <label class="radio-option @(_travelDest == "world" ? "active" : "")">
+                                <input type="radio" name="dest" value="world" @onchange='() => _travelDest = "world"' checked="@(_travelDest == "world")" /> <VbIcon Name="travel" Size="sm" /> Svět
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Počet dní</label>
+                        <input class="form-input" type="number" min="1" max="90" @bind="_travelDays" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Počet osob</label>
+                        <input class="form-input" type="number" min="1" max="6" @bind="_travelPersons" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Varianta</label>
+                        <div class="radio-group">
+                            <label class="radio-option @(_travelVariant == "standard" ? "active" : "")">
+                                <input type="radio" name="tvar" value="standard" @onchange='() => _travelVariant = "standard"' checked="@(_travelVariant == "standard")" /> Standard
+                            </label>
+                            <label class="radio-option @(_travelVariant == "plus" ? "active" : "")">
+                                <input type="radio" name="tvar" value="plus" @onchange='() => _travelVariant = "plus"' checked="@(_travelVariant == "plus")" /> Plus
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="calc-results">
+                    <div class="calc-result-primary">
+                        <span class="result-label">Celková cena</span>
+                        <span class="result-value">@_travelPrice.ToString("N0") Kč</span>
+                    </div>
+                </div>
+                <div class="coverage-list">
+                    <h4>Krytí zahrnuje:</h4>
+                    <ul>
+                        <li>Léčebné výlohy v zahraničí — @(_travelVariant == "plus" ? "100 000 000" : "5 000 000") Kč</li>
+                        <li>Storno poplatky — @(_travelVariant == "plus" ? "50 000" : "25 000") Kč</li>
+                        <li>Zavazadla — @(_travelVariant == "plus" ? "40 000" : "20 000") Kč</li>
+                        <li>Odpovědnost za škodu — @(_travelVariant == "plus" ? "5 000 000" : "2 000 000") Kč</li>
+                        @if (_travelVariant == "plus")
+                        {
+                            <li>Úrazové pojištění — 500 000 Kč</li>
+                            <li>Právní pomoc v zahraničí</li>
+                        }
+                    </ul>
+                </div>
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+                {
+                    <VbButton OnClick='() => ShowModal("TravelInsurance")'>Sjednat online</VbButton>
+                }
+            </ChildContent>
+        </ContentCard>
+        break;
+
+    case "property":
+        <ContentCard Title="Pojištění nemovitosti">
+            <ChildContent>
+                <div class="calculator-form">
+                    <div class="form-group">
+                        <label class="form-label">Typ nemovitosti</label>
+                        <div class="radio-group">
+                            <label class="radio-option @(_propType == "apartment" ? "active" : "")">
+                                <input type="radio" name="ptype" value="apartment" @onchange='() => _propType = "apartment"' checked="@(_propType == "apartment")" /> <VbIcon Name="building" Size="sm" /> Byt
+                            </label>
+                            <label class="radio-option @(_propType == "house" ? "active" : "")">
+                                <input type="radio" name="ptype" value="house" @onchange='() => _propType = "house"' checked="@(_propType == "house")" /> <VbIcon Name="home" Size="sm" /> Dům
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hodnota nemovitosti</label>
+                        <input class="form-input" type="range" min="500000" max="15000000" step="100000"
+                               @bind="_propValue" @bind:event="oninput" />
+                        <div class="range-value">@_propValue.ToString("N0") Kč</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" @bind="_propContents" />
+                            Včetně pojištění domácnosti (+40%)
+                        </label>
+                    </div>
+                </div>
+                <div class="calc-results">
+                    <div class="calc-result-primary">
+                        <span class="result-label">Roční pojistné</span>
+                        <span class="result-value">@_propAnnual.ToString("N0") Kč</span>
+                    </div>
+                    <div class="calc-results-grid">
+                        <div class="calc-result-item">
+                            <span class="result-label">Měsíční pojistné</span>
+                            <span class="result-value-sm">@_propMonthly.ToString("N0") Kč</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="coverage-list">
+                    <h4>Krytí zahrnuje:</h4>
+                    <ul>
+                        <li>Požár, výbuch, úder blesku</li>
+                        <li>Povodeň a záplava</li>
+                        <li>Vichřice, krupobití</li>
+                        <li>Krádež a vandalismus</li>
+                        <li>Škody vodou z instalací</li>
+                        @if (_propContents)
+                        {
+                            <li>Vybavení a osobní věci</li>
+                            <li>Elektronika a spotřebiče</li>
+                        }
+                    </ul>
+                </div>
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+                {
+                    <VbButton OnClick='() => ShowModal("PropertyInsurance")'>Sjednat online</VbButton>
+                }
+            </ChildContent>
+        </ContentCard>
+        break;
+
+    case "life":
+        <ContentCard Title="Životní pojištění">
+            <ChildContent>
+                <div class="calculator-form">
+                    <div class="form-group">
+                        <label class="form-label">Věk</label>
+                        <input class="form-input" type="number" min="18" max="65" @bind="_lifeAge" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pojistná částka</label>
+                        <input class="form-input" type="range" min="200000" max="5000000" step="100000"
+                               @bind="_lifeCoverage" @bind:event="oninput" />
+                        <div class="range-value">@_lifeCoverage.ToString("N0") Kč</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Varianta</label>
+                        <div class="radio-group">
+                            <label class="radio-option @(_lifeVariant == "risk" ? "active" : "")">
+                                <input type="radio" name="lvar" value="risk" @onchange='() => _lifeVariant = "risk"' checked="@(_lifeVariant == "risk")" /> Rizikové
+                            </label>
+                            <label class="radio-option @(_lifeVariant == "investment" ? "active" : "")">
+                                <input type="radio" name="lvar" value="investment" @onchange='() => _lifeVariant = "investment"' checked="@(_lifeVariant == "investment")" /> Investiční
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="calc-results">
+                    <div class="calc-result-primary">
+                        <span class="result-label">Měsíční pojistné</span>
+                        <span class="result-value">@_lifeMonthly.ToString("N0") Kč</span>
+                    </div>
+                </div>
+                <div class="coverage-list">
+                    <h4>Krytí zahrnuje:</h4>
+                    <ul>
+                        <li>Úmrtí — výplata pojistné částky</li>
+                        <li>Invalidita III. stupně — výplata pojistné částky</li>
+                        <li>Invalidita II. stupně — 50% pojistné částky</li>
+                        <li>Závažná onemocnění — 25% pojistné částky</li>
+                        @if (_lifeVariant == "investment")
+                        {
+                            <li>Investiční složka — zhodnocení prostředků</li>
+                            <li>Daňový odpočet až 24 000 Kč/rok</li>
+                        }
+                    </ul>
+                </div>
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+                {
+                    <VbButton OnClick='() => ShowModal("LifeInsurance")'>Sjednat online</VbButton>
+                }
+            </ChildContent>
+        </ContentCard>
+        break;
+
+    case "protection":
+        <ContentCard Title="Pojištění schopnosti splácet">
+            <ChildContent>
+                <div class="calculator-form">
+                    <div class="form-group">
+                        <label class="form-label">Měsíční splátka úvěru/hypotéky</label>
+                        <input class="form-input" type="number" min="500" max="100000" step="100"
+                               @bind="_protPayment" />
+                        <div class="range-value">@_protPayment.ToString("N0") Kč</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Varianta</label>
+                        <div class="radio-group">
+                            <label class="radio-option @(_protVariant == "standard" ? "active" : "")">
+                                <input type="radio" name="pvar" value="standard" @onchange='() => _protVariant = "standard"' checked="@(_protVariant == "standard")" /> Standard
+                            </label>
+                            <label class="radio-option @(_protVariant == "plus" ? "active" : "")">
+                                <input type="radio" name="pvar" value="plus" @onchange='() => _protVariant = "plus"' checked="@(_protVariant == "plus")" /> Plus
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="calc-results">
+                    <div class="calc-result-primary">
+                        <span class="result-label">Měsíční pojistné</span>
+                        <span class="result-value">@_protMonthly.ToString("N0") Kč</span>
+                    </div>
+                </div>
+                <div class="coverage-list">
+                    <h4>Standard krytí:</h4>
+                    <ul>
+                        <li>Úmrtí — pojistitel doplatí zůstatek úvěru</li>
+                        <li>Plná invalidita — pojistitel doplatí zůstatek úvěru</li>
+                    </ul>
+                    @if (_protVariant == "plus")
+                    {
+                        <h4>Plus krytí navíc:</h4>
+                        <ul>
+                            <li>Pracovní neschopnost — splátky až 12 měsíců</li>
+                            <li>Ztráta zaměstnání — splátky až 12 měsíců</li>
+                        </ul>
+                    }
+                </div>
+                @if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+                {
+                    <VbButton OnClick='() => ShowModal("PaymentProtection")'>Sjednat online</VbButton>
+                }
+            </ChildContent>
+        </ContentCard>
+        break;
+}
+
+@if (_showModal)
+{
+    <div class="modal-overlay" @onclick="HideModal">
+        <div class="modal-card" @onclick:stopPropagation>
+            @if (_submitSuccess)
+            {
+                <h3>Žádost odeslána!</h3>
+                <p>Vaše žádost byla přijata a čeká na schválení bankéřem. Stav můžete sledovat v záložce "Moje produkty".</p>
+                <VbButton OnClick="HideModal">Zavřít</VbButton>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <h3>Chyba</h3>
+                <p>@_errorMessage</p>
+                <VbButton OnClick="HideModal">Zavřít</VbButton>
+            }
+            else
+            {
+                <h3>Potvrdit žádost — @GetModalTitle()</h3>
+                <div class="modal-summary">
+                    @switch (_modalProductType)
+                    {
+                        case "TravelInsurance":
+                            <div class="summary-row"><span>Destinace:</span> <strong>@(_travelDest == "europe" ? "Evropa" : "Svět")</strong></div>
+                            <div class="summary-row"><span>Počet dní:</span> <strong>@_travelDays</strong></div>
+                            <div class="summary-row"><span>Počet osob:</span> <strong>@_travelPersons</strong></div>
+                            <div class="summary-row"><span>Varianta:</span> <strong>@(_travelVariant == "plus" ? "Plus" : "Standard")</strong></div>
+                            <div class="summary-row"><span>Celková cena:</span> <strong>@_travelPrice.ToString("N0") Kč</strong></div>
+                            break;
+
+                        case "PropertyInsurance":
+                            <div class="summary-row"><span>Typ nemovitosti:</span> <strong>@(_propType == "apartment" ? "Byt" : "Dům")</strong></div>
+                            <div class="summary-row"><span>Hodnota nemovitosti:</span> <strong>@_propValue.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Pojištění domácnosti:</span> <strong>@(_propContents ? "Ano" : "Ne")</strong></div>
+                            <div class="summary-row"><span>Roční pojistné:</span> <strong>@_propAnnual.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Měsíční pojistné:</span> <strong>@_propMonthly.ToString("N0") Kč</strong></div>
+                            break;
+
+                        case "LifeInsurance":
+                            <div class="summary-row"><span>Věk:</span> <strong>@_lifeAge let</strong></div>
+                            <div class="summary-row"><span>Pojistná částka:</span> <strong>@_lifeCoverage.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Varianta:</span> <strong>@(_lifeVariant == "investment" ? "Investiční" : "Rizikové")</strong></div>
+                            <div class="summary-row"><span>Měsíční pojistné:</span> <strong>@_lifeMonthly.ToString("N0") Kč</strong></div>
+                            break;
+
+                        case "PaymentProtection":
+                            <div class="summary-row"><span>Měsíční splátka:</span> <strong>@_protPayment.ToString("N0") Kč</strong></div>
+                            <div class="summary-row"><span>Varianta:</span> <strong>@(_protVariant == "plus" ? "Plus" : "Standard")</strong></div>
+                            <div class="summary-row"><span>Měsíční pojistné:</span> <strong>@_protMonthly.ToString("N0") Kč</strong></div>
+                            break;
+                    }
+                </div>
+                <div class="modal-actions">
+                    <VbButton OnClick="SubmitApplication" Disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Odesílání..." : "Odeslat žádost")
+                    </VbButton>
+                    <VbButton OnClick="HideModal">Zrušit</VbButton>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string _subTab = "travel";
+
+    // ── Shared modal state ──
+    private bool _showModal;
+    private bool _isSubmitting;
+    private bool _submitSuccess;
+    private string _errorMessage = "";
+    private string _modalProductType = "";
+
+    // ── Travel state ──
+    private string _travelDest = "europe";
+    private string _travelVariant = "standard";
+    private int _travelDays = 7;
+    private int _travelPersons = 2;
+    private decimal _travelPrice => InsuranceCalculator.CalculateTravel(_travelDest, _travelVariant, _travelDays, _travelPersons);
+
+    // ── Property state ──
+    private string _propType = "apartment";
+    private decimal _propValue = 3_000_000m;
+    private bool _propContents;
+    private decimal _propAnnual => InsuranceCalculator.CalculatePropertyAnnual(_propType, _propValue, _propContents);
+    private decimal _propMonthly => InsuranceCalculator.CalculatePropertyMonthly(_propType, _propValue, _propContents);
+
+    // ── Life state ──
+    private int _lifeAge = 30;
+    private decimal _lifeCoverage = 1_000_000m;
+    private string _lifeVariant = "risk";
+    private decimal _lifeMonthly => InsuranceCalculator.CalculateLifeMonthly(_lifeAge, _lifeCoverage, _lifeVariant);
+
+    // ── Payment protection state ──
+    private decimal _protPayment = 5_000m;
+    private string _protVariant = "standard";
+    private decimal _protMonthly => InsuranceCalculator.CalculatePaymentProtection(_protPayment, _protVariant);
+
+    private void ShowModal(string productType)
+    {
+        _modalProductType = productType;
+        _showModal = true;
+        _submitSuccess = false;
+        _errorMessage = "";
+    }
+
+    private void HideModal()
+    {
+        _showModal = false;
+        _isSubmitting = false;
+    }
+
+    private string GetModalTitle() => _modalProductType switch
+    {
+        "TravelInsurance" => "Cestovní pojištění",
+        "PropertyInsurance" => "Pojištění nemovitosti",
+        "LifeInsurance" => "Životní pojištění",
+        "PaymentProtection" => "Pojištění schopnosti splácet",
+        _ => "Pojištění"
+    };
+
+    private async Task SubmitApplication()
+    {
+        _isSubmitting = true;
+        try
+        {
+            var (parameters, monthlyPayment) = GetApplicationData();
+            await Api.SubmitProductApplicationAsync(Auth.CurrentSession!.UserId, _modalProductType, parameters, monthlyPayment);
+            _submitSuccess = true;
+        }
+        catch
+        {
+            _errorMessage = "Žádost se nepodařilo odeslat. Zkuste to prosím později.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private (string parameters, decimal monthlyPayment) GetApplicationData() => _modalProductType switch
+    {
+        "TravelInsurance" => (
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                destination = _travelDest,
+                variant = _travelVariant,
+                days = _travelDays,
+                persons = _travelPersons,
+                totalPrice = _travelPrice
+            }),
+            _travelPrice
+        ),
+        "PropertyInsurance" => (
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                propertyType = _propType,
+                propertyValue = _propValue,
+                includesContents = _propContents,
+                annualPremium = _propAnnual,
+                monthlyPremium = _propMonthly
+            }),
+            _propMonthly
+        ),
+        "LifeInsurance" => (
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                age = _lifeAge,
+                coverageAmount = _lifeCoverage,
+                variant = _lifeVariant,
+                monthlyPremium = _lifeMonthly
+            }),
+            _lifeMonthly
+        ),
+        "PaymentProtection" => (
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                loanPayment = _protPayment,
+                variant = _protVariant,
+                monthlyPremium = _protMonthly
+            }),
+            _protMonthly
+        ),
+        _ => throw new InvalidOperationException($"Unknown product type: {_modalProductType}")
+    };
+}

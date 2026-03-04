@@ -16,9 +16,14 @@
 
     <!-- HTTP -->
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
 
     <!-- Database - Marten (Event Sourcing) -->
     <PackageVersion Include="Marten" Version="8.22.1" />
+
+    <!-- QR Code -->
+    <PackageVersion Include="QRCoder" Version="1.6.0" />
 
     <!-- Security -->
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />

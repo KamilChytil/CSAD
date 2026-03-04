@@ -18,6 +18,7 @@ public sealed class GetPaymentsByAccountQueryHandler(
             p.SenderAccountNumber, p.RecipientAccountNumber,
             p.Amount, p.Currency.ToString(), p.Description,
             p.Type.ToString(), p.Status.ToString(),
+            p.Category.ToString(),
             p.CreatedAt, p.CompletedAt, p.FailureReason)).ToList();
     }
 }

@@ -27,7 +27,7 @@ public class CreateAccountCommandHandlerTests
         result.Balance.Should().Be(0);
         result.Currency.Should().Be(Currency.CZK);
         result.IsActive.Should().BeTrue();
-        result.AccountNumber.Should().StartWith("FAIR-");
+        result.AccountNumber.Should().MatchRegex(@"^\d{6}-\d{10}/8888$");
 
         await _eventStore.Received(1).StartStreamAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
     }

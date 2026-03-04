@@ -1,0 +1,623 @@
+@page "/sprava"
+@namespace FairBank.Web.Products.Pages
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Nav
+
+<PageHeader Title="SPRAVA" />
+
+<div class="page-content management-page">
+
+    @* ── TABS ────────────────────── *@
+    <div class="mgmt-tabs">
+        <button class="mgmt-tab @(_currentTab == "overview" ? "active" : "")" @onclick="@(() => _currentTab = "overview")">
+            Prehled
+        </button>
+        <button class="mgmt-tab @(_currentTab == "applications" ? "active" : "")" @onclick="@(() => _currentTab = "applications")">
+            Zadosti
+            @if (_applications.Any()) { <span class="mgmt-badge">@_applications.Count</span> }
+        </button>
+        <button class="mgmt-tab @(_currentTab == "clients" ? "active" : "")" @onclick="@(() => _currentTab = "clients")">
+            Klienti
+            @if (_bankerClients.Any()) { <span class="mgmt-badge">@_bankerClients.Count</span> }
+        </button>
+    </div>
+
+    @* ── TAB: PREHLED ────────────── *@
+    @if (_currentTab == "overview")
+    {
+        <div class="overview-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><VbIcon Name="clock" Size="sm" /></div>
+                <div class="stat-body">
+                    <div class="stat-number">@_applications.Count</div>
+                    <div class="stat-label">Cekajicich zadosti</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><VbIcon Name="users" Size="sm" /></div>
+                <div class="stat-body">
+                    <div class="stat-number">@_bankerClients.Count</div>
+                    <div class="stat-label">Klientu</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overview-actions">
+            <h3>Rychle akce</h3>
+            <div class="quick-actions">
+                <VbButton Variant="primary" IconName="clipboard" OnClick="@(() => _currentTab = "applications")">
+                    Zobrazit zadosti
+                </VbButton>
+                <VbButton Variant="outline" IconName="users" OnClick="@(() => _currentTab = "clients")">
+                    Zobrazit klienty
+                </VbButton>
+                <VbButton Variant="outline" IconName="chat" OnClick="@(() => Nav.NavigateTo("/zpravy"))">
+                    Otevrit zpravy
+                </VbButton>
+            </div>
+        </div>
+    }
+
+    @* ── TAB: ZADOSTI (existing) ──── *@
+    @if (_currentTab == "applications")
+    {
+        @if (_isLoading)
+        {
+            <ContentCard Title="Sprava zadosti">
+                <ChildContent>
+                    <p>Nacitani zadosti...</p>
+                </ChildContent>
+            </ContentCard>
+        }
+        else if (!_applications.Any())
+        {
+            <ContentCard Title="Zadne cekajici zadosti">
+                <ChildContent>
+                    <p class="empty-state"><VbIcon Name="check" Size="sm" /> Vsechny zadosti byly zpracovany.</p>
+                </ChildContent>
+            </ContentCard>
+        }
+        else
+        {
+            <ContentCard Title="@($"Cekajici zadosti ({_applications.Count})")">
+                <ChildContent>
+                    <div class="application-list">
+                        @foreach (var app in _applications)
+                        {
+                            <div class="application-card" @onclick="() => SelectApplication(app)">
+                                <div class="application-type">
+                                    <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
+                                </div>
+                                <div class="application-details">
+                                    <div>
+                                        <span class="status-badge status-pending"><VbIcon Name="clock" Size="sm" /> Ceka na schvaleni</span>
+                                    </div>
+                                    <div>
+                                        <strong>@app.MonthlyPayment.ToString("N0") Kc/mesic</strong>
+                                    </div>
+                                    <div>
+                                        Podano: @app.CreatedAt.ToString("d. M. yyyy")
+                                    </div>
+                                    <div>
+                                        Zadatel: @app.UserId.ToString()[..8]...
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @if (_successMessage is not null)
+        {
+            <ContentCard Title="Vysledek">
+                <ChildContent>
+                    <p class="empty-state">@_successMessage</p>
+                </ChildContent>
+            </ContentCard>
+        }
+    }
+
+    @* ── TAB: KLIENTI ────────────── *@
+    @if (_currentTab == "clients")
+    {
+        @if (_isLoadingClients)
+        {
+            <div class="mgmt-empty">Nacitani klientu...</div>
+        }
+        else if (!_bankerClients.Any())
+        {
+            <div class="mgmt-empty">
+                <VbIcon Name="users" Size="sm" />
+                <p>Zatim zadni klienti.</p>
+            </div>
+        }
+        else
+        {
+            <div class="clients-grid">
+                @foreach (var client in _bankerClients)
+                {
+                    <div class="client-card" @onclick='() => Nav.NavigateTo("/zpravy")'>
+                        <div class="client-avatar">
+                            <VbIcon Name="user" Size="sm" />
+                        </div>
+                        <div class="client-info">
+                            <div class="client-name">@client.ClientLabel</div>
+                            <div class="client-meta">
+                                Aktivnich chatu: @client.ActiveChatsCount
+                                @if (client.LastActivity.HasValue)
+                                {
+                                    <span>&middot; Posledni aktivita: @client.LastActivity.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="client-arrow">
+                            <VbIcon Name="chevron-right" Size="sm" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ── APPLICATION DETAIL MODAL ── *@
+    @if (_selectedApp is not null)
+    {
+        <div class="modal-overlay" @onclick="CloseDetail">
+            <div class="modal-card management-detail" @onclick:stopPropagation>
+                <h3>Detail zadosti</h3>
+
+                <div class="form-group">
+                    <label class="form-label">Typ produktu</label>
+                    <p><VbIcon Name="@GetProductIconName(_selectedApp.ProductType)" Size="sm" /> @GetProductLabel(_selectedApp.ProductType)</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Mesicni platba</label>
+                    <p><strong>@_selectedApp.MonthlyPayment.ToString("N0") Kc/mesic</strong></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Datum podani</label>
+                    <p>@_selectedApp.CreatedAt.ToString("d. M. yyyy HH:mm")</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Zadatel (UserId)</label>
+                    <p>@_selectedApp.UserId</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Parametry zadosti</label>
+                    <div class="application-params">
+                        @foreach (var param in ParseParameters(_selectedApp.Parameters))
+                        {
+                            <div class="param-row">
+                                <span class="param-label">@GetParamLabel(param.Key):</span>
+                                <span class="param-value">@param.Value</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Poznamka (volitelne)</label>
+                    <textarea class="form-input" @bind="_reviewNote" rows="3" placeholder="Duvod schvaleni/zamitnutí..."></textarea>
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <p class="error-message">@_errorMessage</p>
+                }
+
+                <div class="management-actions">
+                    <VbButton OnClick="ApproveSelected" Disabled="@_isProcessing">
+                        <VbIcon Name="check" Size="sm" /> Schvalit
+                    </VbButton>
+                    <VbButton OnClick="RejectSelected" Variant="danger" Disabled="@_isProcessing">
+                        <VbIcon Name="x-circle" Size="sm" /> Zamitnout
+                    </VbButton>
+                    <VbButton OnClick="CloseDetail" Variant="outline">
+                        Zavrit
+                    </VbButton>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .management-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    /* Tabs */
+    .mgmt-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .mgmt-tab {
+        background: none;
+        border: none;
+        padding: 0.75rem 0.5rem;
+        font-weight: 600;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--vb-transition);
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+
+    .mgmt-tab:hover {
+        color: var(--vb-text-secondary);
+    }
+
+    .mgmt-tab.active {
+        color: var(--vb-red);
+        border-bottom-color: var(--vb-red);
+    }
+
+    .mgmt-badge {
+        background: var(--vb-gray-200);
+        color: var(--vb-text-secondary);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: var(--vb-radius-full);
+        font-weight: 700;
+    }
+
+    .mgmt-tab.active .mgmt-badge {
+        background: var(--vb-red);
+        color: white;
+    }
+
+    .mgmt-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        font-style: italic;
+    }
+
+    /* Overview stats */
+    .overview-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        color: var(--vb-red);
+        flex-shrink: 0;
+    }
+
+    .stat-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--vb-text-primary);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--vb-text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-top: 0.25rem;
+    }
+
+    .overview-actions {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        padding: 1.25rem;
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .overview-actions h3 {
+        margin: 0 0 1rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Clients grid */
+    .clients-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .client-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
+        cursor: pointer;
+        transition: var(--vb-transition);
+    }
+
+    .client-card:hover {
+        box-shadow: var(--vb-shadow);
+        transform: translateY(-1px);
+        border-color: var(--vb-red-glow);
+    }
+
+    .client-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--vb-radius-full);
+        background: var(--vb-gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        color: var(--vb-text-secondary);
+    }
+
+    .client-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .client-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--vb-text-primary);
+    }
+
+    .client-meta {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+        margin-top: 2px;
+    }
+
+    .client-arrow {
+        flex-shrink: 0;
+        color: var(--vb-text-muted);
+    }
+</style>
+
+@code {
+    private string _currentTab = "overview";
+    private List<ProductApplicationDto> _applications = [];
+    private List<BankerClientDto> _bankerClients = [];
+    private ProductApplicationDto? _selectedApp;
+    private string _reviewNote = string.Empty;
+    private bool _isLoading = true;
+    private bool _isLoadingClients = true;
+    private bool _isProcessing;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Auth.CurrentSession?.Role is not "Admin" and not "Banker")
+        {
+            Nav.NavigateTo("/prehled");
+            return;
+        }
+
+        await Task.WhenAll(LoadApplications(), LoadClients());
+    }
+
+    private async Task LoadApplications()
+    {
+        _isLoading = true;
+        try
+        {
+            _applications = await Api.GetPendingApplicationsAsync();
+        }
+        catch
+        {
+            _applications = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadClients()
+    {
+        _isLoadingClients = true;
+        try
+        {
+            var bankerId = Auth.CurrentSession!.UserId;
+            _bankerClients = await Api.GetBankerClientsAsync(bankerId);
+        }
+        catch
+        {
+            _bankerClients = [];
+        }
+        finally
+        {
+            _isLoadingClients = false;
+        }
+    }
+
+    private void SelectApplication(ProductApplicationDto app)
+    {
+        _selectedApp = app;
+        _reviewNote = string.Empty;
+        _errorMessage = null;
+        _successMessage = null;
+    }
+
+    private void CloseDetail()
+    {
+        _selectedApp = null;
+        _reviewNote = string.Empty;
+        _errorMessage = null;
+    }
+
+    private async Task ApproveSelected()
+    {
+        if (_selectedApp is null) return;
+
+        _isProcessing = true;
+        _errorMessage = null;
+        try
+        {
+            var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
+            await Api.ApproveApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
+            _successMessage = $"Zadost {GetProductLabel(_selectedApp.ProductType)} byla schvalena.";
+            CloseDetail();
+            await LoadApplications();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Chyba pri schvalovani: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task RejectSelected()
+    {
+        if (_selectedApp is null) return;
+
+        _isProcessing = true;
+        _errorMessage = null;
+        try
+        {
+            var note = string.IsNullOrWhiteSpace(_reviewNote) ? null : _reviewNote.Trim();
+            await Api.RejectApplicationAsync(_selectedApp.Id, Auth.CurrentSession!.UserId, note);
+            _successMessage = $"Zadost {GetProductLabel(_selectedApp.ProductType)} byla zamitnuta.";
+            CloseDetail();
+            await LoadApplications();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Chyba pri zamitani: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private static Dictionary<string, object?> ParseParameters(string json)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            var result = new Dictionary<string, object?>();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                result[prop.Name] = prop.Value.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.Number => prop.Value.TryGetDecimal(out var d) ? d.ToString("N2") : prop.Value.ToString(),
+                    System.Text.Json.JsonValueKind.True => "Ano",
+                    System.Text.Json.JsonValueKind.False => "Ne",
+                    System.Text.Json.JsonValueKind.Null => "-",
+                    _ => prop.Value.ToString()
+                };
+            }
+            return result;
+        }
+        catch
+        {
+            return new Dictionary<string, object?> { ["raw"] = json };
+        }
+    }
+
+    private static string GetParamLabel(string key) => key switch
+    {
+        "amount" => "Castka",
+        "months" => "Doba splaceni (mesice)",
+        "interestRate" => "Urokova sazba",
+        "rpsn" => "RPSN",
+        "totalCost" => "Celkove naklady",
+        "propertyPrice" => "Cena nemovitosti",
+        "loanAmount" => "Vyse uveru",
+        "years" => "Doba splaceni (roky)",
+        "fixation" => "Fixace (roky)",
+        "ltv" => "LTV",
+        "monthlyPayment" => "Mesicni platba",
+        "destination" => "Destinace",
+        "variant" => "Varianta",
+        "days" => "Pocet dnu",
+        "persons" => "Pocet osob",
+        "totalPrice" => "Celkova cena",
+        "propertyType" => "Typ nemovitosti",
+        "propertyValue" => "Hodnota nemovitosti",
+        "includesContents" => "Vcetne vybaveni",
+        "annualPremium" => "Rocni pojistne",
+        "monthlyPremium" => "Mesicni pojistne",
+        "age" => "Vek",
+        "coverageAmount" => "Vyse kryti",
+        "loanPayment" => "Splatka uveru",
+        _ => key
+    };
+
+    private static string GetProductIconName(string productType) => productType switch
+    {
+        "PersonalLoan" => "wallet",
+        "Mortgage" => "home",
+        "TravelInsurance" => "travel",
+        "PropertyInsurance" => "home",
+        "LifeInsurance" => "heart",
+        "PaymentProtection" => "shield",
+        _ => "clipboard"
+    };
+
+    private static string GetProductLabel(string productType) => productType switch
+    {
+        "PersonalLoan" => "Osobni uver",
+        "Mortgage" => "Hypoteka",
+        "TravelInsurance" => "Cestovni pojisteni",
+        "PropertyInsurance" => "Pojisteni nemovitosti",
+        "LifeInsurance" => "Zivotni pojisteni",
+        "PaymentProtection" => "Pojisteni splatek",
+        _ => productType
+    };
+}

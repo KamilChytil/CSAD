@@ -11,8 +11,15 @@ public sealed class ChatMessage
     public string Content { get; private set; } = string.Empty;
     public DateTime SentAt { get; private set; }
     public bool IsSystem { get; private set; } = false;
+    public DateTime? ReadAt { get; private set; }
 
     private ChatMessage() { }
+
+    public void MarkAsRead()
+    {
+        if (ReadAt is null)
+            ReadAt = DateTime.UtcNow;
+    }
 
     public static ChatMessage Create(Guid conversationId, Guid senderId, string senderName, string content, bool isSystem = false)
         => new()

@@ -2,53 +2,64 @@ using Microsoft.JSInterop;
 
 namespace FairBank.Web.Shared.Services;
 
-public sealed class ThemeService(IJSRuntime js)
+/// <summary>
+/// Blazor service wrapping the vabank.theme JS interop for dark/light mode management.
+/// Register as Singleton in DI.
+/// </summary>
+public sealed class ThemeService(IJSRuntime js) : IAsyncDisposable
 {
-    // Must match the key used in index.html inline <script>
-    private const string StorageKey = "vb-theme";
+    private bool _isDarkMode;
+    private bool _initialized;
 
-    public bool IsDarkMode { get; private set; }
-
+    public bool IsDarkMode => _isDarkMode;
     public event Action? OnThemeChanged;
 
     public async Task InitializeAsync()
     {
+        if (_initialized) return;
         try
         {
-            var saved = await js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
-            IsDarkMode = saved == "dark";
-            await ApplyThemeAsync();
+            var theme = await js.InvokeAsync<string>("vabank.theme.get");
+            _isDarkMode = theme == "dark";
+            _initialized = true;
         }
-        catch { /* JS interop may not be available during prerendering */ }
-    }
-
-    public async Task SetDarkModeAsync(bool isDark)
-    {
-        IsDarkMode = isDark;
-        try
+        catch
         {
-            await js.InvokeVoidAsync("localStorage.setItem", StorageKey, isDark ? "dark" : "light");
-            await ApplyThemeAsync();
+            // JS interop not ready yet
         }
-        catch { }
-        OnThemeChanged?.Invoke();
     }
 
     public async Task ToggleAsync()
     {
-        await SetDarkModeAsync(!IsDarkMode);
+        try
+        {
+            var newTheme = await js.InvokeAsync<string>("vabank.theme.toggle");
+            _isDarkMode = newTheme == "dark";
+            OnThemeChanged?.Invoke();
+        }
+        catch
+        {
+            // Fallback
+        }
     }
 
-    private async Task ApplyThemeAsync()
+    public async Task SetDarkModeAsync(bool isDark)
     {
         try
         {
-            // CSS uses [data-theme="dark"] selectors — must set/remove the attribute
-            if (IsDarkMode)
-                await js.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
-            else
-                await js.InvokeVoidAsync("document.documentElement.removeAttribute", "data-theme");
+            await js.InvokeVoidAsync("vabank.theme.set", isDark ? "dark" : "light");
+            _isDarkMode = isDark;
+            OnThemeChanged?.Invoke();
         }
-        catch { }
+        catch
+        {
+            // Fallback  
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        OnThemeChanged = null;
+        return ValueTask.CompletedTask;
     }
 }

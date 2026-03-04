@@ -1,44 +1,72 @@
 @using Microsoft.AspNetCore.Components.Routing
-@inject AuthStateService Auth
+@inject IAuthService Auth
+@inject NavigationManager Nav
+@inject ThemeService Theme
 @implements IDisposable
 
+@* Circular arc menu *@
+<CircularMenu IsOpen="_menuOpen" OnClose="CloseMenu" />
+
+@* Bottom navigation bar — 3 items only *@
 <nav class="bottom-nav">
-    <NavLink class="nav-item" href="prehled" Match="NavLinkMatch.All">
-        <span class="nav-icon"><VbIcon Name="home" Size="sm" /></span>
-        <span class="nav-label">Přehled</span>
+    @* 1) Home *@
+    <NavLink class="@NavClass("prehled")" href="prehled" Match="NavLinkMatch.All">
+        <span class="bnav-icon">
+            <NavIcon Name="home" IsActive="@IsActive("prehled")" Size="44" />
+        </span>
+        <span class="bnav-label">Přehled</span>
     </NavLink>
-    <NavLink class="nav-item" href="platby">
-        <span class="nav-icon"><VbIcon Name="payments" Size="sm" /></span>
-        <span class="nav-label">Platby</span>
-    </NavLink>
-    <NavLink class="nav-item" href="sporeni">
-        <span class="nav-icon"><VbIcon Name="target" Size="sm" /></span>
-        <span class="nav-label">Spoření</span>
-    </NavLink>
-    <NavLink class="nav-item" href="investice">
-        <span class="nav-icon"><VbIcon Name="investments" Size="sm" /></span>
-        <span class="nav-label">Investice</span>
-    </NavLink>
-    <NavLink class="nav-item" href="kurzy">
-        <span class="nav-icon">💱</span>
-        <span class="nav-label">Kurzy</span>
-    </NavLink>
-    <NavLink class="nav-item" href="profil">
-        <span class="nav-icon"><VbIcon Name="user" Size="sm" /></span>
-        <span class="nav-label">Profil</span>
+
+    @* 2) Menu trigger (center) *@
+    <button class="bnav-trigger @(_menuOpen ? "open" : "")" @onclick="ToggleMenu" @onclick:stopPropagation="true">
+        <span class="bnav-trigger-inner">
+            <span class="bnav-trigger-bar"></span>
+            <span class="bnav-trigger-bar"></span>
+        </span>
+    </button>
+
+    @* 3) Profile *@
+    <NavLink class="@NavClass("profil")" href="profil">
+        <span class="bnav-icon">
+            <NavIcon Name="user" IsActive="@IsActive("profil")" Size="44" />
+        </span>
+        <span class="bnav-label">Profil</span>
     </NavLink>
 </nav>
 
 @code {
+    private bool _menuOpen;
+
     protected override void OnInitialized()
     {
-        Auth.OnChanged += HandleAuthChanged;
+        Auth.AuthStateChanged += HandleChanged;
+        Theme.OnThemeChanged += HandleChanged;
+        Nav.LocationChanged += HandleLocationChanged;
     }
 
-    private void HandleAuthChanged() => InvokeAsync(StateHasChanged);
+    private bool IsActive(string path)
+    {
+        var uri = Nav.ToBaseRelativePath(Nav.Uri).ToLowerInvariant();
+        return uri.StartsWith(path, StringComparison.OrdinalIgnoreCase)
+               || (path == "prehled" && uri == "");
+    }
+
+    private string NavClass(string path) => IsActive(path) ? "bnav-item active" : "bnav-item";
+
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+    private void CloseMenu() => _menuOpen = false;
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _menuOpen = false;
+        InvokeAsync(StateHasChanged);
+    }
 
     public void Dispose()
     {
-        Auth.OnChanged -= HandleAuthChanged;
+        Auth.AuthStateChanged -= HandleChanged;
+        Theme.OnThemeChanged -= HandleChanged;
+        Nav.LocationChanged -= HandleLocationChanged;
     }
 }

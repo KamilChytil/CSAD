@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Va-bank — Offline</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #1A1A1A;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 24px;
+        }
+        .offline-content { max-width: 400px; }
+        .chip {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 4px dashed #C41E3A;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 800;
+        }
+        h1 { font-size: 24px; margin-bottom: 12px; letter-spacing: 2px; }
+        p { color: #888; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: #C41E3A;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover { background: #8B0000; }
+    </style>
+</head>
+<body>
+    <div class="offline-content">
+        <img src="icons/logo.svg" alt="Va-bank" style="width:80px;height:80px;margin:0 auto 24px;display:block;" />
+        <h1>JSTE OFFLINE</h1>
+        <p>Připojte se k internetu a zkuste to znovu. Va-bank potřebuje aktivní připojení pro správu vašich financí.</p>
+        <a href="/" class="btn">Zkusit znovu</a>
+    </div>
+</body>
+</html>

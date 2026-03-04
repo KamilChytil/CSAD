@@ -1,10 +1,14 @@
 @namespace FairBank.Web.Shared.Components
+@inject ThemeService Theme
+@implements IDisposable
 
 <div class="poker-chip @SizeClass @(IsActive ? "active" : "")">
-    <div class="chip-border">
-        <div class="chip-face">
+    <div class="chip-img-wrap">
+        <img src="@ChipPath" alt="" class="chip-img" />
+        @if (!string.IsNullOrEmpty(Value))
+        {
             <span class="chip-value">@Value</span>
-        </div>
+        }
     </div>
 </div>
 
@@ -19,4 +23,10 @@
         "lg" => "chip-lg",
         _ => "chip-md"
     };
+
+    private string ChipPath => Theme.IsDarkMode ? "icons/chip_dark.png" : "icons/chip_light.png";
+
+    protected override void OnInitialized() => Theme.OnThemeChanged += HandleThemeChanged;
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Theme.OnThemeChanged -= HandleThemeChanged;
 }

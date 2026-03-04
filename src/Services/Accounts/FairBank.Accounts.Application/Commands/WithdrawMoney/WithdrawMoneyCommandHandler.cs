@@ -24,6 +24,10 @@ public sealed class WithdrawMoneyCommandHandler(IAccountEventStore eventStore)
             account.Balance.Amount,
             account.Balance.Currency,
             account.IsActive,
-            account.CreatedAt);
+            account.CreatedAt,
+            account.Alias,
+            account.RequiresApproval,
+            account.ApprovalThreshold?.Amount,
+            account.SpendingLimit?.Amount);
     }
 }

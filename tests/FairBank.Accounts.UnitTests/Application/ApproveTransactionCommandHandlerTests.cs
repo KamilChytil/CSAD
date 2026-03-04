@@ -12,6 +12,7 @@ public class ApproveTransactionCommandHandlerTests
 {
     private readonly IPendingTransactionStore _pendingStore = Substitute.For<IPendingTransactionStore>();
     private readonly IAccountEventStore _accountStore = Substitute.For<IAccountEventStore>();
+    private readonly INotificationClient _notificationClient = Substitute.For<INotificationClient>();
 
     [Fact]
     public async Task Handle_WithValidTransaction_ShouldApproveAndWithdraw()
@@ -27,7 +28,7 @@ public class ApproveTransactionCommandHandlerTests
         _pendingStore.LoadAsync(txId, Arg.Any<CancellationToken>()).Returns(tx);
         _accountStore.LoadAsync(tx.AccountId, Arg.Any<CancellationToken>()).Returns(account);
 
-        var handler = new ApproveTransactionCommandHandler(_pendingStore, _accountStore);
+        var handler = new ApproveTransactionCommandHandler(_pendingStore, _accountStore, _notificationClient);
         var approverId = Guid.NewGuid();
         var command = new ApproveTransactionCommand(txId, approverId);
 
@@ -44,7 +45,7 @@ public class ApproveTransactionCommandHandlerTests
     {
         _pendingStore.LoadAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((PendingTransaction?)null);
 
-        var handler = new ApproveTransactionCommandHandler(_pendingStore, _accountStore);
+        var handler = new ApproveTransactionCommandHandler(_pendingStore, _accountStore, _notificationClient);
         var command = new ApproveTransactionCommand(Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => handler.Handle(command, CancellationToken.None);

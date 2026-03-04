@@ -151,7 +151,15 @@ public sealed class ChatService : IChatService, IAsyncDisposable
             catch { }
         });
 
-        await _hubConnection.StartAsync();
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await _hubConnection.StartAsync(cts.Token);
+        }
+        catch
+        {
+            // SignalR hub unreachable — chat will be unavailable but app won't hang
+        }
     }
 
     public async Task JoinConversationAsync(Guid conversationId)

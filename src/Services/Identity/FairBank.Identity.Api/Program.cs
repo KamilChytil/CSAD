@@ -59,6 +59,7 @@ app.UseSerilogRequestLogging();
 
 // Map endpoints
 app.MapUserEndpoints();
+app.MapNotificationEndpoints();
 
 // Health check
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Identity" }))

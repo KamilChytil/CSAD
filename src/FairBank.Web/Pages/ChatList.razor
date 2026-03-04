@@ -8,7 +8,7 @@
 
 <div class="chat-list-container">
     <div class="chat-list-header">
-        <h2>💬 Zprávy</h2>
+        <h2><VbIcon Name="chat" Size="sm" /> Zprávy</h2>
     </div>
 
     @if (_loading)
@@ -68,7 +68,7 @@
     private RenderFragment RenderConv(ConversationDto conv) => __builder =>
     {
         <div class="chat-list-item @(conv.Status == "Closed" ? "closed-item" : "")" @onclick="() => OpenConversation(conv.Id)">
-            <div class="chat-list-icon">@GetIcon(conv.Type)</div>
+            <div class="chat-list-icon"><VbIcon Name="@GetIconName(conv.Type)" Size="sm" /></div>
             <div class="chat-list-info">
                 <div class="chat-list-label">
                     @conv.Label
@@ -254,7 +254,7 @@
 
         var label = $"{session.FirstName} {session.LastName}";
         var convs = await ChatService.GetConversationsAsync(session.UserId, session.Role, label, parentId: null);
-        
+
         // Bankers don't have family chats in GetConversationsAsync, only Support.
         // Sort by most recent activity
         _conversations = convs.OrderByDescending(c => c.LastMessageAt ?? DateTime.MinValue).ToList();
@@ -263,10 +263,10 @@
 
     private void OpenConversation(Guid id) => Navigation.NavigateTo($"/zpravy/{id}");
 
-    private static string GetIcon(string type) => type switch
+    private static string GetIconName(string type) => type switch
     {
-        "Support" => "🏦",
-        "Family"  => "👨‍👩‍👧",
-        _         => "💬"
+        "Support" => "bank",
+        "Family"  => "user",
+        _         => "chat"
     };
 }

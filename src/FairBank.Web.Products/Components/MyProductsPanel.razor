@@ -1,0 +1,162 @@
+@namespace FairBank.Web.Products.Pages
+@inject IFairBankApi Api
+@inject IAuthService Auth
+
+@if (_isLoading)
+{
+    <ContentCard Title="Moje produkty">
+        <ChildContent>
+            <p>Načítání...</p>
+        </ChildContent>
+    </ContentCard>
+}
+else if (_applications.Count == 0)
+{
+    <ContentCard Title="Moje produkty">
+        <ChildContent>
+            <div class="application-list">
+                <p>Zatím nemáte žádné produkty.</p>
+                <p class="application-details">Tip: Použijte kalkulačky v záložkách výše a požádejte o úvěr, hypotéku či pojištění.</p>
+            </div>
+        </ChildContent>
+    </ContentCard>
+}
+else
+{
+    <ContentCard Title="Moje produkty">
+        <ChildContent>
+            <div class="application-list">
+                @foreach (var app in _applications)
+                {
+                    <div class="application-card">
+                        <div class="application-type">
+                            <span><VbIcon Name="@GetProductIconName(app.ProductType)" Size="sm" /> @GetProductLabel(app.ProductType)</span>
+                        </div>
+                        <div class="application-details">
+                            <div>
+                                <span class="status-badge @GetStatusCssClass(app.Status)">
+                                    <VbIcon Name="@GetStatusIconName(app.Status)" Size="sm" /> @GetStatusLabel(app.Status)
+                                </span>
+                            </div>
+                            <div>
+                                <strong>@app.MonthlyPayment.ToString("N0") Kč/měsíc</strong>
+                            </div>
+                            <div>
+                                Podáno: @app.CreatedAt.ToString("d. M. yyyy")
+                            </div>
+                            @if (!string.IsNullOrEmpty(app.Note))
+                            {
+                                <div class="application-note">
+                                    <em>Poznámka: @app.Note</em>
+                                </div>
+                            }
+                        </div>
+                        <div class="application-actions">
+                            @if (app.Status == "Pending")
+                            {
+                                <VbButton OnClick="() => CancelApplication(app.Id)" Disabled="@_isCancelling">
+                                    Zrušit žádost
+                                </VbButton>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </ChildContent>
+    </ContentCard>
+}
+
+@code {
+    private List<ProductApplicationDto> _applications = [];
+    private bool _isLoading = true;
+    private bool _isCancelling;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApplications();
+    }
+
+    private async Task LoadApplications()
+    {
+        _isLoading = true;
+        try
+        {
+            _applications = await Api.GetUserApplicationsAsync(Auth.CurrentSession!.UserId);
+        }
+        catch
+        {
+            _applications = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CancelApplication(Guid applicationId)
+    {
+        _isCancelling = true;
+        try
+        {
+            await Api.CancelApplicationAsync(applicationId, Auth.CurrentSession!.UserId);
+            await LoadApplications();
+        }
+        catch
+        {
+            // Silently handle - user can retry
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
+    }
+
+    private static string GetProductIconName(string productType) => productType switch
+    {
+        "PersonalLoan" => "wallet",
+        "Mortgage" => "home",
+        "TravelInsurance" => "travel",
+        "PropertyInsurance" => "home",
+        "LifeInsurance" => "heart",
+        "PaymentProtection" => "shield",
+        _ => "clipboard"
+    };
+
+    private static string GetProductLabel(string productType) => productType switch
+    {
+        "PersonalLoan" => "Osobní úvěr",
+        "Mortgage" => "Hypotéka",
+        "TravelInsurance" => "Cestovní pojištění",
+        "PropertyInsurance" => "Pojištění nemovitosti",
+        "LifeInsurance" => "Životní pojištění",
+        "PaymentProtection" => "Pojištění splátek",
+        _ => productType
+    };
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "Pending" => "Čeká na schválení",
+        "Active" => "Aktivní",
+        "Rejected" => "Zamítnuto",
+        "Cancelled" => "Zrušeno",
+        _ => status
+    };
+
+    private static string GetStatusIconName(string status) => status switch
+    {
+        "Pending" => "clock",
+        "Active" => "check",
+        "Rejected" => "x-circle",
+        "Cancelled" => "ban",
+        _ => "clipboard"
+    };
+
+    private static string GetStatusCssClass(string status) => status switch
+    {
+        "Pending" => "status-pending",
+        "Active" => "status-active",
+        "Rejected" => "status-rejected",
+        "Cancelled" => "status-cancelled",
+        _ => ""
+    };
+}

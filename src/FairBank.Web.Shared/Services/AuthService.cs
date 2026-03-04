@@ -54,6 +54,9 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
                 }
                 else
                 {
+                    // Set auth header for subsequent API calls.
+                    http.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", _currentSession.Token);
                     StartInactivityTimer();
                 }
             }
@@ -94,23 +97,15 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
             if (loginResponse is null) return null;
 
+            // 2FA required — return without saving session or starting timers.
+            if (loginResponse.RequiresTwoFactor)
+                return loginResponse;
+
             // Success — clear any in-memory lockout cache.
             _lockedUntil = null;
             WasSessionExpired = false;
 
-            _currentSession = new AuthSession(
-                loginResponse.SessionId,
-                loginResponse.UserId,
-                loginResponse.Token,
-                loginResponse.Email,
-                loginResponse.FirstName,
-                loginResponse.LastName,
-                loginResponse.Role,
-                loginResponse.ExpiresAt);
-
-            await SaveSessionAsync();
-            StartInactivityTimer();
-            AuthStateChanged?.Invoke();
+            await EstablishSessionFromResponseAsync(loginResponse);
 
             return loginResponse;
         }
@@ -171,14 +166,15 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         // This enforces single-session: if another browser logged in, this returns false.
         try
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             using var req = new HttpRequestMessage(HttpMethod.Get, "api/v1/users/session/validate");
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _currentSession.Token);
-            var resp = await http.SendAsync(req);
+            var resp = await http.SendAsync(req, cts.Token);
             return resp.IsSuccessStatusCode;
         }
         catch
         {
-            // Network error — fail closed. Banking app must not allow access
+            // Network error or timeout — fail closed. Banking app must not allow access
             // when it cannot verify the session with the server.
             return false;
         }
@@ -189,6 +185,30 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
         if (_currentSession is null) return;
         StopInactivityTimer();
         StartInactivityTimer();
+    }
+
+    public async Task EstablishSessionFromResponseAsync(LoginResponse loginResponse)
+    {
+        _lockedUntil = null;
+        WasSessionExpired = false;
+
+        _currentSession = new AuthSession(
+            loginResponse.SessionId,
+            loginResponse.UserId,
+            loginResponse.Token,
+            loginResponse.Email,
+            loginResponse.FirstName,
+            loginResponse.LastName,
+            loginResponse.Role,
+            loginResponse.ExpiresAt);
+
+        // Set auth header on the shared HttpClient for subsequent API calls.
+        http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", loginResponse.Token);
+
+        await SaveSessionAsync();
+        StartInactivityTimer();
+        AuthStateChanged?.Invoke();
     }
 
     public void Dispose()
@@ -246,6 +266,7 @@ public sealed class AuthService(HttpClient http, IJSRuntime js) : IAuthService, 
     private async Task ClearSessionAsync()
     {
         _currentSession = null;
+        http.DefaultRequestHeaders.Authorization = null;
         try
         {
             await js.InvokeVoidAsync("localStorage.removeItem", SessionStorageKey);

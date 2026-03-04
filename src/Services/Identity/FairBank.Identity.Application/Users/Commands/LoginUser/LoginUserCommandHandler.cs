@@ -47,6 +47,29 @@ public sealed class LoginUserCommandHandler(
             return null;
         }
 
+        // Email verification check — only enforce for users who have a pending verification token
+        // (users created before this feature have no token and are allowed in)
+        if (!user.IsEmailVerified && user.EmailVerificationToken is not null)
+            throw new InvalidOperationException("Email address has not been verified.");
+
+        // Two-factor authentication check — if enabled, return partial response
+        // so the client can prompt for the TOTP code
+        if (user.IsTwoFactorEnabled)
+        {
+            return new LoginResponse(
+                Token: "",
+                UserId: user.Id,
+                Email: user.Email.Value,
+                FirstName: user.FirstName,
+                LastName: user.LastName,
+                Role: user.Role.ToString(),
+                SessionId: Guid.Empty,
+                ExpiresAt: DateTime.MinValue)
+            {
+                RequiresTwoFactor = true
+            };
+        }
+
         // Successful login — create new session (invalidates any previous session)
         var sessionId = Guid.NewGuid();
         var expiresAt = DateTime.UtcNow.AddHours(8);

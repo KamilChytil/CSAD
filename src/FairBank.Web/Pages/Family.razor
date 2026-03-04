@@ -1,0 +1,889 @@
+@page "/rodina"
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Navigation
+
+<PageHeader Title="RODINA" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="refresh" OnClick="LoadData">Obnovit</VbButton>
+    </Actions>
+</PageHeader>
+
+<div class="page-content family-page">
+
+    @* ── TABS ────────────────────── *@
+    <div class="family-tabs">
+        <button class="family-tab @(_currentTab == "children" ? "active" : "")" @onclick="@(() => SwitchTab("children"))">
+            Deti
+            @if (_children.Any()) { <span class="tab-badge">@_children.Count</span> }
+        </button>
+        <button class="family-tab @(_currentTab == "approvals" ? "active" : "")" @onclick="@(() => SwitchTab("approvals"))">
+            Schvalovani
+            @if (_allPendingTransactions.Any()) { <span class="tab-badge tab-badge-warn">@_allPendingTransactions.Count</span> }
+        </button>
+        <button class="family-tab @(_currentTab == "limits" ? "active" : "")" @onclick="@(() => SwitchTab("limits"))">
+            Limity
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="family-empty">Nacitani...</div>
+    }
+    else if (_error != null)
+    {
+        <div class="family-error"><VbIcon Name="x-circle" Size="sm" /> @_error</div>
+    }
+    else
+    {
+        @* ── TAB: DETI ────────────────── *@
+        @if (_currentTab == "children")
+        {
+            @if (!_children.Any())
+            {
+                <div class="family-empty">
+                    <div class="empty-icon"><VbIcon Name="users" Size="sm" /></div>
+                    <p>Zatim zadne deti.</p>
+                    <VbButton Variant="primary" IconName="plus" OnClick="OpenAddChildModal">Pridat dite</VbButton>
+                </div>
+            }
+            else
+            {
+                <div class="action-bar">
+                    <VbButton Variant="primary" Size="sm" IconName="plus" OnClick="OpenAddChildModal">Pridat dite</VbButton>
+                </div>
+                <div class="children-grid">
+                    @foreach (var child in _children)
+                    {
+                        var accounts = _childAccounts.GetValueOrDefault(child.Id) ?? new();
+                        var totalBalance = accounts.Sum(a => a.Balance);
+                        var currency = accounts.FirstOrDefault()?.Currency ?? "CZK";
+
+                        <div class="child-card" @onclick='() => Navigation.NavigateTo($"/deti/{child.Id}")'>
+                            <div class="child-avatar">
+                                <VbIcon Name="user" Size="sm" />
+                            </div>
+                            <div class="child-info">
+                                <div class="child-name">@child.FirstName @child.LastName</div>
+                                <div class="child-email">@child.Email</div>
+                            </div>
+                            <div class="child-balance">
+                                <span class="balance-amount">@totalBalance.ToString("N2")</span>
+                                <span class="balance-currency">@currency</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* ── TAB: SCHVALOVANI ──────────── *@
+        @if (_currentTab == "approvals")
+        {
+            @if (!_allPendingTransactions.Any())
+            {
+                <div class="family-empty">
+                    <VbIcon Name="check" Size="sm" />
+                    <p>Zadne cekajici transakce ke schvaleni.</p>
+                </div>
+            }
+            else
+            {
+                <div class="pending-list">
+                    @foreach (var item in _allPendingTransactions)
+                    {
+                        <div class="pending-card">
+                            <div class="pending-header">
+                                <span class="pending-child-name">@item.ChildName</span>
+                                <span class="pending-date">@item.Transaction.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                            <div class="pending-body">
+                                <div class="pending-desc">@item.Transaction.Description</div>
+                                <div class="pending-amount">@item.Transaction.Amount.ToString("N2") @item.Transaction.Currency</div>
+                            </div>
+                            <div class="pending-actions">
+                                <VbButton Variant="primary" Size="sm" OnClick="() => ApproveTransaction(item.Transaction.Id)">
+                                    Schvalit
+                                </VbButton>
+                                <VbButton Variant="danger" Size="sm" OnClick="() => OpenRejectModal(item.Transaction.Id)">
+                                    Zamitnout
+                                </VbButton>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* ── TAB: LIMITY ──────────────── *@
+        @if (_currentTab == "limits")
+        {
+            @if (!_children.Any())
+            {
+                <div class="family-empty">Zadne deti pro nastaveni limitu.</div>
+            }
+            else
+            {
+                <div class="limits-list">
+                    @foreach (var child in _children)
+                    {
+                        var accounts = _childAccounts.GetValueOrDefault(child.Id) ?? new();
+                        <div class="limit-card">
+                            <div class="limit-header">
+                                <VbIcon Name="user" Size="sm" />
+                                <span class="limit-child-name">@child.FirstName @child.LastName</span>
+                            </div>
+                            @foreach (var account in accounts)
+                            {
+                                <div class="limit-account">
+                                    <div class="limit-account-info">
+                                        <span class="limit-acc-number">@account.AccountNumber</span>
+                                        <span class="limit-acc-currency">@account.Currency</span>
+                                        <span class="limit-current">
+                                            Aktualni limit: @(account.SpendingLimit?.ToString("N0") ?? "Nenastaveno") @account.Currency
+                                        </span>
+                                    </div>
+                                    <div class="limit-form">
+                                        <input type="number" class="form-input form-input-sm"
+                                               min="0" step="100"
+                                               placeholder="Novy limit"
+                                               value="@GetLimitValue(account.Id)"
+                                               @onchange="e => SetLimitValue(account.Id, e.Value?.ToString())" />
+                                        <VbButton Variant="primary" Size="sm" OnClick="() => SaveLimit(account.Id, account.Currency)">
+                                            Ulozit
+                                        </VbButton>
+                                    </div>
+                                    @if (_limitMessages.ContainsKey(account.Id))
+                                    {
+                                        <div class="limit-msg @(_limitMessages[account.Id].Item2 ? "limit-ok" : "limit-err")">
+                                            @_limitMessages[account.Id].Item1
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
+
+@* ── ADD CHILD MODAL ────────────── *@
+@if (_showAddChildModal)
+{
+    <div class="modal-overlay" @onclick="CloseAddChildModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Pridat dite</h3>
+                <button class="modal-close" @onclick="CloseAddChildModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <div class="form-error">@_formError</div>
+                }
+                <div class="form-group">
+                    <label>Jmeno</label>
+                    <input type="text" @bind="_newFirstName" placeholder="Jmeno" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>Prijmeni</label>
+                    <input type="text" @bind="_newLastName" placeholder="Prijmeni" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" @bind="_newEmail" placeholder="email@example.com" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>Heslo</label>
+                    <input type="password" @bind="_newPassword" placeholder="Heslo" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>Mena uctu</label>
+                    <select class="form-input" @bind="_newCurrency">
+                        <option value="CZK">CZK</option>
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <VbButton Variant="ghost" OnClick="CloseAddChildModal">Zrusit</VbButton>
+                <VbButton Variant="primary" OnClick="CreateChild" Disabled="_creating">
+                    @(_creating ? "Vytvarim..." : "Vytvorit")
+                </VbButton>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── REJECT MODAL ────────────────── *@
+@if (_showRejectModal)
+{
+    <div class="modal-overlay" @onclick="CloseRejectModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Duvod zamitnutí</h3>
+                <button class="modal-close" @onclick="CloseRejectModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Duvod</label>
+                    <textarea @bind="_rejectReason" rows="3" class="form-input" placeholder="Napiste duvod zamitnutí..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <VbButton Variant="ghost" OnClick="CloseRejectModal">Zrusit</VbButton>
+                <VbButton Variant="danger" OnClick="ConfirmReject">Zamitnout</VbButton>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .family-page {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    /* Tabs */
+    .family-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .family-tab {
+        background: none;
+        border: none;
+        padding: 0.75rem 0.5rem;
+        font-weight: 600;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--vb-transition);
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+
+    .family-tab:hover {
+        color: var(--vb-text-secondary);
+    }
+
+    .family-tab.active {
+        color: var(--vb-red);
+        border-bottom-color: var(--vb-red);
+    }
+
+    .tab-badge {
+        background: var(--vb-gray-200);
+        color: var(--vb-text-secondary);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: var(--vb-radius-full);
+        font-weight: 700;
+    }
+
+    .family-tab.active .tab-badge {
+        background: var(--vb-red);
+        color: white;
+    }
+
+    .tab-badge-warn {
+        background: #fef3cd;
+        color: #856404;
+    }
+
+    .family-tab.active .tab-badge-warn {
+        background: var(--vb-red);
+        color: white;
+    }
+
+    /* States */
+    .family-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        font-style: italic;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    .family-error {
+        text-align: center;
+        color: var(--vb-red);
+        margin-top: 2rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .action-bar {
+        margin-bottom: 1rem;
+    }
+
+    /* Children grid */
+    .children-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .child-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow-xs);
+        cursor: pointer;
+        transition: var(--vb-transition);
+    }
+
+    .child-card:hover {
+        box-shadow: var(--vb-shadow);
+        transform: translateY(-1px);
+        border-color: var(--vb-red-glow);
+    }
+
+    .child-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--vb-radius-full);
+        background: var(--vb-gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        color: var(--vb-text-secondary);
+    }
+
+    .child-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .child-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--vb-text-primary);
+    }
+
+    .child-email {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
+
+    .child-balance {
+        flex-shrink: 0;
+        text-align: right;
+    }
+
+    .balance-amount {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--vb-text-primary);
+    }
+
+    .balance-currency {
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+        margin-left: 0.25rem;
+    }
+
+    /* Pending approvals */
+    .pending-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pending-card {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        padding: 1rem;
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .pending-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .pending-child-name {
+        font-weight: 700;
+        color: var(--vb-text-primary);
+        font-size: 0.9rem;
+    }
+
+    .pending-date {
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+    }
+
+    .pending-body {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .pending-desc {
+        color: var(--vb-text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .pending-amount {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--vb-text-primary);
+    }
+
+    .pending-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Limits */
+    .limits-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .limit-card {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        padding: 1rem;
+        box-shadow: var(--vb-shadow-xs);
+    }
+
+    .limit-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .limit-child-name {
+        font-size: 1rem;
+    }
+
+    .limit-account {
+        padding: 0.75rem 0;
+        border-top: 1px solid var(--vb-divider);
+    }
+
+    .limit-account:first-of-type {
+        border-top: none;
+        padding-top: 0;
+    }
+
+    .limit-account-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .limit-acc-number {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+    }
+
+    .limit-acc-currency {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+    }
+
+    .limit-current {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+    }
+
+    .limit-form {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .limit-msg {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .limit-ok {
+        color: #16a34a;
+    }
+
+    .limit-err {
+        color: var(--vb-red);
+    }
+
+    /* Form */
+    .form-input {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        transition: var(--vb-transition);
+        font-family: inherit;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-red);
+        box-shadow: 0 0 0 2px var(--vb-red-glow);
+    }
+
+    .form-input-sm {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.85rem;
+        width: 140px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .form-error {
+        background: #fdf0f0;
+        color: var(--vb-red);
+        padding: 0.6rem 0.75rem;
+        border-radius: var(--vb-radius-sm);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .modal-content {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow);
+        width: 100%;
+        max-width: 440px;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        color: var(--vb-text-primary);
+    }
+
+    .modal-body {
+        padding: 1.25rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--vb-divider);
+    }
+</style>
+
+@code {
+    private string _currentTab = "children";
+    private bool _loading = true;
+    private string? _error;
+
+    // Children data
+    private List<UserResponse> _children = new();
+    private Dictionary<Guid, List<AccountResponse>> _childAccounts = new();
+
+    // Pending transactions (aggregated)
+    private List<PendingItem> _allPendingTransactions = new();
+
+    // Add child modal
+    private bool _showAddChildModal;
+    private bool _creating;
+    private string _newFirstName = "";
+    private string _newLastName = "";
+    private string _newEmail = "";
+    private string _newPassword = "";
+    private string _newCurrency = "CZK";
+    private string? _formError;
+
+    // Reject modal
+    private bool _showRejectModal;
+    private Guid _rejectingTxId;
+    private string _rejectReason = "";
+
+    // Limits
+    private Dictionary<Guid, string> _limitValues = new();
+    private Dictionary<Guid, (string, bool)> _limitMessages = new();
+
+    private sealed record PendingItem(string ChildName, PendingTransactionDto Transaction);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = Auth.CurrentSession;
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+        if (session.Role != "Client") { Navigation.NavigateTo("/prehled"); return; }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var session = Auth.CurrentSession!;
+            _children = await Api.GetChildrenAsync(session.UserId);
+
+            _childAccounts.Clear();
+            _allPendingTransactions.Clear();
+            _limitValues.Clear();
+
+            foreach (var child in _children)
+            {
+                var accounts = await Api.GetAccountsByOwnerAsync(child.Id);
+                _childAccounts[child.Id] = accounts;
+
+                var childName = $"{child.FirstName} {child.LastName}";
+                foreach (var account in accounts)
+                {
+                    // Load pending transactions for approvals tab
+                    var pending = await Api.GetPendingTransactionsAsync(account.Id);
+                    foreach (var tx in pending)
+                    {
+                        _allPendingTransactions.Add(new PendingItem(childName, tx));
+                    }
+
+                    // Init limit values
+                    _limitValues[account.Id] = account.SpendingLimit?.ToString("0") ?? "";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri nacitani dat: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SwitchTab(string tab)
+    {
+        _currentTab = tab;
+    }
+
+    // ── Add child ──────────────────────────────
+    private void OpenAddChildModal()
+    {
+        _newFirstName = "";
+        _newLastName = "";
+        _newEmail = "";
+        _newPassword = "";
+        _newCurrency = "CZK";
+        _formError = null;
+        _showAddChildModal = true;
+    }
+
+    private void CloseAddChildModal()
+    {
+        _showAddChildModal = false;
+        _formError = null;
+    }
+
+    private async Task CreateChild()
+    {
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_newFirstName) || string.IsNullOrWhiteSpace(_newLastName)
+            || string.IsNullOrWhiteSpace(_newEmail) || string.IsNullOrWhiteSpace(_newPassword))
+        {
+            _formError = "Vyplnte vsechna pole.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var session = Auth.CurrentSession!;
+            var child = await Api.CreateChildAsync(session.UserId, _newFirstName.Trim(), _newLastName.Trim(), _newEmail.Trim(), _newPassword);
+
+            // Create initial account in selected currency
+            await Api.CreateAccountAsync(child.Id, _newCurrency);
+
+            // Create family chat
+            var childLabel = $"{child.FirstName} {child.LastName}";
+            await Api.GetOrCreateFamilyChatAsync(session.UserId, child.Id, childLabel);
+
+            _showAddChildModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message.Contains("already exists")
+                ? "Uzivatel s timto e-mailem jiz existuje."
+                : $"Chyba pri vytvareni: {ex.Message}";
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    // ── Approvals ──────────────────────────────
+    private async Task ApproveTransaction(Guid txId)
+    {
+        try
+        {
+            var session = Auth.CurrentSession!;
+            await Api.ApproveTransactionAsync(txId, session.UserId);
+            await LoadData();
+        }
+        catch { /* silently handle */ }
+    }
+
+    private void OpenRejectModal(Guid txId)
+    {
+        _rejectingTxId = txId;
+        _rejectReason = "";
+        _showRejectModal = true;
+    }
+
+    private void CloseRejectModal()
+    {
+        _showRejectModal = false;
+        _rejectReason = "";
+    }
+
+    private async Task ConfirmReject()
+    {
+        try
+        {
+            var session = Auth.CurrentSession!;
+            var reason = string.IsNullOrWhiteSpace(_rejectReason) ? "Zamitnuty rodicem" : _rejectReason.Trim();
+            await Api.RejectTransactionAsync(_rejectingTxId, session.UserId, reason);
+            _showRejectModal = false;
+            await LoadData();
+        }
+        catch { /* silently handle */ }
+    }
+
+    // ── Limits ──────────────────────────────────
+    private string GetLimitValue(Guid accountId)
+    {
+        return _limitValues.GetValueOrDefault(accountId) ?? "";
+    }
+
+    private void SetLimitValue(Guid accountId, string? value)
+    {
+        _limitValues[accountId] = value ?? "";
+    }
+
+    private async Task SaveLimit(Guid accountId, string currency)
+    {
+        _limitMessages.Remove(accountId);
+
+        var rawValue = _limitValues.GetValueOrDefault(accountId) ?? "";
+        if (!decimal.TryParse(rawValue, out var limit) || limit < 0)
+        {
+            _limitMessages[accountId] = ("Zadejte platnou castku.", false);
+            return;
+        }
+
+        try
+        {
+            await Api.SetSpendingLimitAsync(accountId, limit, currency);
+            _limitMessages[accountId] = ("Limit byl ulozen.", true);
+        }
+        catch (Exception ex)
+        {
+            _limitMessages[accountId] = ($"Chyba: {ex.Message}", false);
+        }
+    }
+}

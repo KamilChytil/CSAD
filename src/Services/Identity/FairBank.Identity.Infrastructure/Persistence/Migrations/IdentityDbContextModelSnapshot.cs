@@ -23,6 +23,89 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FairBank.Identity.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("RelatedEntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId", "IsRead");
+
+                    b.ToTable("notifications", "identity_service");
+                });
+
+            modelBuilder.Entity("FairBank.Identity.Domain.Entities.TwoFactorAuth", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BackupCodes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EnabledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecretKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("two_factor_auth", "identity_service");
+                });
+
             modelBuilder.Entity("FairBank.Identity.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -32,8 +115,19 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ActiveSessionId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AgreedToTermsAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("AllowInternationalPayments")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -43,6 +137,13 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
+
+                    b.Property<string>("EmailVerificationToken")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("EmailVerificationTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("FailedLoginAttempts")
                         .ValueGeneratedOnAdd()
@@ -60,6 +161,16 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsEmailVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsTwoFactorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -68,6 +179,11 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("LockedUntil")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("NightTransactionsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
@@ -75,6 +191,26 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PersonalIdNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("PhoneNumber");
+
+                    b.Property<decimal?>("RequireApprovalAbove")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -97,12 +233,106 @@ namespace FairBank.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("users", "identity_service");
                 });
 
+            modelBuilder.Entity("FairBank.Identity.Domain.Entities.UserDevice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Browser")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DeviceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<bool>("IsCurrentDevice")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsTrusted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastActiveAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OperatingSystem")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Browser", "OperatingSystem", "DeviceType")
+                        .HasDatabaseName("ix_user_devices_fingerprint");
+
+                    b.ToTable("user_devices", "identity_service");
+                });
+
             modelBuilder.Entity("FairBank.Identity.Domain.Entities.User", b =>
                 {
                     b.HasOne("FairBank.Identity.Domain.Entities.User", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.OwnsOne("FairBank.Identity.Domain.ValueObjects.Address", "Address", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("City");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("Country");
+
+                            b1.Property<string>("Street")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Street");
+
+                            b1.Property<string>("ZipCode")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("ZipCode");
+
+                            b1.HasKey("UserId");
+
+                            b1.ToTable("users", "identity_service");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("Address");
 
                     b.Navigation("Parent");
                 });

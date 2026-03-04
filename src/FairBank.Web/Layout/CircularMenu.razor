@@ -1,0 +1,145 @@
+@using Microsoft.AspNetCore.Components.Routing
+@inject IAuthService Auth
+@inject NavigationManager Nav
+@inject ThemeService Theme
+@implements IDisposable
+
+@* Backdrop overlay *@
+@if (IsOpen)
+{
+    <div class="arc-backdrop" @onclick="Close"></div>
+}
+
+@* The arc menu container — horizontal upper semicircle *@
+<div class="arc-menu @(IsOpen ? "open" : "")">
+    @{ var idx = 0; var visible = _menuItems.Where(m => m.Visible).ToList(); }
+    @foreach (var item in visible)
+    {
+        var i = idx;
+        var (x, y) = GetPosition(i, visible.Count);
+        var style = $"--arc-x: {x:F1}px; --arc-y: {y:F1}px; --arc-delay: {i * 50}ms;";
+        <a class="arc-item @(IsCurrentPage(item.Href) ? "active" : "")"
+           href="@item.Href"
+           style="@style"
+           @onclick="Close">
+            <span class="arc-item-icon">
+                @if (item.PngIcon is not null)
+                {
+                    <NavIcon Name="@item.PngIcon" IsActive="@IsCurrentPage(item.Href)" Size="52" />
+                }
+                else
+                {
+                    <VbIcon Name="@item.SvgIcon" Size="lg" />
+                }
+            </span>
+            <span class="arc-item-label">@item.Label</span>
+        </a>
+        idx++;
+    }
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private record MenuEntry(string Href, string Label, string SvgIcon, string? PngIcon, Func<bool> IsVisible)
+    {
+        public bool Visible => IsVisible();
+    }
+
+    private List<MenuEntry> _menuItems = [];
+
+    protected override void OnInitialized()
+    {
+        Auth.AuthStateChanged += HandleChanged;
+        Theme.OnThemeChanged += HandleChanged;
+        Nav.LocationChanged += HandleLocationChanged;
+        BuildMenu();
+    }
+
+    private void BuildMenu()
+    {
+        var role = Auth.CurrentSession?.Role ?? "";
+        _menuItems =
+        [
+            new("platby", "Platby", "send", "paymant", () => true),
+            new("karty", "Karty", "credit-card", "fin", () => true),
+            new("sporeni", "Spoření", "target", "target", () => role != "Child"),
+            new("investice", "Investice", "investments", "chart", () => role != "Child"),
+            new("kurzy", "Kurzy", "exchange", null, () => role != "Child"),
+            new("produkty", "Produkty", "bank", null, () => role != "Child"),
+            new("rodina", "Rodina", "users", null, () => role == "Client"),
+            new("zpravy", "Zprávy", "chat", "chat", () => true),
+            new("sprava", "Správa", "clipboard", null, () => role == "Banker"),
+            new("admin", "Admin", "settings", null, () => role == "Admin"),
+        ];
+    }
+
+    /// <summary>
+    /// Positions items in a horizontal upper semicircle.
+    /// Two rows: outer ring (first ~half) and inner ring (second ~half).
+    /// Both rows go from left to right in an arc above the trigger.
+    /// </summary>
+    private (double x, double y) GetPosition(int index, int total)
+    {
+        if (total <= 5)
+        {
+            // Single row — wide arc
+            const double radius = 160;
+            if (total <= 1) return (0, -radius);
+            double angle = Math.PI * (1.0 - (double)index / (total - 1));
+            return (radius * Math.Cos(angle), -radius * Math.Sin(angle));
+        }
+
+        // Two rows for 6+ items
+        int outerCount = (total + 1) / 2;  // ceil
+        int innerCount = total - outerCount;
+
+        if (index < outerCount)
+        {
+            // Outer row — larger radius, full semicircle
+            const double radius = 185;
+            double angle = Math.PI * (1.0 - (double)index / (outerCount - 1));
+            return (radius * Math.Cos(angle), -radius * Math.Sin(angle));
+        }
+        else
+        {
+            // Inner row — smaller radius, narrower arc
+            int innerIdx = index - outerCount;
+            const double radius = 100;
+            if (innerCount <= 1) return (0, -radius);
+            double angle = Math.PI * (0.85 - (double)innerIdx / (innerCount - 1) * 0.7);
+            return (radius * Math.Cos(angle), -radius * Math.Sin(angle));
+        }
+    }
+
+    private bool IsCurrentPage(string href)
+    {
+        var uri = Nav.ToBaseRelativePath(Nav.Uri).ToLowerInvariant();
+        return uri.StartsWith(href, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private void HandleChanged()
+    {
+        BuildMenu();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        BuildMenu();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Auth.AuthStateChanged -= HandleChanged;
+        Theme.OnThemeChanged -= HandleChanged;
+        Nav.LocationChanged -= HandleLocationChanged;
+    }
+}

@@ -14,6 +14,8 @@ COPY src/FairBank.Web.Savings/FairBank.Web.Savings.csproj      src/FairBank.Web.
 COPY src/FairBank.Web.Investments/FairBank.Web.Investments.csproj src/FairBank.Web.Investments/
 COPY src/FairBank.Web.Profile/FairBank.Web.Profile.csproj      src/FairBank.Web.Profile/
 COPY src/FairBank.Web.Exchange/FairBank.Web.Exchange.csproj    src/FairBank.Web.Exchange/
+COPY src/FairBank.Web.Products/FairBank.Web.Products.csproj    src/FairBank.Web.Products/
+COPY src/FairBank.Web.Cards/FairBank.Web.Cards.csproj          src/FairBank.Web.Cards/
 COPY src/FairBank.Admin.Web/FairBank.Admin.Web.csproj          src/FairBank.Admin.Web/
 COPY src/FairBank.Web/FairBank.Web.csproj                      src/FairBank.Web/
 RUN dotnet restore src/FairBank.Web/FairBank.Web.csproj
@@ -27,6 +29,8 @@ COPY src/FairBank.Web.Savings/     src/FairBank.Web.Savings/
 COPY src/FairBank.Web.Investments/ src/FairBank.Web.Investments/
 COPY src/FairBank.Web.Profile/     src/FairBank.Web.Profile/
 COPY src/FairBank.Web.Exchange/    src/FairBank.Web.Exchange/
+COPY src/FairBank.Web.Products/    src/FairBank.Web.Products/
+COPY src/FairBank.Web.Cards/       src/FairBank.Web.Cards/
 COPY src/FairBank.Admin.Web/       src/FairBank.Admin.Web/
 COPY src/FairBank.Web/             src/FairBank.Web/
 RUN dotnet publish src/FairBank.Web/FairBank.Web.csproj -c Release -o /app/publish

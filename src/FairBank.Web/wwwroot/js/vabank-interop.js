@@ -1,35 +1,89 @@
-// Va-bank JS interop helpers for Blazor WASM
+// Va-bank JavaScript Interop — Theme, PWA, utilities
 window.vabank = {
-    // Copy text to clipboard
-    copyToClipboard: async function (text) {
-        try {
-            await navigator.clipboard.writeText(text);
-            return true;
-        } catch {
-            return false;
+    // ── Theme Management ────────────────────────────────
+    theme: {
+        get() {
+            return localStorage.getItem('vb-theme') || 'light';
+        },
+        set(theme) {
+            localStorage.setItem('vb-theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+            // Update meta theme-color
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) {
+                meta.content = theme === 'dark' ? '#0D0D0D' : '#1A1A1A';
+            }
+        },
+        toggle() {
+            const current = this.get();
+            const next = current === 'dark' ? 'light' : 'dark';
+            this.set(next);
+            return next;
+        },
+        init() {
+            const saved = localStorage.getItem('vb-theme');
+            if (saved) {
+                this.set(saved);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                this.set('dark');
+            }
+            // Listen for system changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('vb-theme')) {
+                    this.set(e.matches ? 'dark' : 'light');
+                }
+            });
         }
     },
 
-    // Scroll element into view
-    scrollToElement: function (elementId) {
-        const el = document.getElementById(elementId);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // ── PWA Install ─────────────────────────────────────
+    pwa: {
+        deferredPrompt: null,
+        init() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                vabank.pwa.deferredPrompt = e;
+            });
+        },
+        canInstall() {
+            return vabank.pwa.deferredPrompt !== null;
+        },
+        async install() {
+            const prompt = vabank.pwa.deferredPrompt;
+            if (!prompt) return false;
+            prompt.prompt();
+            const result = await prompt.userChoice;
+            vabank.pwa.deferredPrompt = null;
+            return result.outcome === 'accepted';
+        }
     },
 
-    // Scroll to bottom of element (for chat)
-    scrollToBottom: function (elementId) {
-        const el = document.getElementById(elementId);
-        if (el) el.scrollTop = el.scrollHeight;
+    // ── LocalStorage ────────────────────────────────────
+    storage: {
+        get(key) {
+            return localStorage.getItem(key);
+        },
+        set(key, value) {
+            localStorage.setItem(key, value);
+        },
+        remove(key) {
+            localStorage.removeItem(key);
+        }
     },
 
-    // Get viewport width
-    getViewportWidth: function () {
-        return window.innerWidth;
+    // ── Scroll ──────────────────────────────────────────
+    scrollToBottom(elementId) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.scrollTop = el.scrollHeight;
+        }
     },
 
-    // Focus input element
-    focusElement: function (elementId) {
-        const el = document.getElementById(elementId);
-        if (el) el.focus();
+    scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
+
+// Initialize theme on page load (before Blazor boots)
+vabank.theme.init();
+vabank.pwa.init();
