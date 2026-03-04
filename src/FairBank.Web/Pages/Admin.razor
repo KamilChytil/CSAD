@@ -1,0 +1,600 @@
+@page "/admin"
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Navigation
+
+<PageHeader Title="SPRAVA UZIVATELU" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="refresh" OnClick="LoadUsers">Obnovit</VbButton>
+    </Actions>
+</PageHeader>
+
+<div class="page-content admin-page">
+
+    @* ── FILTERS ────────────────────── *@
+    <div class="admin-filters">
+        <div class="filter-search">
+            <input type="text" class="form-input" placeholder="Hledat podle jmena nebo e-mailu..."
+                   @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        </div>
+        <div class="filter-role">
+            <select class="form-input" @bind="_roleFilter" @bind:after="OnFilterChanged">
+                <option value="">Vsechny role</option>
+                <option value="Client">Client</option>
+                <option value="Child">Child</option>
+                <option value="Banker">Banker</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+    </div>
+
+    @* ── CONTENT ────────────────────── *@
+    @if (_loading)
+    {
+        <div class="admin-empty">Nacitani uzivatelu...</div>
+    }
+    else if (_error != null)
+    {
+        <div class="admin-error">
+            <VbIcon Name="x-circle" Size="sm" /> @_error
+        </div>
+    }
+    else if (_users == null || !_users.Items.Any())
+    {
+        <div class="admin-empty">Zadni uzivatele nenalezeni.</div>
+    }
+    else
+    {
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Jmeno</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Datum registrace</th>
+                        <th>Akce</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in _users.Items)
+                    {
+                        <tr>
+                            <td class="user-name">@user.FirstName @user.LastName</td>
+                            <td class="user-email">@user.Email</td>
+                            <td>
+                                <span class="role-badge role-@user.Role.ToLowerInvariant()">@user.Role</span>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="status-badge status-active">Aktivni</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Neaktivni</span>
+                                }
+                            </td>
+                            <td class="user-date">@user.CreatedAt.ToString("dd.MM.yyyy")</td>
+                            <td class="user-actions">
+                                <select class="form-input form-input-sm"
+                                        value="@user.Role"
+                                        @onchange="e => ChangeRole(user.Id, e.Value?.ToString() ?? user.Role)">
+                                    <option value="Client">Client</option>
+                                    <option value="Child">Child</option>
+                                    <option value="Banker">Banker</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                                @if (user.IsActive)
+                                {
+                                    <VbButton Variant="outline" Size="sm" OnClick="() => DeactivateUser(user.Id)">
+                                        Deaktivovat
+                                    </VbButton>
+                                }
+                                else
+                                {
+                                    <VbButton Variant="primary" Size="sm" OnClick="() => ActivateUser(user.Id)">
+                                        Aktivovat
+                                    </VbButton>
+                                }
+                                <VbButton Variant="danger" Size="sm" OnClick='() => ConfirmDelete(user.Id, $"{user.FirstName} {user.LastName}")'>
+                                    Smazat
+                                </VbButton>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* ── PAGINATION ────────────────── *@
+        @if (TotalPages > 1)
+        {
+            <div class="admin-pagination">
+                <VbButton Variant="outline" Size="sm" Disabled="@(_page <= 1)" OnClick="PreviousPage">
+                    Predchozi
+                </VbButton>
+                <span class="pagination-info">Stranka @_page z @TotalPages</span>
+                <VbButton Variant="outline" Size="sm" Disabled="@(_page >= TotalPages)" OnClick="NextPage">
+                    Dalsi
+                </VbButton>
+            </div>
+        }
+    }
+
+    @if (_successMessage != null)
+    {
+        <div class="admin-success">@_successMessage</div>
+    }
+</div>
+
+@* ── DELETE CONFIRMATION MODAL ────── *@
+@if (_showDeleteModal)
+{
+    <div class="modal-overlay" @onclick="CloseDeleteModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h3>Potvrzeni smazani</h3>
+                <button class="modal-close" @onclick="CloseDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Opravdu chcete smazat uzivatele <strong>@_deleteUserName</strong>?</p>
+                <p class="delete-warning">Tuto akci nelze vzit zpet.</p>
+            </div>
+            <div class="modal-footer">
+                <VbButton Variant="ghost" OnClick="CloseDeleteModal">Zrusit</VbButton>
+                <VbButton Variant="danger" OnClick="DeleteUser" Disabled="_deleting">
+                    @(_deleting ? "Mazani..." : "Smazat")
+                </VbButton>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .admin-page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .admin-filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-search {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-role {
+        min-width: 160px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        transition: var(--vb-transition);
+        font-family: inherit;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-red);
+        box-shadow: 0 0 0 2px var(--vb-red-glow);
+    }
+
+    .form-input-sm {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.8rem;
+        min-width: 100px;
+    }
+
+    .admin-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        font-style: italic;
+    }
+
+    .admin-error {
+        text-align: center;
+        color: var(--vb-red);
+        margin-top: 2rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .admin-success {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: #f0fdf4;
+        color: #16a34a;
+        border-radius: var(--vb-radius-sm);
+        font-weight: 500;
+        text-align: center;
+    }
+
+    /* Table */
+    .admin-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        background: var(--vb-bg-elevated);
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .admin-table thead {
+        background: var(--vb-gray-100);
+    }
+
+    .admin-table th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--vb-text-secondary);
+        border-bottom: 1px solid var(--vb-divider);
+        white-space: nowrap;
+    }
+
+    .admin-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--vb-divider);
+        vertical-align: middle;
+    }
+
+    .admin-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .admin-table tbody tr:hover {
+        background: var(--vb-gray-50, rgba(0, 0, 0, 0.02));
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        white-space: nowrap;
+    }
+
+    .user-email {
+        color: var(--vb-text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .user-date {
+        color: var(--vb-text-muted);
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .user-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+    }
+
+    /* Role badges */
+    .role-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--vb-radius-full);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .role-client {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .role-child {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .role-banker {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    .role-admin {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    /* Status badges */
+    .status-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--vb-radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-inactive {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    /* Pagination */
+    .admin-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: var(--vb-text-secondary);
+        font-weight: 500;
+    }
+
+    /* Delete warning */
+    .delete-warning {
+        color: var(--vb-red);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .modal-content {
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow);
+        width: 100%;
+        max-width: 440px;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--vb-text-muted);
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        color: var(--vb-text-primary);
+    }
+
+    .modal-body {
+        padding: 1.25rem;
+    }
+
+    .modal-body p {
+        margin: 0;
+        color: var(--vb-text-primary);
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--vb-divider);
+    }
+</style>
+
+@code {
+    private PagedUsersDto? _users;
+    private int TotalPages => _users != null ? (int)Math.Ceiling((double)_users.TotalCount / _pageSize) : 1;
+    private bool _loading = true;
+    private string? _error;
+    private string? _successMessage;
+    private int _page = 1;
+    private int _pageSize = 20;
+    private string _roleFilter = "";
+    private string _searchTerm = "";
+
+    // Delete modal
+    private bool _showDeleteModal;
+    private bool _deleting;
+    private Guid _deleteUserId;
+    private string _deleteUserName = "";
+
+    private System.Timers.Timer? _searchTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = Auth.CurrentSession;
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+        if (session.Role != "Admin") { Navigation.NavigateTo("/prehled"); return; }
+
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _loading = true;
+        _error = null;
+        _successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var roleParam = string.IsNullOrEmpty(_roleFilter) ? null : _roleFilter;
+            var searchParam = string.IsNullOrEmpty(_searchTerm) ? null : _searchTerm.Trim();
+            _users = await Api.GetAllUsersAsync(_page, _pageSize, roleParam, searchParam);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri nacitani uzivatelu: {ex.Message}";
+            _users = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnFilterChanged()
+    {
+        _page = 1;
+        await LoadUsers();
+    }
+
+    private void OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        _searchTimer?.Stop();
+        _searchTimer?.Dispose();
+        _searchTimer = new System.Timers.Timer(400);
+        _searchTimer.Elapsed += async (_, _) =>
+        {
+            _searchTimer?.Stop();
+            _page = 1;
+            await InvokeAsync(async () =>
+            {
+                await LoadUsers();
+                StateHasChanged();
+            });
+        };
+        _searchTimer.AutoReset = false;
+        _searchTimer.Start();
+    }
+
+    private async Task ChangeRole(Guid userId, string newRole)
+    {
+        try
+        {
+            await Api.UpdateUserRoleAsync(userId, newRole);
+            _successMessage = "Role byla zmenena.";
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri zmene role: {ex.Message}";
+        }
+    }
+
+    private async Task ActivateUser(Guid userId)
+    {
+        try
+        {
+            await Api.ActivateUserAsync(userId);
+            _successMessage = "Uzivatel byl aktivovan.";
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri aktivaci: {ex.Message}";
+        }
+    }
+
+    private async Task DeactivateUser(Guid userId)
+    {
+        try
+        {
+            await Api.DeactivateUserAsync(userId);
+            _successMessage = "Uzivatel byl deaktivovan.";
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri deaktivaci: {ex.Message}";
+        }
+    }
+
+    private void ConfirmDelete(Guid userId, string userName)
+    {
+        _deleteUserId = userId;
+        _deleteUserName = userName;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteUserName = "";
+    }
+
+    private async Task DeleteUser()
+    {
+        _deleting = true;
+        try
+        {
+            await Api.DeleteUserAsync(_deleteUserId);
+            _successMessage = $"Uzivatel {_deleteUserName} byl smazan.";
+            _showDeleteModal = false;
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri mazani: {ex.Message}";
+            _showDeleteModal = false;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (_page > 1) { _page--; await LoadUsers(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page < TotalPages) { _page++; await LoadUsers(); }
+    }
+}
