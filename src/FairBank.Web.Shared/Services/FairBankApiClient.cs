@@ -208,6 +208,43 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         response.EnsureSuccessStatusCode();
     }
 
+    // ── Notifications ──────────────────────────────────────────
+    public async Task<List<NotificationDto>> GetNotificationsAsync(Guid userId, bool unreadOnly = false)
+    {
+        var url = $"api/v1/notifications?userId={userId}&unreadOnly={unreadOnly}";
+        return await http.GetFromJsonAsync<List<NotificationDto>>(url) ?? [];
+    }
+
+    public async Task<int> GetUnreadNotificationCountAsync(Guid userId)
+    {
+        var result = await http.GetFromJsonAsync<UnreadCountDto>($"api/v1/notifications/count?userId={userId}");
+        return result?.Count ?? 0;
+    }
+
+    public async Task MarkNotificationReadAsync(Guid notificationId)
+    {
+        await http.PostAsync($"api/v1/notifications/{notificationId}/read", null);
+    }
+
+    public async Task MarkAllNotificationsReadAsync(Guid userId)
+    {
+        await http.PostAsync($"api/v1/notifications/read-all?userId={userId}", null);
+    }
+
+    // ── Spending Limits ──────────────────────────────────────────
+    public async Task SetSpendingLimitAsync(Guid accountId, decimal limit, string currency)
+    {
+        await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/limits",
+            new { Limit = limit, Currency = currency });
+    }
+
+    // ── Family Chat ──────────────────────────────────────────────
+    public async Task GetOrCreateFamilyChatAsync(Guid parentId, Guid childId, string childLabel)
+    {
+        await http.PostAsync(
+            $"api/v1/chat/conversations/family?parentId={parentId}&childId={childId}&childLabel={Uri.EscapeDataString(childLabel)}", null);
+    }
+
     // ── Product applications ──────────────────────────────────
     public async Task<ProductApplicationDto> SubmitProductApplicationAsync(Guid userId, string productType, string parameters, decimal monthlyPayment)
     {
@@ -250,4 +287,6 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
     }
+
+    private sealed record UnreadCountDto(int Count);
 }

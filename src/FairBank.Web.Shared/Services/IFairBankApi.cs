@@ -47,6 +47,18 @@ public interface IFairBankApi
     Task<List<PaymentTemplateDto>> GetPaymentTemplatesByAccountAsync(Guid accountId);
     Task DeletePaymentTemplateAsync(Guid templateId);
 
+    // Notifications
+    Task<List<NotificationDto>> GetNotificationsAsync(Guid userId, bool unreadOnly = false);
+    Task<int> GetUnreadNotificationCountAsync(Guid userId);
+    Task MarkNotificationReadAsync(Guid notificationId);
+    Task MarkAllNotificationsReadAsync(Guid userId);
+
+    // Spending Limits
+    Task SetSpendingLimitAsync(Guid accountId, decimal limit, string currency);
+
+    // Family Chat
+    Task GetOrCreateFamilyChatAsync(Guid parentId, Guid childId, string childLabel);
+
     // Product applications
     Task<ProductApplicationDto> SubmitProductApplicationAsync(Guid userId, string productType, string parameters, decimal monthlyPayment);
     Task<List<ProductApplicationDto>> GetUserApplicationsAsync(Guid userId);

@@ -14,7 +14,8 @@ public static class DependencyInjection
     public static IServiceCollection AddPaymentsInfrastructure(
         this IServiceCollection services,
         string connectionString,
-        string accountsApiBaseUrl)
+        string accountsApiBaseUrl,
+        string identityApiBaseUrl)
     {
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
@@ -32,6 +33,18 @@ public static class DependencyInjection
         {
             client.BaseAddress = new Uri(accountsApiBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddHttpClient<INotificationClient, NotificationHttpClient>(client =>
+        {
+            client.BaseAddress = new Uri(identityApiBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
+        services.AddHttpClient<IIdentityClient, IdentityHttpClient>(client =>
+        {
+            client.BaseAddress = new Uri(identityApiBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
         });
 
         return services;

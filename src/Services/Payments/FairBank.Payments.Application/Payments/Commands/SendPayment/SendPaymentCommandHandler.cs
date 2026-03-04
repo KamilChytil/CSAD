@@ -1,5 +1,6 @@
 using FairBank.Payments.Application.DTOs;
 using FairBank.Payments.Application.Ports;
+using FairBank.Payments.Application.Services;
 using FairBank.Payments.Domain.Entities;
 using FairBank.Payments.Domain.Enums;
 using FairBank.Payments.Domain.Ports;
@@ -11,6 +12,8 @@ namespace FairBank.Payments.Application.Payments.Commands.SendPayment;
 public sealed class SendPaymentCommandHandler(
     IPaymentRepository paymentRepository,
     IAccountsServiceClient accountsClient,
+    INotificationClient notificationClient,
+    IIdentityClient identityClient,
     IUnitOfWork unitOfWork) : IRequestHandler<SendPaymentCommand, PaymentResponse>
 {
     public async Task<PaymentResponse> Handle(SendPaymentCommand request, CancellationToken ct)
@@ -30,6 +33,52 @@ public sealed class SendPaymentCommandHandler(
         if (senderAccount.Balance < request.Amount)
             throw new InvalidOperationException("Insufficient funds.");
 
+        // 3b. Check spending limits (child account protection)
+        var limits = await accountsClient.GetSpendingLimitAsync(request.SenderAccountId, ct);
+        if (limits is { RequiresApproval: true, ApprovalThreshold: not null }
+            && request.Amount > limits.ApprovalThreshold.Value)
+        {
+            if (!Enum.TryParse<Currency>(request.Currency, true, out var currencyForPending))
+                throw new ArgumentException($"Invalid currency: {request.Currency}");
+
+            // Create pending transaction for parent approval
+            var pending = await accountsClient.CreatePendingTransactionAsync(
+                request.SenderAccountId, request.Amount, request.Currency,
+                $"Platba → {request.RecipientAccountNumber}: {request.Description ?? ""}".Trim(),
+                senderAccount.OwnerId, ct);
+
+            if (pending is null)
+                throw new InvalidOperationException("Failed to create pending transaction.");
+
+            // Create payment record with PendingApproval status
+            var pendingPayment = Payment.Create(
+                senderAccountId: request.SenderAccountId,
+                senderAccountNumber: senderAccount.AccountNumber,
+                recipientAccountNumber: request.RecipientAccountNumber,
+                amount: request.Amount,
+                currency: currencyForPending,
+                type: request.IsInstant ? PaymentType.Instant : PaymentType.Standard,
+                description: request.Description);
+
+            pendingPayment.MarkPendingApproval();
+            await paymentRepository.AddAsync(pendingPayment, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
+            // Send notification to parent
+            var childUser = await identityClient.GetUserAsync(senderAccount.OwnerId, ct);
+            if (childUser?.ParentId is not null)
+            {
+                await notificationClient.SendAsync(
+                    childUser.ParentId.Value,
+                    "TransactionPending",
+                    "Platba čeká na schválení",
+                    $"{childUser.FirstName} chce zaplatit {request.Amount} {request.Currency} → {request.RecipientAccountNumber}",
+                    pending.Id, "PendingTransaction", ct);
+            }
+
+            return MapToResponse(pendingPayment);
+        }
+
         // 4. Determine payment type
         var paymentType = request.IsInstant ? PaymentType.Instant : PaymentType.Standard;
 
@@ -48,6 +97,10 @@ public sealed class SendPaymentCommandHandler(
             type: paymentType,
             description: request.Description,
             recipientAccountId: recipientAccount?.Id);
+
+        // Auto-categorize based on description
+        var category = PaymentCategorizer.Categorize(request.Description);
+        payment.SetCategory(category);
 
         await paymentRepository.AddAsync(payment, ct);
         await unitOfWork.SaveChangesAsync(ct);
@@ -99,5 +152,6 @@ public sealed class SendPaymentCommandHandler(
         p.SenderAccountNumber, p.RecipientAccountNumber,
         p.Amount, p.Currency.ToString(), p.Description,
         p.Type.ToString(), p.Status.ToString(),
+        p.Category.ToString(),
         p.CreatedAt, p.CompletedAt, p.FailureReason);
 }

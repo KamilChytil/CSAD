@@ -28,6 +28,7 @@ public static class DependencyInjection
             options.Projections.Snapshot<Card>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<SavingsGoal>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<SavingsRule>(SnapshotLifecycle.Inline);
         })
         .UseLightweightSessions();
 
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ICardEventStore, MartenCardEventStore>();
         services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
         services.AddScoped<ISavingsGoalEventStore, MartenSavingsGoalEventStore>();
+        services.AddScoped<ISavingsRuleEventStore, MartenSavingsRuleEventStore>();
 
         return services;
     }
