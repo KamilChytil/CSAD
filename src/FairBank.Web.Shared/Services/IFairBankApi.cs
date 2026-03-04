@@ -66,4 +66,41 @@ public interface IFairBankApi
     Task<ProductApplicationDto> ApproveApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null);
     Task<ProductApplicationDto> RejectApplicationAsync(Guid applicationId, Guid reviewerId, string? note = null);
     Task<ProductApplicationDto> CancelApplicationAsync(Guid applicationId, Guid userId);
+
+    // Cards
+    Task<List<CardDto>> GetCardsByAccountAsync(Guid accountId);
+    Task<CardDto?> IssueCardAsync(Guid accountId, string holderName, string type = "Debit");
+    Task FreezeCardAsync(Guid cardId);
+    Task UnfreezeCardAsync(Guid cardId);
+    Task SetCardLimitsAsync(Guid cardId, decimal? dailyLimit, decimal? monthlyLimit, string currency = "CZK");
+    Task UpdateCardSettingsAsync(Guid cardId, bool onlinePayments, bool contactless);
+    Task DeactivateCardAsync(Guid cardId);
+
+    // Savings Goals
+    Task<List<SavingsGoalDto>> GetSavingsGoalsByAccountAsync(Guid accountId);
+    Task<SavingsGoalDto?> CreateSavingsGoalAsync(Guid accountId, string name, string? description, decimal targetAmount, string currency = "CZK");
+    Task DepositToSavingsGoalAsync(Guid goalId, decimal amount, string currency = "CZK");
+    Task WithdrawFromSavingsGoalAsync(Guid goalId, decimal amount, string currency = "CZK");
+    Task DeleteSavingsGoalAsync(Guid goalId);
+
+    // Savings Rules
+    Task<List<SavingsRuleDto>> GetSavingsRulesByAccountAsync(Guid accountId);
+    Task<SavingsRuleDto?> CreateSavingsRuleAsync(Guid accountId, string name, string? description, string type, decimal amount);
+    Task ToggleSavingsRuleAsync(Guid ruleId);
+
+    // Investments
+    Task<List<InvestmentDto>> GetInvestmentsByAccountAsync(Guid accountId);
+    Task<InvestmentDto?> CreateInvestmentAsync(Guid accountId, string name, string type, decimal amount, decimal units, decimal pricePerUnit, string currency = "CZK");
+    Task SellInvestmentAsync(Guid investmentId);
+
+    // Admin
+    Task<PagedUsersDto?> GetAllUsersAsync(int page = 1, int pageSize = 20, string? role = null, string? search = null);
+    Task UpdateUserRoleAsync(Guid userId, string newRole);
+    Task DeactivateUserAsync(Guid userId);
+    Task ActivateUserAsync(Guid userId);
+    Task DeleteUserAsync(Guid userId);
+
+    // Profile
+    Task ChangeEmailAsync(Guid userId, string newEmail);
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
 }

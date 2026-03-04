@@ -288,5 +288,169 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         return (await response.Content.ReadFromJsonAsync<ProductApplicationDto>())!;
     }
 
+    // ── Cards ──────────────────────────────────────────────────
+    public async Task<List<CardDto>> GetCardsByAccountAsync(Guid accountId)
+    {
+        var response = await http.GetAsync($"api/v1/accounts/{accountId}/cards");
+        if (!response.IsSuccessStatusCode) return [];
+        return await response.Content.ReadFromJsonAsync<List<CardDto>>() ?? [];
+    }
+
+    public async Task<CardDto?> IssueCardAsync(Guid accountId, string holderName, string type = "Debit")
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/cards",
+            new { HolderName = holderName, Type = type });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<CardDto>();
+    }
+
+    public async Task FreezeCardAsync(Guid cardId)
+    {
+        await http.PostAsync($"api/v1/cards/{cardId}/freeze", null);
+    }
+
+    public async Task UnfreezeCardAsync(Guid cardId)
+    {
+        await http.PostAsync($"api/v1/cards/{cardId}/unfreeze", null);
+    }
+
+    public async Task SetCardLimitsAsync(Guid cardId, decimal? dailyLimit, decimal? monthlyLimit, string currency = "CZK")
+    {
+        await http.PutAsJsonAsync($"api/v1/cards/{cardId}/limits",
+            new { DailyLimit = dailyLimit, MonthlyLimit = monthlyLimit, Currency = currency });
+    }
+
+    public async Task UpdateCardSettingsAsync(Guid cardId, bool onlinePayments, bool contactless)
+    {
+        await http.PutAsJsonAsync($"api/v1/cards/{cardId}/settings",
+            new { OnlinePaymentsEnabled = onlinePayments, ContactlessEnabled = contactless });
+    }
+
+    public async Task DeactivateCardAsync(Guid cardId)
+    {
+        await http.DeleteAsync($"api/v1/cards/{cardId}");
+    }
+
+    // ── Savings Goals ─────────────────────────────────────────
+    public async Task<List<SavingsGoalDto>> GetSavingsGoalsByAccountAsync(Guid accountId)
+    {
+        var response = await http.GetAsync($"api/v1/accounts/{accountId}/savings-goals");
+        if (!response.IsSuccessStatusCode) return [];
+        return await response.Content.ReadFromJsonAsync<List<SavingsGoalDto>>() ?? [];
+    }
+
+    public async Task<SavingsGoalDto?> CreateSavingsGoalAsync(Guid accountId, string name, string? description, decimal targetAmount, string currency = "CZK")
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/savings-goals",
+            new { Name = name, Description = description, TargetAmount = targetAmount, Currency = currency });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<SavingsGoalDto>();
+    }
+
+    public async Task DepositToSavingsGoalAsync(Guid goalId, decimal amount, string currency = "CZK")
+    {
+        await http.PostAsJsonAsync($"api/v1/savings-goals/{goalId}/deposit",
+            new { Amount = amount, Currency = currency });
+    }
+
+    public async Task WithdrawFromSavingsGoalAsync(Guid goalId, decimal amount, string currency = "CZK")
+    {
+        await http.PostAsJsonAsync($"api/v1/savings-goals/{goalId}/withdraw",
+            new { Amount = amount, Currency = currency });
+    }
+
+    public async Task DeleteSavingsGoalAsync(Guid goalId)
+    {
+        await http.DeleteAsync($"api/v1/savings-goals/{goalId}");
+    }
+
+    // ── Savings Rules ─────────────────────────────────────────
+    public async Task<List<SavingsRuleDto>> GetSavingsRulesByAccountAsync(Guid accountId)
+    {
+        var response = await http.GetAsync($"api/v1/accounts/{accountId}/savings-rules");
+        if (!response.IsSuccessStatusCode) return [];
+        return await response.Content.ReadFromJsonAsync<List<SavingsRuleDto>>() ?? [];
+    }
+
+    public async Task<SavingsRuleDto?> CreateSavingsRuleAsync(Guid accountId, string name, string? description, string type, decimal amount)
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/savings-rules",
+            new { Name = name, Description = description, Type = type, Amount = amount });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<SavingsRuleDto>();
+    }
+
+    public async Task ToggleSavingsRuleAsync(Guid ruleId)
+    {
+        await http.PutAsync($"api/v1/savings-rules/{ruleId}/toggle", null);
+    }
+
+    // ── Investments ───────────────────────────────────────────
+    public async Task<List<InvestmentDto>> GetInvestmentsByAccountAsync(Guid accountId)
+    {
+        var response = await http.GetAsync($"api/v1/accounts/{accountId}/investments");
+        if (!response.IsSuccessStatusCode) return [];
+        return await response.Content.ReadFromJsonAsync<List<InvestmentDto>>() ?? [];
+    }
+
+    public async Task<InvestmentDto?> CreateInvestmentAsync(Guid accountId, string name, string type, decimal amount, decimal units, decimal pricePerUnit, string currency = "CZK")
+    {
+        var response = await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/investments",
+            new { Name = name, Type = type, Amount = amount, Units = units, PricePerUnit = pricePerUnit, Currency = currency });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<InvestmentDto>();
+    }
+
+    public async Task SellInvestmentAsync(Guid investmentId)
+    {
+        await http.PostAsync($"api/v1/investments/{investmentId}/sell", null);
+    }
+
+    // ── Admin ─────────────────────────────────────────────────
+    public async Task<PagedUsersDto?> GetAllUsersAsync(int page = 1, int pageSize = 20, string? role = null, string? search = null)
+    {
+        var url = $"api/v1/users?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrEmpty(role)) url += $"&role={Uri.EscapeDataString(role)}";
+        if (!string.IsNullOrEmpty(search)) url += $"&search={Uri.EscapeDataString(search)}";
+
+        var response = await http.GetAsync(url);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<PagedUsersDto>();
+    }
+
+    public async Task UpdateUserRoleAsync(Guid userId, string newRole)
+    {
+        await http.PutAsJsonAsync($"api/v1/users/{userId}/role",
+            new { NewRole = newRole });
+    }
+
+    public async Task DeactivateUserAsync(Guid userId)
+    {
+        await http.PostAsync($"api/v1/users/{userId}/deactivate", null);
+    }
+
+    public async Task ActivateUserAsync(Guid userId)
+    {
+        await http.PostAsync($"api/v1/users/{userId}/activate", null);
+    }
+
+    public async Task DeleteUserAsync(Guid userId)
+    {
+        await http.DeleteAsync($"api/v1/users/{userId}");
+    }
+
+    // ── Profile ───────────────────────────────────────────────
+    public async Task ChangeEmailAsync(Guid userId, string newEmail)
+    {
+        await http.PutAsJsonAsync($"api/v1/users/{userId}/email",
+            new { NewEmail = newEmail });
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        await http.PutAsJsonAsync($"api/v1/users/{userId}/password",
+            new { CurrentPassword = currentPassword, NewPassword = newPassword });
+    }
+
     private sealed record UnreadCountDto(int Count);
 }

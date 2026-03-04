@@ -2,9 +2,15 @@ namespace FairBank.Web.Shared.Models;
 
 public sealed record InvestmentDto(
     Guid Id,
+    Guid AccountId,
     string Name,
     string Type,
-    decimal CurrentValue,
     decimal InvestedAmount,
+    decimal CurrentValue,
+    decimal Units,
+    decimal PricePerUnit,
     decimal ChangePercent,
-    string Currency);
+    string Currency,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime? SoldAt);
