@@ -41,6 +41,7 @@ app.UseSerilogRequestLogging();
 
 app.MapAccountEndpoints();
 app.MapCardEndpoints();
+app.MapSavingsGoalEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Accounts" }))
     .WithTags("Health");

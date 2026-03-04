@@ -27,12 +27,14 @@ public static class DependencyInjection
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<Card>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<PendingTransaction>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<SavingsGoal>(SnapshotLifecycle.Inline);
         })
         .UseLightweightSessions();
 
         services.AddScoped<IAccountEventStore, MartenAccountEventStore>();
         services.AddScoped<ICardEventStore, MartenCardEventStore>();
         services.AddScoped<IPendingTransactionStore, MartenPendingTransactionStore>();
+        services.AddScoped<ISavingsGoalEventStore, MartenSavingsGoalEventStore>();
 
         return services;
     }
