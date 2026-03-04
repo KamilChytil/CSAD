@@ -62,6 +62,16 @@ app.MapGet("/health", async (IConfiguration config) =>
     }
 }).WithTags("Health");
 
+// Ensure the account-number sequence exists (idempotent).
+{
+    var cs = app.Configuration.GetConnectionString("DefaultConnection");
+    await using var conn = new NpgsqlConnection(cs);
+    await conn.OpenAsync();
+    await using var cmd = conn.CreateCommand();
+    cmd.CommandText = "CREATE SEQUENCE IF NOT EXISTS accounts_service.account_number_seq START WITH 100000001;";
+    await cmd.ExecuteNonQueryAsync();
+}
+
 // Seed demo accounts (idempotent — skips if already exist)
 await AccountSeeder.SeedAsync(app.Services);
 

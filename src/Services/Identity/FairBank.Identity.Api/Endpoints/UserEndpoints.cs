@@ -58,6 +58,9 @@ public static class UserEndpoints
             try
             {
                 var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                // Service-to-service: set auth headers that RequireAuth() expects
+                accountsClient.DefaultRequestHeaders.TryAddWithoutValidation("X-User-Id", result.Id.ToString());
+                accountsClient.DefaultRequestHeaders.TryAddWithoutValidation("X-User-Role", "Client");
                 await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
                 await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
             }

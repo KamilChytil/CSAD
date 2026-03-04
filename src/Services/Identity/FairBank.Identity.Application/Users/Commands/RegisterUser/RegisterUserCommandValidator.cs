@@ -31,8 +31,8 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
             .WithMessage("Personal ID number must be at least 9 characters.");
 
         RuleFor(x => x.DateOfBirth)
-            .Must(dob => dob == null || dob.Value.AddYears(15) <= DateOnly.FromDateTime(DateTime.UtcNow))
-            .When(x => x.DateOfBirth.HasValue)
+            .Must(dob => dob == null || (DateOnly.TryParse(dob, out var d) && d.AddYears(15) <= DateOnly.FromDateTime(DateTime.UtcNow)))
+            .When(x => !string.IsNullOrEmpty(x.DateOfBirth))
             .WithMessage("User must be at least 15 years old.");
 
         RuleFor(x => x.Phone)

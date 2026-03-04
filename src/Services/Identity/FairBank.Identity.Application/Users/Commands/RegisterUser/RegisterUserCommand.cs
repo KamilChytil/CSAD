@@ -11,7 +11,7 @@ public sealed record RegisterUserCommand(
     string Password,
     UserRole Role = UserRole.Client,
     string? PersonalIdNumber = null,
-    DateOnly? DateOfBirth = null,
+    string? DateOfBirth = null,
     string? Phone = null,
     string? Street = null,
     string? City = null,

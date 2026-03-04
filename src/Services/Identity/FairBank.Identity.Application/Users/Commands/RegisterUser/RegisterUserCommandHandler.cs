@@ -42,7 +42,7 @@ public sealed class RegisterUserCommandHandler(
             passwordHash,
             request.Role,
             personalIdNumber: request.PersonalIdNumber,
-            dateOfBirth: request.DateOfBirth,
+            dateOfBirth: DateOnly.TryParse(request.DateOfBirth, out var dob) ? dob : null,
             phoneNumber: phoneNumber,
             address: address);
 
