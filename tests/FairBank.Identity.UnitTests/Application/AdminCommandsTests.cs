@@ -11,6 +11,7 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
 using FairBank.SharedKernel.Logging;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -19,6 +20,7 @@ public class AdminCommandsTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser(string email = "jan@example.com", UserRole role = UserRole.Client)
     {
@@ -63,7 +65,7 @@ public class AdminCommandsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new UpdateUserRoleCommandHandler(_userRepository, _unitOfWork);
+        var handler = new UpdateUserRoleCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new UpdateUserRoleCommand(userId, UserRole.Banker);
 
         // Act
@@ -86,7 +88,7 @@ public class AdminCommandsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new DeactivateUserCommandHandler(_userRepository, _unitOfWork);
+        var handler = new DeactivateUserCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new DeactivateUserCommand(userId);
 
         // Act
@@ -110,7 +112,7 @@ public class AdminCommandsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new ActivateUserCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ActivateUserCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ActivateUserCommand(userId);
 
         // Act

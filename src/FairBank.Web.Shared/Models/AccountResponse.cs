@@ -10,4 +10,9 @@ public sealed record AccountResponse(
     DateTime CreatedAt,
     bool RequiresApproval = false,
     decimal? ApprovalThreshold = null,
-    decimal? SpendingLimit = null);
+    decimal? SpendingLimit = null,
+    string AccountType = "Checking")
+{
+    /// <summary>Czech display label for the account type.</summary>
+    public string TypeLabel => AccountType == "Savings" ? "Spořicí účet" : "Běžný účet";
+}

@@ -30,12 +30,14 @@ using FairBank.Identity.Application.Users.Queries.GetUserById;
 using FairBank.Identity.Application.Users.Queries.GetDevices;
 using FairBank.Identity.Application.Users.Queries.GetSecuritySettings;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
+using FairBank.Identity.Application.Audit.Queries.GetAuditLogs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Infrastructure.Persistence;
 using FairBank.SharedKernel.Security;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
 
 namespace FairBank.Identity.Api.Endpoints;
 
@@ -48,9 +50,19 @@ public static class UserEndpoints
 
         // ── Public endpoints (no auth needed) ─────────────────
 
-        group.MapPost("/register", async (RegisterUserCommand command, ISender sender) =>
+        group.MapPost("/register", async (RegisterUserCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
         {
             var result = await sender.Send(command);
+
+            // Auto-provision a checking + savings CZK account for the new user (fire-and-forget)
+            try
+            {
+                var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
+            }
+            catch { /* log silently */ }
+
             return Results.Created($"/api/v1/users/{result.Id}", result);
         })
         .WithName("RegisterUser")
@@ -423,13 +435,23 @@ public static class UserEndpoints
 
         // ── Parent-only endpoints ─────────────────────────────
 
-        group.MapPost("/{parentId:guid}/children", async (Guid parentId, HttpContext httpContext, CreateChildCommand command, ISender sender) =>
+        group.MapPost("/{parentId:guid}/children", async (Guid parentId, HttpContext httpContext, CreateChildCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
         {
             var authUserId = httpContext.GetUserId();
             if (authUserId != parentId)
                 return Results.Json(new { error = "Forbidden" }, statusCode: 403);
 
             var result = await sender.Send(command with { ParentId = parentId });
+
+            // Auto-provision a checking + savings CZK account for the new child (fire-and-forget)
+            try
+            {
+                var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
+            }
+            catch { /* fire-and-forget */ }
+
             return Results.Created($"/api/v1/users/{result.Id}", result);
         })
         .WithName("CreateChild")
@@ -518,6 +540,13 @@ public static class UserEndpoints
         .Produces(StatusCodes.Status204NoContent)
         .RequireAuth()
         .RequireRole("Admin");
+
+        // ── Admin Audit Logs ─────────────────────────────────
+
+        group.MapGet("/admin/audit-logs", async (ISender sender, int page = 1, int pageSize = 20) =>
+            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize))))
+        .WithName("GetAuditLogs")
+        .Produces<PagedAuditLogsResponse>(StatusCodes.Status200OK);
 
         return group;
     }

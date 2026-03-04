@@ -7,6 +7,7 @@ public interface IFairBankApi
     // Accounts
     Task<AccountResponse?> GetAccountAsync(Guid id);
     Task<AccountResponse> CreateAccountAsync(Guid ownerId, string currency);
+    Task<AccountResponse> CreateSavingsAccountAsync(Guid ownerId);
     Task<AccountResponse> DepositAsync(Guid accountId, decimal amount, string currency, string? description = null);
     Task<AccountResponse> WithdrawAsync(Guid accountId, decimal amount, string currency, string? description = null);
 
@@ -99,6 +100,7 @@ public interface IFairBankApi
     Task DeactivateUserAsync(Guid userId);
     Task ActivateUserAsync(Guid userId);
     Task DeleteUserAsync(Guid userId);
+    Task<PagedAuditLogsResponse> GetAuditLogsAsync(int page = 1, int pageSize = 20);
 
     // Profile
     Task ChangeEmailAsync(Guid userId, string newEmail);

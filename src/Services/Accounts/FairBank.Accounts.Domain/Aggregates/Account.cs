@@ -18,13 +18,14 @@ public sealed class Account
     [JsonInclude] public bool RequiresApproval { get; private set; }
     [JsonInclude] public Money? ApprovalThreshold { get; private set; }
     [JsonInclude] public AccountLimits? Limits { get; private set; }
+    [JsonInclude] public AccountType AccountType { get; private set; } = AccountType.Checking;
 
     private readonly List<object> _uncommittedEvents = [];
 
     [JsonConstructor]
     private Account() { } // Marten rehydration
 
-    public static Account Create(Guid ownerId, Currency currency, string? accountNumber = null)
+    public static Account Create(Guid ownerId, Currency currency, string? accountNumber = null, AccountType accountType = AccountType.Checking)
     {
         var account = new Account
         {
@@ -33,7 +34,8 @@ public sealed class Account
             AccountNumber = AccountNumber.Create(accountNumber),
             Balance = Money.Zero(currency),
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            AccountType = accountType
         };
 
         account.RaiseEvent(new AccountCreated(
@@ -41,7 +43,8 @@ public sealed class Account
             ownerId,
             account.AccountNumber.Value,
             currency,
-            DateTime.UtcNow));
+            DateTime.UtcNow,
+            accountType));
 
         return account;
     }
@@ -148,6 +151,7 @@ public sealed class Account
         Balance = Money.Zero(@event.Currency);
         IsActive = true;
         CreatedAt = @event.OccurredAt;
+        AccountType = @event.AccountType;
     }
 
     public void Apply(MoneyDeposited @event)

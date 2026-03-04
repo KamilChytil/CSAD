@@ -7,6 +7,7 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
 using FairBank.SharedKernel.Logging;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -15,6 +16,7 @@ public class LoginUserAuditTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser(string password = "Password1!")
     {
@@ -31,7 +33,7 @@ public class LoginUserAuditTests
         _userRepository.GetByEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger, _sender);
         var command = new LoginUserCommand("jan@example.com", "Password1!");
 
         // Act
@@ -56,7 +58,7 @@ public class LoginUserAuditTests
         _userRepository.GetByEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger, _sender);
         var command = new LoginUserCommand("jan@example.com", "WrongPassword1!");
 
         // Act
@@ -85,7 +87,7 @@ public class LoginUserAuditTests
         _userRepository.GetByEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new LoginUserCommandHandler(_userRepository, _unitOfWork, _auditLogger, _sender);
         var command = new LoginUserCommand("jan@example.com", "WrongPassword1!");
 
         // Act

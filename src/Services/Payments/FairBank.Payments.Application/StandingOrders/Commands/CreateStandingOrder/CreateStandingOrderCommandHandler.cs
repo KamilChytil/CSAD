@@ -27,6 +27,11 @@ public sealed class CreateStandingOrderCommandHandler(
         if (!Enum.TryParse<RecurrenceInterval>(request.Interval, true, out var interval))
             throw new ArgumentException($"Invalid interval: {request.Interval}");
 
+        var firstExecUtc = DateTime.SpecifyKind(request.FirstExecutionDate, DateTimeKind.Utc);
+        var endDateUtc  = request.EndDate.HasValue
+            ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc)
+            : (DateTime?)null;
+
         var standingOrder = StandingOrder.Create(
             senderAccountId: request.SenderAccountId,
             senderAccountNumber: senderAccount.AccountNumber,
@@ -34,9 +39,9 @@ public sealed class CreateStandingOrderCommandHandler(
             amount: request.Amount,
             currency: currency,
             interval: interval,
-            firstExecutionDate: request.FirstExecutionDate,
+            firstExecutionDate: firstExecUtc,
             description: request.Description,
-            endDate: request.EndDate);
+            endDate: endDateUtc);
 
         await standingOrderRepository.AddAsync(standingOrder, ct);
         await unitOfWork.SaveChangesAsync(ct);

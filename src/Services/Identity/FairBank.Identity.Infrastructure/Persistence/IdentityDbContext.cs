@@ -11,6 +11,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<TwoFactorAuth> TwoFactorAuths => Set<TwoFactorAuth>();
     public DbSet<UserDevice> UserDevices => Set<UserDevice>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

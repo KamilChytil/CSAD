@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<ITwoFactorAuthRepository, TwoFactorAuthRepository>();
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
