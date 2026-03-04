@@ -1,12 +1,24 @@
 using FairBank.Identity.Application.Helpers;
+using FairBank.Identity.Application.Users.Commands.ChangeEmail;
+using FairBank.Identity.Application.Users.Commands.ChangePassword;
 using FairBank.Identity.Application.Users.Commands.CreateChild;
+using FairBank.Identity.Application.Users.Commands.ForgotPassword;
 using FairBank.Identity.Application.Users.Commands.LoginUser;
 using FairBank.Identity.Application.Users.Commands.LogoutUser;
 using FairBank.Identity.Application.Users.Commands.RegisterUser;
+using FairBank.Identity.Application.Users.Commands.ResendVerification;
+using FairBank.Identity.Application.Users.Commands.ResetPassword;
+using FairBank.Identity.Application.Users.Commands.SetSecuritySettings;
+using FairBank.Identity.Application.Users.Commands.SetupTwoFactor;
+using FairBank.Identity.Application.Users.Commands.EnableTwoFactor;
+using FairBank.Identity.Application.Users.Commands.DisableTwoFactor;
+using FairBank.Identity.Application.Users.Commands.VerifyTwoFactor;
+using FairBank.Identity.Application.Users.Commands.VerifyEmail;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Application.Users.Queries.GetChildren;
 using FairBank.Identity.Application.Users.Queries.GetBankers;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
+using FairBank.Identity.Application.Users.Queries.GetSecuritySettings;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
 using FairBank.Identity.Domain.Entities;
 using MediatR;
@@ -112,6 +124,121 @@ public static class UserEndpoints
         })
         .WithName("GetBankers")
         .Produces<IEnumerable<UserResponse>>(StatusCodes.Status200OK);
+
+        group.MapPost("/verify-email", async (VerifyEmailCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(new { verified = result });
+        })
+        .WithName("VerifyEmail")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/resend-verification", async (ResendVerificationCommand command, ISender sender) =>
+        {
+            await sender.Send(command);
+            return Results.Ok(new { sent = true });
+        })
+        .WithName("ResendVerification")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/forgot-password", async (ForgotPasswordCommand command, ISender sender) =>
+        {
+            await sender.Send(command);
+            return Results.Ok(new { sent = true });
+        })
+        .WithName("ForgotPassword")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/reset-password", async (ResetPasswordCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(new { reset = result });
+        })
+        .WithName("ResetPassword")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/change-password", async (ChangePasswordCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(new { changed = result });
+        })
+        .WithName("ChangePassword")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        // ── Security Settings ────────────────────────────────
+        group.MapPut("/{id:guid}/security-settings", async (Guid id, SetSecuritySettingsCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command with { UserId = id });
+            return Results.Ok(new { updated = result });
+        })
+        .WithName("SetSecuritySettings")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapGet("/{id:guid}/security-settings", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new GetSecuritySettingsQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetSecuritySettings")
+        .Produces<SecuritySettingsResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // ── Profile Editing ──────────────────────────────────
+
+        group.MapPut("/{id:guid}/email", async (Guid id, ChangeEmailCommand command, ISender sender) =>
+        {
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("ChangeEmail")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPut("/{id:guid}/password", async (Guid id, ChangePasswordCommand command, ISender sender) =>
+        {
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("ChangePasswordPut")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        // ── Two-Factor Authentication ────────────────────────
+
+        group.MapPost("/2fa/setup", async (SetupTwoFactorCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(result);
+        })
+        .WithName("SetupTwoFactor")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/2fa/enable", async (EnableTwoFactorCommand command, ISender sender) =>
+        {
+            var backupCodes = await sender.Send(command);
+            return Results.Ok(new { backupCodes });
+        })
+        .WithName("EnableTwoFactor")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/2fa/disable", async (DisableTwoFactorCommand command, ISender sender) =>
+        {
+            await sender.Send(command);
+            return Results.Ok(new { disabled = true });
+        })
+        .WithName("DisableTwoFactor")
+        .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/2fa/verify", async (VerifyTwoFactorCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(result);
+        })
+        .WithName("VerifyTwoFactor")
+        .Produces<LoginResponse>(StatusCodes.Status200OK);
 
         return group;
     }
