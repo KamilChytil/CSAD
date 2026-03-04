@@ -977,7 +977,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Platba se nezdařila. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Platba se nezdařila. Zkuste to znovu.";
             _showConfirmModal = false;
         }
         finally
@@ -1021,7 +1023,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Převod se nezdařil. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Převod se nezdařil. Zkuste to znovu.";
         }
         finally
         {
@@ -1051,8 +1055,10 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : ex.Message.Contains("nezdaři") ? ex.Message : "Vytvoření trvalého příkazu se nezdařilo.";
-        }
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : ex.Message.Contains("nezdaři") ? ex.Message
+                : "Vytvoření trvalého příkazu se nezdařilo.";        }
         finally
         {
             _isLoading = false;
@@ -1144,7 +1150,9 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Zahraniční platba se nezdařila. Zkuste to znovu.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu."
+                : ex.Message.Contains("does not exist") ? "Cílový účet neexistuje. Zkontrolujte číslo účtu."
+                : "Zahraniční platba se nezdařila. Zkuste to znovu.";
         }
         finally
         {

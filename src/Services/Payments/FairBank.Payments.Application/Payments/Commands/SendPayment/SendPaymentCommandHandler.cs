@@ -104,8 +104,17 @@ public sealed class SendPaymentCommandHandler(
         // 4. Determine payment type
         var paymentType = request.IsInstant ? PaymentType.Instant : PaymentType.Standard;
 
-        // 5. Check if it's an internal transfer (same FAIR- prefix)
+        // 5. Look up recipient account and validate it exists for FairBank accounts
         var recipientAccount = await accountsClient.GetAccountByNumberAsync(request.RecipientAccountNumber, ct);
+
+        // If the recipient account number belongs to FairBank (bank code 8888) it MUST exist in the DB.
+        // Sending to a non-existent FairBank account would cause money to vanish, so we reject it.
+        var recipientBankCode = request.RecipientAccountNumber.Contains('/')
+            ? request.RecipientAccountNumber[(request.RecipientAccountNumber.LastIndexOf('/') + 1)..]
+            : string.Empty;
+        if (recipientBankCode == "8888" && recipientAccount is null)
+            throw new InvalidOperationException($"Recipient account '{request.RecipientAccountNumber}' does not exist.");
+
         if (recipientAccount is not null && senderAccount.OwnerId == recipientAccount.OwnerId)
             paymentType = PaymentType.InternalTransfer;
 
