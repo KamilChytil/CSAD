@@ -190,6 +190,7 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 app.UseCors("GatewayCors");
+app.UseWebSockets();
 
 // Path-based middleware resolves the rate limit policy name BEFORE the rate limiter runs.
 app.UsePathBasedRateLimiting();

@@ -78,13 +78,6 @@
                 <span class="side-nav-label">Správa</span>
             </NavLink>
         }
-        @if (Auth.CurrentSession?.Role == "Admin")
-        {
-            <NavLink class="side-nav-item" href="admin">
-                <span class="side-nav-icon"><VbIcon Name="settings" Size="lg" /></span>
-                <span class="side-nav-label">Admin</span>
-            </NavLink>
-        }
         <NavLink class="side-nav-item" href="profil">
             <span class="side-nav-icon"><NavIcon Name="user" IsActive="@IsActive("profil")" Size="40" /></span>
             <span class="side-nav-label">Profil</span>

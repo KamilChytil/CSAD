@@ -1,9 +1,161 @@
 @inherits LayoutComponentBase
+@inject IAuthService Auth
+@inject NavigationManager Navigation
+@inject ThemeService Theme
 
 <div class="vb-app">
-    <div class="vb-content-area">
+    @if (Auth.IsAuthenticated)
+    {
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <img src="icons/logo.svg" alt="Va-bank" class="sidebar-logo" />
+                <span class="sidebar-title">ADMIN</span>
+            </div>
+            <nav class="sidebar-nav">
+                <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+                    <VbIcon Name="home" Size="sm" /> Dashboard
+                </NavLink>
+                <NavLink class="sidebar-link" href="users">
+                    <VbIcon Name="users" Size="sm" /> Uživatelé
+                </NavLink>
+                <NavLink class="sidebar-link" href="logs">
+                    <VbIcon Name="clipboard-list" Size="sm" /> Auditní logy
+                </NavLink>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="sidebar-theme-btn" @onclick="ToggleTheme">
+                    <VbIcon Name="@(Theme.IsDarkMode ? "sun" : "moon")" Size="sm" />
+                    <span>@(Theme.IsDarkMode ? "Světlý" : "Tmavý")</span>
+                </button>
+                <button class="sidebar-logout-btn" @onclick="Logout">
+                    <VbIcon Name="logout" Size="sm" /> Odhlásit se
+                </button>
+            </div>
+        </aside>
+    }
+
+    <div class="vb-content-area @(Auth.IsAuthenticated ? "with-sidebar" : "")">
         <main class="vb-main">
             @Body
         </main>
     </div>
 </div>
+
+<style>
+    .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 220px;
+        height: 100vh;
+        background: var(--vb-bg-elevated);
+        border-right: 1px solid var(--vb-card-border);
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+        padding: 1rem 0;
+    }
+
+    .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--vb-divider);
+        margin-bottom: 0.75rem;
+    }
+
+    .sidebar-logo {
+        width: 32px;
+        height: 32px;
+    }
+
+    .sidebar-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--vb-red);
+        letter-spacing: 0.1em;
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0 0.75rem;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: var(--vb-radius-sm);
+        color: var(--vb-text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: var(--vb-transition);
+    }
+
+    .sidebar-link:hover {
+        background: var(--vb-gray-100);
+        color: var(--vb-text-primary);
+    }
+
+    .sidebar-link.active {
+        background: var(--vb-red);
+        color: #fff;
+    }
+
+    .sidebar-footer {
+        padding: 0.75rem;
+        border-top: 1px solid var(--vb-divider);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .sidebar-theme-btn,
+    .sidebar-logout-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border: none;
+        border-radius: var(--vb-radius-sm);
+        background: transparent;
+        color: var(--vb-text-secondary);
+        font-size: 0.85rem;
+        font-family: inherit;
+        cursor: pointer;
+        transition: var(--vb-transition);
+    }
+
+    .sidebar-theme-btn:hover,
+    .sidebar-logout-btn:hover {
+        background: var(--vb-gray-100);
+        color: var(--vb-text-primary);
+    }
+
+    .sidebar-logout-btn {
+        color: var(--vb-red);
+    }
+
+    .vb-content-area.with-sidebar {
+        margin-left: 220px;
+    }
+</style>
+
+@code {
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleAsync();
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

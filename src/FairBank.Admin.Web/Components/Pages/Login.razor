@@ -1,0 +1,318 @@
+@page "/login"
+@inject IAuthService Auth
+@inject IFairBankApi Api
+@inject NavigationManager Nav
+
+<div class="login-page">
+    <div class="login-header">
+        <img src="icons/logo.svg" alt="Va-bank" class="login-logo" />
+        <h1 class="login-title">VA-BANK ADMIN</h1>
+        <p class="login-subtitle">Administrátorský portál</p>
+    </div>
+
+    <div class="login-card">
+        @if (_requiresTwoFactor)
+        {
+            <h2 class="login-card-title">Dvoufaktorové ověření</h2>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="login-alert login-alert-danger">@_errorMessage</div>
+            }
+
+            <div class="form-group">
+                <label class="form-label">Kód z autentizační aplikace</label>
+                <input type="text" class="form-input @(_totpError ? "input-error" : "")"
+                       placeholder="000000" maxlength="6"
+                       @bind="_totpCode" @bind:event="oninput"
+                       @onkeyup="OnTotpKeyUp" />
+            </div>
+
+            <button class="login-btn" @onclick="HandleVerifyTwoFactor" disabled="@_isLoading">
+                @(_isLoading ? "Ověřuji..." : "Ověřit")
+            </button>
+        }
+        else
+        {
+            <h2 class="login-card-title">Přihlášení</h2>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="login-alert login-alert-danger">@_errorMessage</div>
+            }
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input @(_emailError ? "input-error" : "")"
+                       placeholder="admin@vabank.cz"
+                       @bind="_email" @bind:event="oninput" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Heslo</label>
+                <input type="password" class="form-input @(_passwordError ? "input-error" : "")"
+                       placeholder="••••••••"
+                       @bind="_password" @bind:event="oninput"
+                       @onkeyup="OnPasswordKeyUp" />
+            </div>
+
+            <button class="login-btn" @onclick="HandleLogin" disabled="@_isLoading">
+                @(_isLoading ? "Přihlašuji..." : "Přihlásit se")
+            </button>
+        }
+    </div>
+</div>
+
+<style>
+    .login-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--vb-bg);
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-logo {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 1rem;
+    }
+
+    .login-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--vb-red);
+        margin: 0;
+        letter-spacing: 0.1em;
+    }
+
+    .login-subtitle {
+        color: var(--vb-text-muted);
+        margin-top: 0.25rem;
+        font-size: 0.95rem;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        padding: 2rem;
+        background: var(--vb-bg-elevated);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        box-shadow: var(--vb-shadow);
+    }
+
+    .login-card-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+        margin: 0 0 1.5rem 0;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        margin-bottom: 0.4rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.7rem 0.85rem;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: var(--vb-transition);
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-red);
+        box-shadow: 0 0 0 2px var(--vb-red-glow);
+    }
+
+    .input-error {
+        border-color: var(--vb-red) !important;
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--vb-red);
+        color: #fff;
+        border: none;
+        border-radius: var(--vb-radius-sm);
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        transition: var(--vb-transition);
+        margin-top: 0.5rem;
+    }
+
+    .login-btn:hover:not(:disabled) {
+        opacity: 0.9;
+    }
+
+    .login-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .login-alert {
+        padding: 0.75rem 1rem;
+        border-radius: var(--vb-radius-sm);
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .login-alert-danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+</style>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _totpCode = "";
+    private string _errorMessage = "";
+    private bool _emailError;
+    private bool _passwordError;
+    private bool _totpError;
+    private bool _isLoading;
+    private bool _requiresTwoFactor;
+    private Guid _pendingUserId;
+
+    private async Task OnPasswordKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await HandleLogin();
+    }
+
+    private async Task OnTotpKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await HandleVerifyTwoFactor();
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsAuthenticated && Auth.CurrentSession?.Role == "Admin")
+        {
+            Nav.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = "";
+        _emailError = string.IsNullOrWhiteSpace(_email);
+        _passwordError = string.IsNullOrWhiteSpace(_password);
+        if (_emailError || _passwordError) return;
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Auth.LoginAsync(new LoginRequest(_email.Trim(), _password));
+
+            if (result is null)
+            {
+                _errorMessage = "Nesprávný email nebo heslo.";
+                return;
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                _pendingUserId = result.UserId;
+                _requiresTwoFactor = true;
+                _errorMessage = "";
+                return;
+            }
+
+            // Only allow Admin role
+            if (Auth.CurrentSession?.Role != "Admin")
+            {
+                await Auth.LogoutAsync();
+                _errorMessage = "Přístup je povolen pouze pro administrátory.";
+                return;
+            }
+
+            Nav.NavigateTo("/", forceLoad: false);
+        }
+        catch
+        {
+            _errorMessage = "Chyba připojení k serveru.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleVerifyTwoFactor()
+    {
+        _errorMessage = "";
+        _totpError = false;
+
+        var code = _totpCode.Trim();
+        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
+        {
+            _totpError = true;
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var verifyResult = await Api.VerifyTwoFactorAsync(_pendingUserId, code);
+            if (verifyResult is null)
+            {
+                _errorMessage = "Neplatný ověřovací kód.";
+                return;
+            }
+
+            await Auth.EstablishSessionFromResponseAsync(verifyResult);
+
+            // Only allow Admin role
+            if (Auth.CurrentSession?.Role != "Admin")
+            {
+                await Auth.LogoutAsync();
+                _errorMessage = "Přístup je povolen pouze pro administrátory.";
+                return;
+            }
+
+            Nav.NavigateTo("/", forceLoad: false);
+        }
+        catch
+        {
+            _errorMessage = "Chyba při ověřování kódu.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

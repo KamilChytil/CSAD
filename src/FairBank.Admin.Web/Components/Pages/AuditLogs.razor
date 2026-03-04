@@ -1,11 +1,11 @@
-@page "/admin/logs"
+@page "/logs"
 @inject IFairBankApi Api
 @inject IAuthService Auth
 @inject NavigationManager Navigation
 
 <PageHeader Title="AUDITNÍ LOGY" ShowChip="false">
     <Actions>
-        <VbButton Variant="outline" Size="sm" IconName="arrow-left" OnClick="GoBack">Zpět do administrace</VbButton>
+        <VbButton Variant="outline" Size="sm" IconName="arrow-left" OnClick="GoBack">Zpět</VbButton>
         <VbButton Variant="outline" Size="sm" IconName="refresh" OnClick="LoadLogs">Obnovit</VbButton>
     </Actions>
 </PageHeader>
@@ -307,7 +307,7 @@
     {
         var session = Auth.CurrentSession;
         if (session == null) { Navigation.NavigateTo("/login"); return; }
-        if (session.Role != "Admin") { Navigation.NavigateTo("/prehled"); return; }
+        if (session.Role != "Admin") { Navigation.NavigateTo("/"); return; }
 
         await LoadLogs();
     }
@@ -376,5 +376,5 @@
         await LoadLogs();
     }
 
-    private void GoBack() => Navigation.NavigateTo("/admin");
+    private void GoBack() => Navigation.NavigateTo("/users");
 }

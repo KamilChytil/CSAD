@@ -1,11 +1,11 @@
-@page "/admin"
+@page "/users"
 @inject IFairBankApi Api
 @inject IAuthService Auth
 @inject NavigationManager Navigation
 
-<PageHeader Title="SPRAVA UZIVATELU" ShowChip="false">
+<PageHeader Title="SPRÁVA UŽIVATELŮ" ShowChip="false">
     <Actions>
-        <VbButton Variant="outline" Size="sm" IconName="clipboard-list" OnClick='() => Navigation.NavigateTo("/admin/logs")'>Auditní Logy</VbButton>
+        <VbButton Variant="outline" Size="sm" IconName="clipboard-list" OnClick='() => Navigation.NavigateTo("/logs")'>Auditní Logy</VbButton>
         <VbButton Variant="outline" Size="sm" IconName="refresh" OnClick="LoadUsers">Obnovit</VbButton>
     </Actions>
 </PageHeader>
@@ -15,12 +15,12 @@
     @* ── FILTERS ────────────────────── *@
     <div class="admin-filters">
         <div class="filter-search">
-            <input type="text" class="form-input" placeholder="Hledat podle jmena nebo e-mailu..."
+            <input type="text" class="form-input" placeholder="Hledat podle jména nebo e-mailu..."
                    @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
         </div>
         <div class="filter-role">
             <select class="form-input" @bind="_roleFilter" @bind:after="OnFilterChanged">
-                <option value="">Vsechny role</option>
+                <option value="">Všechny role</option>
                 <option value="Client">Client</option>
                 <option value="Child">Child</option>
                 <option value="Banker">Banker</option>
@@ -32,7 +32,7 @@
     @* ── CONTENT ────────────────────── *@
     @if (_loading)
     {
-        <div class="admin-empty">Nacitani uzivatelu...</div>
+        <div class="admin-empty">Načítání uživatelů...</div>
     }
     else if (_error != null)
     {
@@ -42,7 +42,7 @@
     }
     else if (_users == null || !_users.Items.Any())
     {
-        <div class="admin-empty">Zadni uzivatele nenalezeni.</div>
+        <div class="admin-empty">Žádní uživatelé nenalezeni.</div>
     }
     else
     {
@@ -50,7 +50,7 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Jmeno</th>
+                        <th>Jméno</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
@@ -70,11 +70,11 @@
                             <td>
                                 @if (user.IsActive)
                                 {
-                                    <span class="status-badge status-active">Aktivni</span>
+                                    <span class="status-badge status-active">Aktivní</span>
                                 }
                                 else
                                 {
-                                    <span class="status-badge status-inactive">Neaktivni</span>
+                                    <span class="status-badge status-inactive">Neaktivní</span>
                                 }
                             </td>
                             <td class="user-date">@user.CreatedAt.ToString("dd.MM.yyyy")</td>
@@ -114,11 +114,11 @@
         {
             <div class="admin-pagination">
                 <VbButton Variant="outline" Size="sm" Disabled="@(_page <= 1)" OnClick="PreviousPage">
-                    Predchozi
+                    Předchozí
                 </VbButton>
-                <span class="pagination-info">Stranka @_page z @TotalPages</span>
+                <span class="pagination-info">Stránka @_page z @TotalPages</span>
                 <VbButton Variant="outline" Size="sm" Disabled="@(_page >= TotalPages)" OnClick="NextPage">
-                    Dalsi
+                    Další
                 </VbButton>
             </div>
         }
@@ -136,17 +136,17 @@
     <div class="modal-overlay" @onclick="CloseDeleteModal">
         <div class="modal-content" @onclick:stopPropagation>
             <div class="modal-header">
-                <h3>Potvrzeni smazani</h3>
+                <h3>Potvrzení smazání</h3>
                 <button class="modal-close" @onclick="CloseDeleteModal">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Opravdu chcete smazat uzivatele <strong>@_deleteUserName</strong>?</p>
-                <p class="delete-warning">Tuto akci nelze vzit zpet.</p>
+                <p>Opravdu chcete smazat uživatele <strong>@_deleteUserName</strong>?</p>
+                <p class="delete-warning">Tuto akci nelze vzít zpět.</p>
             </div>
             <div class="modal-footer">
-                <VbButton Variant="ghost" OnClick="CloseDeleteModal">Zrusit</VbButton>
+                <VbButton Variant="ghost" OnClick="CloseDeleteModal">Zrušit</VbButton>
                 <VbButton Variant="danger" OnClick="DeleteUser" Disabled="_deleting">
-                    @(_deleting ? "Mazani..." : "Smazat")
+                    @(_deleting ? "Mazání..." : "Smazat")
                 </VbButton>
             </div>
         </div>
@@ -459,7 +459,7 @@
     {
         var session = Auth.CurrentSession;
         if (session == null) { Navigation.NavigateTo("/login"); return; }
-        if (session.Role != "Admin") { Navigation.NavigateTo("/prehled"); return; }
+        if (session.Role != "Admin") { Navigation.NavigateTo("/"); return; }
 
         await LoadUsers();
     }
@@ -479,7 +479,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Chyba pri nacitani uzivatelu: {ex.Message}";
+            _error = $"Chyba při načítání uživatelů: {ex.Message}";
             _users = null;
         }
         finally
@@ -518,12 +518,12 @@
         try
         {
             await Api.UpdateUserRoleAsync(userId, newRole);
-            _successMessage = "Role byla zmenena.";
+            _successMessage = "Role byla změněna.";
             await LoadUsers();
         }
         catch (Exception ex)
         {
-            _error = $"Chyba pri zmene role: {ex.Message}";
+            _error = $"Chyba při změně role: {ex.Message}";
         }
     }
 
@@ -532,12 +532,12 @@
         try
         {
             await Api.ActivateUserAsync(userId);
-            _successMessage = "Uzivatel byl aktivovan.";
+            _successMessage = "Uživatel byl aktivován.";
             await LoadUsers();
         }
         catch (Exception ex)
         {
-            _error = $"Chyba pri aktivaci: {ex.Message}";
+            _error = $"Chyba při aktivaci: {ex.Message}";
         }
     }
 
@@ -546,12 +546,12 @@
         try
         {
             await Api.DeactivateUserAsync(userId);
-            _successMessage = "Uzivatel byl deaktivovan.";
+            _successMessage = "Uživatel byl deaktivován.";
             await LoadUsers();
         }
         catch (Exception ex)
         {
-            _error = $"Chyba pri deaktivaci: {ex.Message}";
+            _error = $"Chyba při deaktivaci: {ex.Message}";
         }
     }
 
@@ -574,13 +574,13 @@
         try
         {
             await Api.DeleteUserAsync(_deleteUserId);
-            _successMessage = $"Uzivatel {_deleteUserName} byl smazan.";
+            _successMessage = $"Uživatel {_deleteUserName} byl smazán.";
             _showDeleteModal = false;
             await LoadUsers();
         }
         catch (Exception ex)
         {
-            _error = $"Chyba pri mazani: {ex.Message}";
+            _error = $"Chyba při mazání: {ex.Message}";
             _showDeleteModal = false;
         }
         finally

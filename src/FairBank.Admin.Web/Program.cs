@@ -30,7 +30,19 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddSingleton<ThemeService>();
+
+// ── HTTP client for API Gateway communication ──
+var apiGatewayUrl = builder.Configuration["Services:ApiGateway"] ?? "http://api-gateway:8080";
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(apiGatewayUrl),
+    Timeout = TimeSpan.FromSeconds(15)
+});
+
+// ── Shared services (FairBankApi, Auth, Theme) ──
+builder.Services.AddScoped<IFairBankApi, FairBankApiClient>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ThemeService>();
 
 var app = builder.Build();
 

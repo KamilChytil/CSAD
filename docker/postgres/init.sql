@@ -40,3 +40,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA chat_service GRANT ALL ON SEQUENCES TO fairba
 ALTER DEFAULT PRIVILEGES IN SCHEMA products_service GRANT ALL ON SEQUENCES TO fairbank_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA cards_service GRANT ALL ON SEQUENCES TO fairbank_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA notifications_service GRANT ALL ON SEQUENCES TO fairbank_app;
+
+-- Sequence for generating unique account numbers (used by Accounts service)
+CREATE SEQUENCE IF NOT EXISTS accounts_service.account_number_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    CACHE 1;
+GRANT USAGE, SELECT ON SEQUENCE accounts_service.account_number_seq TO fairbank_app;

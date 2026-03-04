@@ -30,29 +30,28 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Auto-create database tables on startup.
-// EnsureCreatedAsync() does NOT create tables when the database already exists (shared DB).
-// We check whether our tables exist and create them from the EF model if missing.
+// Auto-create database tables on startup (idempotent).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-    var conn = db.Database.GetDbConnection();
-    await conn.OpenAsync();
-    await using (var checkCmd = conn.CreateCommand())
+    try
     {
-        checkCmd.CommandText =
-            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'payments_service' AND table_name = 'exchange_transactions')";
-        var exists = (bool)(await checkCmd.ExecuteScalarAsync())!;
-        if (!exists)
-        {
-            // Replace CREATE TABLE with CREATE TABLE IF NOT EXISTS to safely handle
-            // partially-created schemas (e.g. after a failed or partial migration).
-            var script = db.Database.GenerateCreateScript()
-                .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal);
-            await using var createCmd = conn.CreateCommand();
-            createCmd.CommandText = script;
-            await createCmd.ExecuteNonQueryAsync();
-        }
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+
+        var script = db.Database.GenerateCreateScript()
+            .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE SEQUENCE ", "CREATE SEQUENCE IF NOT EXISTS ", StringComparison.Ordinal);
+
+        await using var createCmd = conn.CreateCommand();
+        createCmd.CommandText = script;
+        await createCmd.ExecuteNonQueryAsync();
+    }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07")
+    {
+        // Tables/indexes already exist – safe to ignore.
     }
 }
 

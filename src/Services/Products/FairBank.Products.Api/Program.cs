@@ -23,11 +23,29 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Auto-create database schema on startup
+// Auto-create database tables on startup (idempotent).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ProductsDbContext>();
-    await db.Database.EnsureCreatedAsync();
+    try
+    {
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+
+        var script = db.Database.GenerateCreateScript()
+            .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE UNIQUE INDEX ", "CREATE UNIQUE INDEX IF NOT EXISTS ", StringComparison.Ordinal)
+            .Replace("CREATE SEQUENCE ", "CREATE SEQUENCE IF NOT EXISTS ", StringComparison.Ordinal);
+
+        await using var createCmd = conn.CreateCommand();
+        createCmd.CommandText = script;
+        await createCmd.ExecuteNonQueryAsync();
+    }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07")
+    {
+        // Tables/indexes already exist – safe to ignore.
+    }
 }
 
 if (app.Environment.IsDevelopment())

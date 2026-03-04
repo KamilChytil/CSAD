@@ -1,8 +1,9 @@
 @page "/"
-@page "/admin"
 @namespace FairBank.Admin.Web.Components.Pages
+@inject IAuthService Auth
+@inject NavigationManager Navigation
 
-<PageHeader Title="ADMIN" />
+<PageHeader Title="ADMIN DASHBOARD" ShowChip="false" />
 
 <div class="page-content">
     <ContentCard Title="Správa systému">
@@ -14,6 +15,10 @@
             <div class="info-row">
                 <span class="info-label">Stav</span>
                 <span class="info-value status-active">Aktivní</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Přihlášený uživatel</span>
+                <span class="info-value">@(Auth.CurrentSession?.Email ?? "—")</span>
             </div>
         </ChildContent>
     </ContentCard>
@@ -43,12 +48,52 @@
         </ChildContent>
     </ContentCard>
 
-    <ContentCard Title="Uživatelé">
-        <ChildContent>
-            <p class="empty-state">Správa uživatelů bude přidána v další verzi.</p>
-        </ChildContent>
-    </ContentCard>
+    <div class="admin-quick-links">
+        <ContentCard Title="Rychlé odkazy">
+            <ChildContent>
+                <div class="quick-links-grid">
+                    <a href="/users" class="quick-link">
+                        <VbIcon Name="users" Size="md" />
+                        <span>Správa uživatelů</span>
+                    </a>
+                    <a href="/logs" class="quick-link">
+                        <VbIcon Name="clipboard-list" Size="md" />
+                        <span>Auditní logy</span>
+                    </a>
+                </div>
+            </ChildContent>
+        </ContentCard>
+    </div>
 </div>
+
+<style>
+    .quick-links-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .quick-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1.25rem;
+        background: var(--vb-bg);
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        text-decoration: none;
+        color: var(--vb-text-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: var(--vb-transition);
+    }
+
+    .quick-link:hover {
+        border-color: var(--vb-red);
+        box-shadow: 0 0 0 2px var(--vb-red-glow);
+    }
+</style>
 
 @code {
     [Inject] private IDbContextFactory<FairBank.Admin.Web.Data.LogDbContext> DbFactory { get; set; } = default!;
@@ -57,6 +102,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var session = Auth.CurrentSession;
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+        if (session.Role != "Admin") { Navigation.NavigateTo("/login"); return; }
+
         await LoadLogs();
     }
 
