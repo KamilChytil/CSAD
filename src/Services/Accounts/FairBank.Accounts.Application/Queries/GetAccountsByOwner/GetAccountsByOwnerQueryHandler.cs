@@ -23,7 +23,8 @@ public sealed class GetAccountsByOwnerQueryHandler(IAccountEventStore eventStore
                 a.Alias,
                 a.RequiresApproval,
                 a.ApprovalThreshold?.Amount,
-                a.SpendingLimit?.Amount))
+                a.SpendingLimit?.Amount,
+                a.AccountType))
             .ToList();
     }
 }

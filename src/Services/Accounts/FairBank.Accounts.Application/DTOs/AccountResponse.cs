@@ -13,4 +13,5 @@ public sealed record AccountResponse(
     string? Alias = null,
     bool RequiresApproval = false,
     decimal? ApprovalThreshold = null,
-    decimal? SpendingLimit = null);
+    decimal? SpendingLimit = null,
+    AccountType AccountType = AccountType.Checking);

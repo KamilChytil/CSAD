@@ -11,7 +11,7 @@ public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore, I
     public async Task<AccountResponse> Handle(CreateAccountCommand request, CancellationToken ct)
     {
         var accountNumber = request.AccountNumber ?? await numberGenerator.NextAsync(ct);
-        var account = Account.Create(request.OwnerId, request.Currency, accountNumber);
+        var account = Account.Create(request.OwnerId, request.Currency, accountNumber, request.AccountType);
 
         await eventStore.StartStreamAsync(account, ct);
 
@@ -26,6 +26,7 @@ public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore, I
             account.Alias,
             account.RequiresApproval,
             account.ApprovalThreshold?.Amount,
-            account.SpendingLimit?.Amount);
+            account.SpendingLimit?.Amount,
+            account.AccountType);
     }
 }

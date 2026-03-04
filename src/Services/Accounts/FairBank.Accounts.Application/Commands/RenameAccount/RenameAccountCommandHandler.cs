@@ -26,6 +26,7 @@ public sealed class RenameAccountCommandHandler(IAccountEventStore eventStore)
             account.Alias,
             account.RequiresApproval,
             account.ApprovalThreshold?.Amount,
-            account.SpendingLimit?.Amount);
+            account.SpendingLimit?.Amount,
+            account.AccountType);
     }
 }

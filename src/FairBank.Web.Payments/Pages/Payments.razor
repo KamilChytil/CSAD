@@ -265,7 +265,7 @@
                             <option value="">— vyberte účet —</option>
                             @foreach (var acc in _accounts)
                             {
-                                <option value="@acc.Id">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                                <option value="@acc.Id">@acc.TypeLabel – @acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
                         </select>
                     </div>
@@ -275,7 +275,7 @@
                             <option value="">— vyberte cílový účet —</option>
                             @foreach (var acc in _accounts.Where(a => a.Id.ToString() != _transferFromAccountId))
                             {
-                                <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                                <option value="@acc.AccountNumber">@acc.TypeLabel – @acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
                         </select>
                     </div>

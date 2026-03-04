@@ -47,11 +47,12 @@ public static class UserEndpoints
         {
             var result = await sender.Send(command);
 
-            // Auto-provision a CZK account for the new user (fire-and-forget; failures don't block registration)
+            // Auto-provision a checking + savings CZK account for the new user (fire-and-forget)
             try
             {
                 var accountsClient = httpClientFactory.CreateClient("accounts-api");
-                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK" });
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
             }
             catch { /* log silently */ }
 
@@ -127,7 +128,8 @@ public static class UserEndpoints
             try
             {
                 var accountsClient = httpClientFactory.CreateClient("accounts-api");
-                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK" });
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
             }
             catch { /* fire-and-forget */ }
 
