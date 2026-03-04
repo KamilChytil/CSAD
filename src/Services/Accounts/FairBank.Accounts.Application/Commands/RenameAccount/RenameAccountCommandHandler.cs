@@ -1,20 +1,18 @@
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Ports;
-using FairBank.Accounts.Domain.ValueObjects;
 using MediatR;
 
-namespace FairBank.Accounts.Application.Commands.DepositMoney;
+namespace FairBank.Accounts.Application.Commands.RenameAccount;
 
-public sealed class DepositMoneyCommandHandler(IAccountEventStore eventStore)
-    : IRequestHandler<DepositMoneyCommand, AccountResponse>
+public sealed class RenameAccountCommandHandler(IAccountEventStore eventStore)
+    : IRequestHandler<RenameAccountCommand, AccountResponse>
 {
-    public async Task<AccountResponse> Handle(DepositMoneyCommand request, CancellationToken ct)
+    public async Task<AccountResponse> Handle(RenameAccountCommand request, CancellationToken ct)
     {
         var account = await eventStore.LoadAsync(request.AccountId, ct)
-            ?? throw new InvalidOperationException($"Account {request.AccountId} not found.");
+            ?? throw new InvalidOperationException($"Account '{request.AccountId}' not found.");
 
-        account.Deposit(Money.Create(request.Amount, request.Currency), request.Description);
-
+        account.Rename(request.Alias);
         await eventStore.AppendEventsAsync(account, ct);
 
         return new AccountResponse(

@@ -19,7 +19,11 @@ public sealed class GetAccountsByOwnerQueryHandler(IAccountEventStore eventStore
                 a.Balance.Amount,
                 a.Balance.Currency,
                 a.IsActive,
-                a.CreatedAt))
+                a.CreatedAt,
+                a.Alias,
+                a.RequiresApproval,
+                a.ApprovalThreshold?.Amount,
+                a.SpendingLimit?.Amount))
             .ToList();
     }
 }

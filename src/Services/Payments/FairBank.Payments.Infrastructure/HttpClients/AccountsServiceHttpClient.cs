@@ -37,5 +37,25 @@ public sealed class AccountsServiceHttpClient(HttpClient httpClient) : IAccounts
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<SpendingLimitInfo?> GetSpendingLimitAsync(Guid accountId, CancellationToken ct = default)
+    {
+        var response = await httpClient.GetAsync($"api/v1/accounts/{accountId}/limits", ct);
+        if (!response.IsSuccessStatusCode) return null;
+        var dto = await response.Content.ReadFromJsonAsync<SpendingLimitApiDto>(ct);
+        return dto is null ? null : new SpendingLimitInfo(dto.RequiresApproval, dto.ApprovalThreshold, dto.Currency);
+    }
+
+    public async Task<PendingTransactionInfo?> CreatePendingTransactionAsync(
+        Guid accountId, decimal amount, string currency, string description, Guid requestedBy, CancellationToken ct = default)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/v1/accounts/pending",
+            new { AccountId = accountId, Amount = amount, Currency = currency, Description = description, RequestedBy = requestedBy }, ct);
+        if (!response.IsSuccessStatusCode) return null;
+        var dto = await response.Content.ReadFromJsonAsync<PendingTxApiDto>(ct);
+        return dto is null ? null : new PendingTransactionInfo(dto.Id, dto.Status);
+    }
+
     private sealed record AccountApiDto(Guid Id, Guid OwnerId, string AccountNumber, decimal Balance, string Currency, bool IsActive, DateTime CreatedAt);
+    private sealed record SpendingLimitApiDto(bool RequiresApproval, decimal? ApprovalThreshold, string? Currency, decimal? SpendingLimit);
+    private sealed record PendingTxApiDto(Guid Id, string Status);
 }
