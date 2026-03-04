@@ -1,3 +1,4 @@
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
 using FairBank.Identity.Application.Helpers;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Domain.Entities;
@@ -10,7 +11,8 @@ namespace FairBank.Identity.Application.Users.Commands.LoginUser;
 
 public sealed class LoginUserCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<LoginUserCommand, LoginResponse?>
 {
     public async Task<LoginResponse?> Handle(LoginUserCommand request, CancellationToken ct)
@@ -38,6 +40,14 @@ public sealed class LoginUserCommandHandler(
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             user.RecordFailedLogin();
+
+            await sender.Send(new RecordAuditLogCommand(
+                Action: "LoginFailed",
+                UserId: user.Id,
+                UserEmail: user.Email.Value,
+                Details: "Invalid password"
+            ), ct);
+
             await unitOfWork.SaveChangesAsync(ct);
 
             // After recording, throw lockout if threshold just crossed
@@ -74,6 +84,13 @@ public sealed class LoginUserCommandHandler(
         var sessionId = Guid.NewGuid();
         var expiresAt = DateTime.UtcNow.AddHours(8);
         user.RecordSuccessfulLogin(sessionId, expiresAt);
+
+        await sender.Send(new RecordAuditLogCommand(
+            Action: "LoginSuccess",
+            UserId: user.Id,
+            UserEmail: user.Email.Value
+        ), ct);
+
         await unitOfWork.SaveChangesAsync(ct);
 
         var token = SessionTokenHelper.Encode(user.Id, sessionId);

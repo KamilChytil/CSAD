@@ -99,6 +99,7 @@ public interface IFairBankApi
     Task DeactivateUserAsync(Guid userId);
     Task ActivateUserAsync(Guid userId);
     Task DeleteUserAsync(Guid userId);
+    Task<PagedAuditLogsResponse> GetAuditLogsAsync(int page = 1, int pageSize = 20);
 
     // Profile
     Task ChangeEmailAsync(Guid userId, string newEmail);

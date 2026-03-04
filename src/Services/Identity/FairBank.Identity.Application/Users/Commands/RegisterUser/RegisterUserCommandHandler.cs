@@ -1,3 +1,4 @@
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
 using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Domain.Entities;
@@ -11,7 +12,8 @@ namespace FairBank.Identity.Application.Users.Commands.RegisterUser;
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
     IEmailSender emailSender,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<RegisterUserCommand, UserResponse>
 {
     public async Task<UserResponse> Handle(RegisterUserCommand request, CancellationToken ct)
@@ -45,6 +47,14 @@ public sealed class RegisterUserCommandHandler(
         user.GenerateEmailVerificationToken();
 
         await userRepository.AddAsync(user, ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            Action: "UserRegistered",
+            EntityName: "User",
+            EntityId: user.Id.ToString(),
+            Details: $"{user.Email.Value} ({user.Role})"
+        ), ct);
+
         await unitOfWork.SaveChangesAsync(ct);
 
         // Send verification email (fire-and-forget — failures logged but don't block registration)

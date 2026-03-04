@@ -1,0 +1,251 @@
+@page "/admin/logs"
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@inject NavigationManager Navigation
+
+<PageHeader Title="AUDITNÍ LOGY" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="arrow-left" OnClick="GoBack">Zpět do administrace</VbButton>
+        <VbButton Variant="outline" Size="sm" IconName="refresh" OnClick="LoadLogs">Obnovit</VbButton>
+    </Actions>
+</PageHeader>
+
+<div class="page-content admin-logs-page">
+
+    @if (_loading)
+    {
+        <div class="logs-empty">Načítání logů...</div>
+    }
+    else if (_error != null)
+    {
+        <div class="logs-error">
+            <VbIcon Name="x-circle" Size="sm" /> @_error
+        </div>
+    }
+    else if (_logs == null || !_logs.Items.Any())
+    {
+        <div class="logs-empty">Žádné záznamy nenalezeny.</div>
+    }
+    else
+    {
+        <div class="logs-table-wrap">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Čas</th>
+                        <th>Uživatel</th>
+                        <th>Akce</th>
+                        <th>Entita</th>
+                        <th>Detaily</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in _logs.Items)
+                    {
+                        <tr>
+                            <td class="log-time">@log.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            <td class="log-user">
+                                @if (log.UserId.HasValue)
+                                {
+                                    <div class="user-email">@log.UserEmail</div>
+                                    <div class="user-id">@log.UserId</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Systém / Host</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="action-badge action-@log.Action.ToLowerInvariant()">@log.Action</span>
+                            </td>
+                            <td class="log-entity">
+                                <span class="entity-name">@log.EntityName</span>
+                                @if (!string.IsNullOrEmpty(log.EntityId))
+                                {
+                                    <div class="entity-id">ID: @log.EntityId</div>
+                                }
+                            </td>
+                            <td class="log-details">@log.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* ── PAGINATION ────────────────── *@
+        @if (TotalPages > 1)
+        {
+            <div class="logs-pagination">
+                <VbButton Variant="outline" Size="sm" Disabled="@(_page <= 1)" OnClick="PreviousPage">
+                    Předchozí
+                </VbButton>
+                <span class="pagination-info">Stránka @_page z @TotalPages</span>
+                <VbButton Variant="outline" Size="sm" Disabled="@(_page >= TotalPages)" OnClick="NextPage">
+                    Další
+                </VbButton>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .admin-logs-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .logs-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--vb-card-border);
+        border-radius: var(--vb-radius-md);
+        background: var(--vb-bg-elevated);
+        box-shadow: var(--vb-shadow-sm);
+    }
+
+    .logs-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+    .logs-table th {
+        padding: 0.75rem 1rem;
+        background: var(--vb-gray-100);
+        text-align: left;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        color: var(--vb-text-secondary);
+        border-bottom: 1px solid var(--vb-divider);
+    }
+
+    .logs-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--vb-divider);
+        vertical-align: top;
+    }
+
+    .log-time {
+        white-space: nowrap;
+        color: var(--vb-text-muted);
+        font-family: monospace;
+    }
+
+    .user-email {
+        font-weight: 600;
+        color: var(--vb-text-primary);
+    }
+
+    .user-id, .entity-id {
+        font-size: 0.7rem;
+        color: var(--vb-text-muted);
+        font-family: monospace;
+    }
+
+    .action-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--vb-radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    /* Action specific colors */
+    .action-loginsuccess { background: #dcfce7; color: #16a34a; }
+    .action-loginfailed { background: #fef2f2; color: #dc2626; }
+    .action-userdeactivated { background: #fee2e2; color: #991b1b; }
+    .action-useractivated { background: #dcfce7; color: #166534; }
+    .action-userrolechanged { background: #e0f2fe; color: #0369a1; }
+    .action-userregistered { background: #f0fdf4; color: #15803d; }
+
+    .entity-name {
+        font-weight: 500;
+        color: var(--vb-text-secondary);
+    }
+
+    .log-details {
+        max-width: 400px;
+        word-break: break-all;
+    }
+
+    .logs-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: var(--vb-text-secondary);
+        font-weight: 500;
+    }
+
+    .logs-empty {
+        text-align: center;
+        color: var(--vb-text-muted);
+        margin-top: 3rem;
+        font-style: italic;
+    }
+
+    .logs-error {
+        text-align: center;
+        color: var(--vb-red);
+        margin-top: 2rem;
+        font-weight: 500;
+    }
+</style>
+
+@code {
+    private PagedAuditLogsResponse? _logs;
+    private bool _loading = true;
+    private string? _error;
+    private int _page = 1;
+    private int _pageSize = 20;
+
+    private int TotalPages => _logs != null ? (int)Math.Ceiling((double)_logs.TotalCount / _pageSize) : 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = Auth.CurrentSession;
+        if (session == null) { Navigation.NavigateTo("/login"); return; }
+        if (session.Role != "Admin") { Navigation.NavigateTo("/prehled"); return; }
+
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            _logs = await Api.GetAuditLogsAsync(_page, _pageSize);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba při načítání logů: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (_page > 1) { _page--; await LoadLogs(); }
+    }
+
+    private async Task NextPage()
+    {
+        if (_page < TotalPages) { _page++; await LoadLogs(); }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin");
+}

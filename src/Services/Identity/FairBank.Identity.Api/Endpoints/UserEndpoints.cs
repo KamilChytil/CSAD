@@ -29,6 +29,7 @@ using FairBank.Identity.Application.Users.Queries.GetUserById;
 using FairBank.Identity.Application.Users.Queries.GetDevices;
 using FairBank.Identity.Application.Users.Queries.GetSecuritySettings;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
+using FairBank.Identity.Application.Audit.Queries.GetAuditLogs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Enums;
 using MediatR;
@@ -388,6 +389,13 @@ public static class UserEndpoints
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
+
+        // ── Admin Audit Logs ─────────────────────────────────
+
+        group.MapGet("/admin/audit-logs", async (ISender sender, int page = 1, int pageSize = 20) =>
+            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize))))
+        .WithName("GetAuditLogs")
+        .Produces<PagedAuditLogsResponse>(StatusCodes.Status200OK);
 
         return group;
     }

@@ -439,6 +439,14 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         await http.DeleteAsync($"api/v1/users/{userId}");
     }
 
+    public async Task<PagedAuditLogsResponse> GetAuditLogsAsync(int page = 1, int pageSize = 20)
+    {
+        var url = $"api/v1/users/admin/audit-logs?page={page}&pageSize={pageSize}";
+        var response = await http.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PagedAuditLogsResponse>())!;
+    }
+
     // ── Profile ───────────────────────────────────────────────
     public async Task ChangeEmailAsync(Guid userId, string newEmail)
     {
