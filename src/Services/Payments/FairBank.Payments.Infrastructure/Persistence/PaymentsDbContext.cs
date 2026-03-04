@@ -10,6 +10,8 @@ public sealed class PaymentsDbContext(DbContextOptions<PaymentsDbContext> option
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<StandingOrder> StandingOrders => Set<StandingOrder>();
     public DbSet<PaymentTemplate> PaymentTemplates => Set<PaymentTemplate>();
+    public DbSet<ExchangeTransaction> ExchangeTransactions => Set<ExchangeTransaction>();
+    public DbSet<ExchangeFavorite> ExchangeFavorites => Set<ExchangeFavorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

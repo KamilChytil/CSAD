@@ -1,97 +1,163 @@
 @page "/kurzy"
 @namespace FairBank.Web.Exchange.Pages
 @using FairBank.Web.Exchange.Services
+@using FairBank.Web.Shared.Models
 @inject HttpClient Http
+@inject IFairBankApi Api
+@inject IAuthService Auth
+@implements IDisposable
 
-<PageHeader Title="SMĚNNÉ KURZY" />
+<PageHeader Title="SMENARNA" />
 
 <div class="page-content">
 
-    @* ── Currency Converter ── *@
-    <ContentCard Title="Převodník měn">
+    <ContentCard Title="Smena men">
         <ChildContent>
-            <div class="converter-row">
+            <div class="exchange-form">
+                <div class="exchange-selects">
+                    <div class="form-group">
+                        <label class="form-label">Z meny</label>
+                        <select class="form-input" @bind="_fromCurrency" @bind:after="OnCurrencyChanged">
+                            @foreach (var curr in _dropdownCurrencies)
+                            {
+                                <option value="@curr">@(curr.ToUpperInvariant()) - @(CurrencyConverter.GetName(curr))</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="exchange-swap-btn">
+                        <VbButton Variant="ghost" Size="sm" OnClick="SwapCurrencies">Prohodit</VbButton>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Na menu</label>
+                        <select class="form-input" @bind="_toCurrency" @bind:after="OnCurrencyChanged">
+                            @foreach (var curr in _dropdownCurrencies)
+                            {
+                                <option value="@curr">@(curr.ToUpperInvariant()) - @(CurrencyConverter.GetName(curr))</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label class="form-label">Částka</label>
+                    <label class="form-label">Castka</label>
                     <input class="form-input" type="number" min="0" step="0.01"
-                           @bind="_amount" />
+                           @bind="_amount" @bind:after="RecalculateTarget" />
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Z měny</label>
-                    <select class="form-input" @bind="_fromCurrency">
-                        @foreach (var curr in _dropdownCurrencies)
-                        {
-                            <option value="@curr">@(curr.ToUpperInvariant()) — @(CurrencyConverter.GetName(curr))</option>
-                        }
-                    </select>
-                </div>
-                <div class="converter-swap">
-                    <VbButton Variant="outline" OnClick="SwapCurrencies">⇄</VbButton>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Na měnu</label>
-                    <select class="form-input" @bind="_toCurrency">
-                        @foreach (var curr in _dropdownCurrencies)
-                        {
-                            <option value="@curr">@(curr.ToUpperInvariant()) — @(CurrencyConverter.GetName(curr))</option>
-                        }
-                    </select>
-                </div>
+
+                @if (_currentRate is not null)
+                {
+                    <div class="rate-info-box">
+                        <div class="rate-line">Kurz: 1 @(_fromCurrency.ToUpperInvariant()) = @(_currentRate.Rate.ToString("N4")) @(_toCurrency.ToUpperInvariant())</div>
+                        <div class="rate-line rate-highlight">Obdrzite: @(_targetAmount.ToString("N2")) @(_toCurrency.ToUpperInvariant())</div>
+                        <div class="rate-line rate-meta">Kurz z @(_currentRate.RateDate) (aktualizace za @(_refreshCountdown)s)</div>
+                    </div>
+                }
+                else if (_rateLoading)
+                {
+                    <div class="rate-info-box">
+                        <span class="rate-meta">Nacitam kurz...</span>
+                    </div>
+                }
+
+                @if (_canExchange)
+                {
+                    <div class="form-actions">
+                        <VbButton Variant="primary" OnClick="ShowConfirmDialog"
+                                  Disabled="@(_amount <= 0 || _currentRate is null || _exchangeInProgress)">
+                            Prevest
+                        </VbButton>
+                    </div>
+                }
             </div>
-
-            @if (_convertedAmount is not null)
-            {
-                <div class="conversion-result">
-                    <span class="conversion-from">@_amount.ToString("N2") @_fromCurrency.ToUpperInvariant()</span>
-                    <span class="conversion-arrow">=</span>
-                    <span class="conversion-to">@_convertedAmount.Value.ToString("N2") @_toCurrency.ToUpperInvariant()</span>
-                </div>
-            }
-
-            <VbButton OnClick="Convert">Převést</VbButton>
         </ChildContent>
     </ContentCard>
 
-    @* ── Exchange Rate Table ── *@
-    <ContentCard Title="Kurzy k CZK">
+    @if (_showConfirmDialog)
+    {
+        <ContentCard Title="Potvrzeni smeny">
+            <ChildContent>
+                <div class="confirm-details">
+                    <p>Odecteno: <strong>@(_amount.ToString("N2")) @(_fromCurrency.ToUpperInvariant())</strong></p>
+                    <p>Pripsano: <strong>@(_targetAmount.ToString("N2")) @(_toCurrency.ToUpperInvariant())</strong></p>
+                    <p>Kurz: @(_currentRate!.Rate.ToString("N4"))</p>
+                </div>
+                <div class="form-actions">
+                    <VbButton Variant="primary" OnClick="ExecuteExchange" Disabled="@_exchangeInProgress">
+                        @(_exchangeInProgress ? "Provadim..." : "Potvrdit smenu")
+                    </VbButton>
+                    <VbButton Variant="ghost" OnClick="CancelConfirm">Zrusit</VbButton>
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    @if (_successMessage is not null)
+    {
+        <ContentCard>
+            <ChildContent>
+                <p class="exchange-success">@_successMessage</p>
+            </ChildContent>
+        </ContentCard>
+    }
+    @if (_errorMessage is not null)
+    {
+        <ContentCard>
+            <ChildContent>
+                <p class="exchange-error">@_errorMessage</p>
+            </ChildContent>
+        </ContentCard>
+    }
+
+    <ContentCard Title="Oblibene smeny">
         <HeaderAction>
-            @if (!string.IsNullOrEmpty(_converter.RateDate))
+            @if (_canExchange)
             {
-                <span class="rate-date">@_converter.RateDate</span>
+                <VbButton Variant="ghost" Size="sm" OnClick="AddCurrentAsFavorite">+ Pridat</VbButton>
             }
         </HeaderAction>
         <ChildContent>
-            @if (_isLoading)
+            @if (_favorites.Count == 0)
             {
                 <div class="empty-state-card">
-                    <PokerChip Value="..." Size="lg" />
-                    <p class="empty-state">Načítám kurzy...</p>
-                </div>
-            }
-            else if (_error is not null)
-            {
-                <div class="empty-state-card">
-                    <PokerChip Value="!" Size="lg" />
-                    <p class="empty-state">@_error</p>
-                    <VbButton OnClick="LoadRates">Zkusit znovu</VbButton>
+                    <p class="empty-state">Zadne oblibene smeny</p>
                 </div>
             }
             else
             {
-                <div class="rate-table">
-                    <div class="rate-table-header">
-                        <span class="rate-col-flag">Měna</span>
-                        <span class="rate-col-code"></span>
-                        <span class="rate-col-rate">1 CZK =</span>
-                        <span class="rate-col-inverse">1 měna = CZK</span>
-                    </div>
-                    @foreach (var rate in _displayRates)
+                <div class="favorites-list">
+                    @foreach (var fav in _favorites)
                     {
-                        <div class="rate-table-row">
-                            <span class="rate-col-flag">@rate.Flag</span>
-                            <span class="rate-col-code">@rate.Code</span>
-                            <span class="rate-col-rate">@rate.RateFromCzk.ToString("F4")</span>
-                            <span class="rate-col-inverse">@rate.RateToCzk.ToString("F2") Kč</span>
+                        <div class="favorite-item">
+                            <VbButton Variant="outline" Size="sm" OnClick="() => ApplyFavorite(fav)">
+                                @fav.FromCurrency > @fav.ToCurrency
+                            </VbButton>
+                            <VbButton Variant="ghost" Size="sm" OnClick="() => RemoveFavorite(fav.Id)">x</VbButton>
+                        </div>
+                    }
+                </div>
+            }
+        </ChildContent>
+    </ContentCard>
+
+    <ContentCard Title="Historie smen">
+        <ChildContent>
+            @if (_history.Count == 0)
+            {
+                <div class="empty-state-card">
+                    <p class="empty-state">Zadna historie smen</p>
+                </div>
+            }
+            else
+            {
+                <div class="history-list">
+                    @foreach (var tx in _history)
+                    {
+                        <div class="history-item">
+                            <span class="history-date">@tx.CreatedAt.ToString("d.M.")</span>
+                            <span class="history-detail">@tx.SourceAmount.ToString("N2") @tx.FromCurrency &gt; @tx.TargetAmount.ToString("N2") @tx.ToCurrency</span>
+                            <span class="history-rate">@tx.ExchangeRate.ToString("N4")</span>
                         </div>
                     }
                 </div>
@@ -101,111 +167,362 @@
 
 </div>
 
+<style>
+    .exchange-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .exchange-selects {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+    .exchange-selects .form-group {
+        flex: 1;
+    }
+    .exchange-swap-btn {
+        padding-bottom: 4px;
+    }
+    .rate-info-box {
+        background: var(--vb-bg-elevated, #1a1a2e);
+        border-radius: var(--vb-radius-sm, 10px);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .rate-line {
+        font-size: 0.95rem;
+        color: var(--vb-text-secondary, #a0a0b0);
+    }
+    .rate-highlight {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--vb-gold, #D4A843);
+    }
+    .rate-meta {
+        font-size: 0.8rem;
+        color: var(--vb-text-muted, #666);
+    }
+    .exchange-note {
+        font-size: 0.85rem;
+        color: var(--vb-text-muted, #666);
+        font-style: italic;
+    }
+    .confirm-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .exchange-success {
+        color: #4ade80;
+        font-weight: 600;
+    }
+    .exchange-error {
+        color: var(--vb-red, #C41E3A);
+        font-weight: 600;
+    }
+    .favorites-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .favorite-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .history-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--vb-border, rgba(255,255,255,0.06));
+    }
+    .history-item:last-child {
+        border-bottom: none;
+    }
+    .history-date {
+        color: var(--vb-text-muted, #666);
+        font-size: 0.85rem;
+        min-width: 40px;
+    }
+    .history-detail {
+        flex: 1;
+        font-weight: 500;
+    }
+    .history-rate {
+        color: var(--vb-text-secondary, #a0a0b0);
+        font-size: 0.85rem;
+    }
+    @@media (max-width: 600px) {
+        .exchange-selects {
+            flex-direction: column;
+        }
+    }
+</style>
+
 @code {
     private readonly CurrencyConverter _converter = new();
-
-    private bool _isLoading = true;
-    private string? _error;
-
-    // Converter state
-    private decimal _amount = 1000;
+    private List<string> _dropdownCurrencies = [];
     private string _fromCurrency = "czk";
     private string _toCurrency = "eur";
-    private decimal? _convertedAmount;
+    private decimal _amount = 1000;
+    private decimal _targetAmount;
 
-    // Dropdown: all fiat currencies, CZK first then alphabetical
-    private List<string> _dropdownCurrencies = [];
+    private ExchangeRateDto? _currentRate;
+    private bool _rateLoading;
+    private int _refreshCountdown = 10;
+    private Timer? _refreshTimer;
 
-    // Rate table: 12 major currencies
-    private static readonly string[] _tableCurrencies =
-        ["eur", "usd", "gbp", "chf", "pln", "jpy", "sek", "nok", "dkk", "huf", "cad", "aud"];
+    private bool _canExchange;
+    private bool _showConfirmDialog;
+    private bool _exchangeInProgress;
+    private string? _successMessage;
+    private string? _errorMessage;
 
-    private List<DisplayRate> _displayRates = [];
+    private List<ExchangeFavoriteDto> _favorites = [];
+    private List<ExchangeTransactionDto> _history = [];
+    private List<AccountResponse> _accounts = [];
+
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadRates();
-    }
+        await LoadCurrencyList();
 
-    private async Task LoadRates()
-    {
-        _isLoading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
+        if (Auth.CurrentSession is not null)
         {
-            var url = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/czk.json";
-            var json = await Http.GetStringAsync(url);
-            _converter.LoadRates(json);
-            BuildDropdownCurrencies();
-            BuildDisplayRates();
-        }
-        catch (Exception ex)
-        {
-            _error = $"Nepodařilo se načíst kurzy: {ex.Message}";
-
-            // Try fallback URL
+            var userId = Auth.CurrentSession.UserId;
             try
             {
-                var fallback = "https://latest.currency-api.pages.dev/v1/currencies/czk.json";
-                var json = await Http.GetStringAsync(fallback);
+                var accountsTask = Api.GetAccountsByOwnerAsync(userId);
+                var favoritesTask = Api.GetExchangeFavoritesAsync(userId);
+                var historyTask = Api.GetExchangeHistoryAsync(userId);
+                await Task.WhenAll(accountsTask, favoritesTask, historyTask);
+                _accounts = accountsTask.Result ?? [];
+                _favorites = favoritesTask.Result ?? [];
+                _history = historyTask.Result ?? [];
+            }
+            catch { }
+        }
+    }
+
+    private async Task LoadCurrencyList()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync(
+                "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/czk.json");
+            _converter.LoadRates(json);
+            BuildDropdown();
+        }
+        catch
+        {
+            try
+            {
+                var json = await Http.GetStringAsync(
+                    "https://latest.currency-api.pages.dev/v1/currencies/czk.json");
                 _converter.LoadRates(json);
-                _error = null;
-                BuildDropdownCurrencies();
-                BuildDisplayRates();
+                BuildDropdown();
             }
             catch
             {
-                // Keep original error
+                _dropdownCurrencies = ["czk", "eur", "usd", "gbp"];
             }
-        }
-        finally
-        {
-            _isLoading = false;
         }
     }
 
-    private void BuildDropdownCurrencies()
+    private void BuildDropdown()
     {
         var fiatKeys = _converter.GetFiatRates().Keys
             .Where(c => !string.Equals(c, "czk", StringComparison.OrdinalIgnoreCase))
             .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
             .ToList();
-
         _dropdownCurrencies = new List<string> { "czk" };
         _dropdownCurrencies.AddRange(fiatKeys);
     }
 
-    private void BuildDisplayRates()
+    private async Task OnCurrencyChanged()
     {
-        _displayRates.Clear();
-        var allRates = _converter.GetAllRates();
+        _successMessage = null;
+        _errorMessage = null;
+        _showConfirmDialog = false;
 
-        foreach (var code in _tableCurrencies)
+        _canExchange = !string.Equals(_fromCurrency, _toCurrency, StringComparison.OrdinalIgnoreCase);
+
+        if (string.Equals(_fromCurrency, _toCurrency, StringComparison.OrdinalIgnoreCase))
         {
-            if (allRates.TryGetValue(code, out var rateFromCzk) && rateFromCzk > 0)
+            _currentRate = null;
+            _targetAmount = _amount;
+            StopTimer();
+            return;
+        }
+
+        await FetchRate();
+        StartTimer();
+    }
+
+    private async Task SwapCurrencies()
+    {
+        (_fromCurrency, _toCurrency) = (_toCurrency, _fromCurrency);
+        await OnCurrencyChanged();
+    }
+
+    private async Task FetchRate()
+    {
+        _rateLoading = true;
+        StateHasChanged();
+
+        _currentRate = await Api.GetExchangeRateAsync(_fromCurrency, _toCurrency);
+
+        if (_currentRate is null)
+        {
+            var localRate = _converter.Convert(1, _fromCurrency, _toCurrency);
+            if (localRate.HasValue)
             {
-                _displayRates.Add(new DisplayRate(
-                    CurrencyConverter.GetFlag(code),
-                    code.ToUpperInvariant(),
-                    rateFromCzk,
-                    1m / rateFromCzk));
+                _currentRate = new ExchangeRateDto(
+                    localRate.Value, _fromCurrency.ToUpperInvariant(),
+                    _toCurrency.ToUpperInvariant(), _converter.RateDate ?? "");
             }
+        }
+
+        _rateLoading = false;
+        RecalculateTarget();
+        _refreshCountdown = 10;
+        StateHasChanged();
+    }
+
+    private void RecalculateTarget()
+    {
+        if (_currentRate is not null)
+            _targetAmount = Math.Round(_amount * _currentRate.Rate, 2);
+    }
+
+    private void StartTimer()
+    {
+        StopTimer();
+        _refreshCountdown = 10;
+        _refreshTimer = new Timer(async _ =>
+        {
+            _refreshCountdown--;
+            if (_refreshCountdown <= 0)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await FetchRate();
+                    StateHasChanged();
+                });
+            }
+            else
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void StopTimer()
+    {
+        _refreshTimer?.Dispose();
+        _refreshTimer = null;
+    }
+
+    private void ShowConfirmDialog()
+    {
+        _showConfirmDialog = true;
+        _successMessage = null;
+        _errorMessage = null;
+    }
+
+    private void CancelConfirm() => _showConfirmDialog = false;
+
+    private async Task ExecuteExchange()
+    {
+        if (Auth.CurrentSession is null || _currentRate is null) return;
+
+        _exchangeInProgress = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var sourceAccount = _accounts.FirstOrDefault(a =>
+                string.Equals(a.Currency, _fromCurrency, StringComparison.OrdinalIgnoreCase));
+            var targetAccount = _accounts.FirstOrDefault(a =>
+                string.Equals(a.Currency, _toCurrency, StringComparison.OrdinalIgnoreCase));
+
+            if (sourceAccount is null || targetAccount is null)
+            {
+                _errorMessage = "Nemate ucty v obou menach. Zalozze si ucet v pozadovane mene.";
+                _exchangeInProgress = false;
+                _showConfirmDialog = false;
+                return;
+            }
+
+            var request = new ExecuteExchangeRequest(
+                Auth.CurrentSession.UserId,
+                sourceAccount.Id, targetAccount.Id,
+                _amount,
+                _fromCurrency.ToUpperInvariant(),
+                _toCurrency.ToUpperInvariant());
+
+            var result = await Api.ExecuteExchangeAsync(request);
+
+            _successMessage = $"Uspesne smeneno {result.SourceAmount:N2} {result.FromCurrency} za {result.TargetAmount:N2} {result.ToCurrency}";
+            _showConfirmDialog = false;
+
+            _history = await Api.GetExchangeHistoryAsync(Auth.CurrentSession.UserId);
+            _accounts = await Api.GetAccountsByOwnerAsync(Auth.CurrentSession.UserId) ?? [];
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Smena se nezdarila: {ex.Message}";
+            _showConfirmDialog = false;
+        }
+        finally
+        {
+            _exchangeInProgress = false;
         }
     }
 
-    private void Convert()
+    private async Task AddCurrentAsFavorite()
     {
-        _convertedAmount = _converter.Convert(_amount, _fromCurrency, _toCurrency);
+        if (Auth.CurrentSession is null) return;
+        try
+        {
+            var request = new AddFavoriteRequest(
+                Auth.CurrentSession.UserId,
+                _fromCurrency.ToUpperInvariant(),
+                _toCurrency.ToUpperInvariant());
+            await Api.AddExchangeFavoriteAsync(request);
+            _favorites = await Api.GetExchangeFavoritesAsync(Auth.CurrentSession.UserId);
+        }
+        catch { }
     }
 
-    private void SwapCurrencies()
+    private async Task RemoveFavorite(Guid favoriteId)
     {
-        (_fromCurrency, _toCurrency) = (_toCurrency, _fromCurrency);
-        if (_convertedAmount is not null)
-            Convert();
+        if (Auth.CurrentSession is null) return;
+        try
+        {
+            await Api.RemoveExchangeFavoriteAsync(favoriteId);
+            _favorites = await Api.GetExchangeFavoritesAsync(Auth.CurrentSession.UserId);
+        }
+        catch { }
     }
 
-    private sealed record DisplayRate(string Flag, string Code, decimal RateFromCzk, decimal RateToCzk);
+    private async Task ApplyFavorite(ExchangeFavoriteDto favorite)
+    {
+        _fromCurrency = favorite.FromCurrency.ToLowerInvariant();
+        _toCurrency = favorite.ToCurrency.ToLowerInvariant();
+        await OnCurrencyChanged();
+    }
+
+    public void Dispose() => StopTimer();
 }

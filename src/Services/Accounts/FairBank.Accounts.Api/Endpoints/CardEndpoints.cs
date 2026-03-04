@@ -6,6 +6,7 @@ using FairBank.Accounts.Application.Commands.UnfreezeCard;
 using FairBank.Accounts.Application.Commands.UpdateCardSettings;
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Queries.GetCardsByAccount;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -24,7 +25,8 @@ public static class CardEndpoints
             return Results.Created($"/api/v1/cards/{result.Id}", result);
         })
         .WithName("IssueCard")
-        .Produces<CardResponse>(StatusCodes.Status201Created);
+        .Produces<CardResponse>(StatusCodes.Status201Created)
+        .RequireAuth();
 
         // GET /api/v1/accounts/{accountId:guid}/cards — list cards for an account
         group.MapGet("/accounts/{accountId:guid}/cards", async (Guid accountId, ISender sender) =>
@@ -33,7 +35,8 @@ public static class CardEndpoints
             return Results.Ok(result);
         })
         .WithName("GetCardsByAccount")
-        .Produces<IReadOnlyList<CardResponse>>(StatusCodes.Status200OK);
+        .Produces<IReadOnlyList<CardResponse>>(StatusCodes.Status200OK)
+        .RequireAuth();
 
         // POST /api/v1/cards/{id:guid}/freeze — freeze a card
         group.MapPost("/cards/{id:guid}/freeze", async (Guid id, ISender sender) =>
@@ -42,7 +45,8 @@ public static class CardEndpoints
             return Results.NoContent();
         })
         .WithName("FreezeCard")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         // POST /api/v1/cards/{id:guid}/unfreeze — unfreeze a card
         group.MapPost("/cards/{id:guid}/unfreeze", async (Guid id, ISender sender) =>
@@ -51,7 +55,8 @@ public static class CardEndpoints
             return Results.NoContent();
         })
         .WithName("UnfreezeCard")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         // PUT /api/v1/cards/{id:guid}/limits — set card spending limits
         group.MapPut("/cards/{id:guid}/limits", async (Guid id, SetCardLimitsCommand command, ISender sender) =>
@@ -60,7 +65,8 @@ public static class CardEndpoints
             return Results.NoContent();
         })
         .WithName("SetCardLimits")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         // PUT /api/v1/cards/{id:guid}/settings — update card settings
         group.MapPut("/cards/{id:guid}/settings", async (Guid id, UpdateCardSettingsCommand command, ISender sender) =>
@@ -69,7 +75,8 @@ public static class CardEndpoints
             return Results.NoContent();
         })
         .WithName("UpdateCardSettings")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         // DELETE /api/v1/cards/{id:guid} — deactivate a card
         group.MapDelete("/cards/{id:guid}", async (Guid id, ISender sender) =>
@@ -78,7 +85,8 @@ public static class CardEndpoints
             return Results.NoContent();
         })
         .WithName("DeactivateCard")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         return group;
     }

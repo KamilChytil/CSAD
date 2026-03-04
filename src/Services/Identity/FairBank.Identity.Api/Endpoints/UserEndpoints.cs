@@ -4,6 +4,7 @@ using FairBank.Identity.Application.Users.Commands.ChangeEmail;
 using FairBank.Identity.Application.Users.Commands.ChangePassword;
 using FairBank.Identity.Application.Users.Commands.DeactivateUser;
 using FairBank.Identity.Application.Users.Commands.DeleteUser;
+using FairBank.Identity.Application.Users.Commands.RestoreUser;
 using FairBank.Identity.Application.Users.Commands.UpdateUserRole;
 using FairBank.Identity.Application.Users.Commands.CreateChild;
 using FairBank.Identity.Application.Users.Commands.ForgotPassword;
@@ -32,7 +33,10 @@ using FairBank.Identity.Application.Users.Queries.ValidateSession;
 using FairBank.Identity.Application.Audit.Queries.GetAuditLogs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Enums;
+using FairBank.Identity.Infrastructure.Persistence;
+using FairBank.SharedKernel.Security;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Json;
 
 namespace FairBank.Identity.Api.Endpoints;
@@ -43,6 +47,8 @@ public static class UserEndpoints
     {
         var group = app.MapGroup("/api/v1/users")
             .WithTags("Users");
+
+        // ── Public endpoints (no auth needed) ─────────────────
 
         group.MapPost("/register", async (RegisterUserCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
         {
@@ -85,77 +91,6 @@ public static class UserEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status400BadRequest);
 
-        // ── Logout — invalidates the active session server-side ──
-        group.MapPost("/logout", async (HttpContext ctx, ISender sender) =>
-        {
-            var token = ExtractBearerToken(ctx);
-            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out var sessionId))
-                return Results.Unauthorized();
-
-            await sender.Send(new LogoutUserCommand(userId, sessionId));
-            return Results.NoContent();
-        })
-        .WithName("LogoutUser")
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces(StatusCodes.Status401Unauthorized);
-
-        // ── Session validate — used by frontend AuthGuard ──
-        group.MapGet("/session/validate", async (HttpContext ctx, ISender sender) =>
-        {
-            var token = ExtractBearerToken(ctx);
-            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out var sessionId))
-                return Results.Unauthorized();
-
-            var valid = await sender.Send(new ValidateSessionQuery(userId, sessionId));
-            return valid ? Results.Ok(new { valid = true }) : Results.Unauthorized();
-        })
-        .WithName("ValidateSession")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized);
-
-        group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
-        {
-            var result = await sender.Send(new GetUserByIdQuery(id));
-            return result is not null ? Results.Ok(result) : Results.NotFound();
-        })
-        .WithName("GetUserById")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
-
-        group.MapPost("/{parentId:guid}/children", async (Guid parentId, CreateChildCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
-        {
-            var result = await sender.Send(command with { ParentId = parentId });
-
-            try
-            {
-                var accountsClient = httpClientFactory.CreateClient("accounts-api");
-                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
-                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
-            }
-            catch { /* fire-and-forget */ }
-
-            return Results.Created($"/api/v1/users/{result.Id}", result);
-        })
-        .WithName("CreateChild")
-        .Produces(StatusCodes.Status201Created)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        group.MapGet("/{parentId:guid}/children", async (Guid parentId, ISender sender) =>
-        {
-            var result = await sender.Send(new GetChildrenQuery(parentId));
-            return Results.Ok(result);
-        })
-        .WithName("GetChildren")
-        .Produces(StatusCodes.Status200OK);
-
-        group.MapGet("/bankers", async (ISender sender) =>
-        {
-            var result = await sender.Send(new GetBankersQuery());
-            return Results.Ok(result);
-        })
-        .WithName("GetBankers")
-        .Produces<IEnumerable<UserResponse>>(StatusCodes.Status200OK);
-
         group.MapPost("/verify-email", async (VerifyEmailCommand command, ISender sender) =>
         {
             var result = await sender.Send(command);
@@ -190,103 +125,6 @@ public static class UserEndpoints
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
-        group.MapPost("/change-password", async (ChangePasswordCommand command, ISender sender) =>
-        {
-            var result = await sender.Send(command);
-            return Results.Ok(new { changed = result });
-        })
-        .WithName("ChangePassword")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        // ── Security Settings ────────────────────────────────
-        group.MapPut("/{id:guid}/security-settings", async (Guid id, SetSecuritySettingsCommand command, ISender sender) =>
-        {
-            var result = await sender.Send(command with { UserId = id });
-            return Results.Ok(new { updated = result });
-        })
-        .WithName("SetSecuritySettings")
-        .Produces(StatusCodes.Status200OK);
-
-        group.MapGet("/{id:guid}/security-settings", async (Guid id, ISender sender) =>
-        {
-            var result = await sender.Send(new GetSecuritySettingsQuery(id));
-            return result is not null ? Results.Ok(result) : Results.NotFound();
-        })
-        .WithName("GetSecuritySettings")
-        .Produces<SecuritySettingsResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
-
-        // ── Profile Editing ──────────────────────────────────
-
-        group.MapPut("/{id:guid}/email", async (Guid id, ChangeEmailCommand command, ISender sender) =>
-        {
-            await sender.Send(command with { UserId = id });
-            return Results.NoContent();
-        })
-        .WithName("ChangeEmail")
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        group.MapPut("/{id:guid}/password", async (Guid id, ChangePasswordCommand command, ISender sender) =>
-        {
-            await sender.Send(command with { UserId = id });
-            return Results.NoContent();
-        })
-        .WithName("ChangePasswordPut")
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        // ── Two-Factor Authentication ────────────────────────
-
-        group.MapPost("/2fa/setup", async (Guid userId, ISender sender) =>
-        {
-            try
-            {
-                var result = await sender.Send(new SetupTwoFactorCommand(userId));
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        })
-        .WithName("SetupTwoFactor")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        group.MapPost("/2fa/enable", async (EnableTwoFactorCommand command, ISender sender) =>
-        {
-            try
-            {
-                var backupCodes = await sender.Send(command);
-                return Results.Ok(new { backupCodes });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        })
-        .WithName("EnableTwoFactor")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
-
-        group.MapPost("/2fa/disable", async (DisableTwoFactorCommand command, ISender sender) =>
-        {
-            try
-            {
-                await sender.Send(command);
-                return Results.Ok(new { disabled = true });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        })
-        .WithName("DisableTwoFactor")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest);
-
         group.MapPost("/2fa/verify", async (VerifyTwoFactorCommand command, ISender sender) =>
         {
             try
@@ -303,54 +141,140 @@ public static class UserEndpoints
         .Produces<LoginResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
-        // ── Admin User Management ────────────────────────────
+        // ── Authenticated endpoints (any role) ────────────────
 
-        group.MapGet("/", async (ISender sender, int page = 1, int pageSize = 20, UserRole? role = null, string? search = null) =>
-            Results.Ok(await sender.Send(new GetAllUsersQuery(page, pageSize, role, search))))
-        .WithName("GetAllUsers")
-        .Produces<PagedUsersResponse>(StatusCodes.Status200OK);
-
-        group.MapPut("/{id:guid}/role", async (Guid id, UpdateUserRoleCommand command, ISender sender) =>
+        // ── Logout — invalidates the active session server-side ──
+        group.MapPost("/logout", async (HttpContext ctx, ISender sender) =>
         {
-            await sender.Send(command with { UserId = id });
+            var token = ExtractBearerToken(ctx);
+            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out var sessionId))
+                return Results.Unauthorized();
+
+            await sender.Send(new LogoutUserCommand(userId, sessionId));
             return Results.NoContent();
         })
-        .WithName("UpdateUserRole")
-        .Produces(StatusCodes.Status204NoContent);
+        .WithName("LogoutUser")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .RequireAuth();
 
-        group.MapPost("/{id:guid}/deactivate", async (Guid id, ISender sender) =>
+        // ── Session validate — used by frontend AuthGuard ──
+        group.MapGet("/session/validate", async (HttpContext ctx, ISender sender) =>
         {
-            await sender.Send(new DeactivateUserCommand(id));
-            return Results.NoContent();
-        })
-        .WithName("DeactivateUser")
-        .Produces(StatusCodes.Status204NoContent);
+            var token = ExtractBearerToken(ctx);
+            if (token is null || !SessionTokenHelper.TryDecode(token, out var userId, out var sessionId))
+                return Results.Unauthorized();
 
-        group.MapPost("/{id:guid}/activate", async (Guid id, ISender sender) =>
+            var valid = await sender.Send(new ValidateSessionQuery(userId, sessionId));
+            return valid ? Results.Ok(new { valid = true }) : Results.Unauthorized();
+        })
+        .WithName("ValidateSession")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .RequireAuth();
+
+        // ── Session validate — lightweight endpoint used by API Gateway AuthMiddleware ──
+        // Direct DB query, no MediatR overhead. Returns isValid + role + userId.
+        // NOTE: This is called by the gateway itself, not by end-users, so no auth filter.
+        group.MapGet("/{userId:guid}/session-validate", async (
+            Guid userId,
+            Guid sessionId,
+            IdentityDbContext db) =>
         {
-            await sender.Send(new ActivateUserCommand(id));
-            return Results.NoContent();
-        })
-        .WithName("ActivateUser")
-        .Produces(StatusCodes.Status204NoContent);
+            var user = await db.Users
+                .AsNoTracking()
+                .Where(u => u.Id == userId && u.IsActive)
+                .Select(u => new
+                {
+                    u.ActiveSessionId,
+                    u.SessionExpiresAt,
+                    Role = u.Role.ToString()
+                })
+                .FirstOrDefaultAsync();
 
-        group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
-        {
-            await sender.Send(new DeleteUserCommand(id));
-            return Results.NoContent();
-        })
-        .WithName("DeleteUser")
-        .Produces(StatusCodes.Status204NoContent);
+            if (user is null
+                || !user.ActiveSessionId.HasValue
+                || user.ActiveSessionId.Value != sessionId
+                || !user.SessionExpiresAt.HasValue
+                || user.SessionExpiresAt.Value <= DateTime.UtcNow)
+            {
+                return Results.Ok(new { isValid = false });
+            }
 
-        // ── Device Management ────────────────────────────────
-
-        group.MapGet("/{userId:guid}/devices", async (Guid userId, ISender sender) =>
-        {
-            var result = await sender.Send(new GetDevicesQuery(userId));
-            return Results.Ok(result);
+            return Results.Ok(new
+            {
+                isValid = true,
+                role = user.Role,
+                userId = userId.ToString()
+            });
         })
-        .WithName("GetDevices")
+        .WithName("ValidateSessionForGateway")
         .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/change-password", async (ChangePasswordCommand command, ISender sender) =>
+        {
+            var result = await sender.Send(command);
+            return Results.Ok(new { changed = result });
+        })
+        .WithName("ChangePassword")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        // ── Two-Factor Authentication (authenticated) ─────────
+
+        group.MapPost("/2fa/setup", async (Guid userId, ISender sender) =>
+        {
+            try
+            {
+                var result = await sender.Send(new SetupTwoFactorCommand(userId));
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("SetupTwoFactor")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        group.MapPost("/2fa/enable", async (EnableTwoFactorCommand command, ISender sender) =>
+        {
+            try
+            {
+                var backupCodes = await sender.Send(command);
+                return Results.Ok(new { backupCodes });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("EnableTwoFactor")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        group.MapPost("/2fa/disable", async (DisableTwoFactorCommand command, ISender sender) =>
+        {
+            try
+            {
+                await sender.Send(command);
+                return Results.Ok(new { disabled = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("DisableTwoFactor")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        // ── Device Management (authenticated) ─────────────────
 
         group.MapPost("/devices", async (RegisterDeviceCommand command, ISender sender) =>
         {
@@ -366,7 +290,8 @@ public static class UserEndpoints
         })
         .WithName("RegisterDevice")
         .Produces(StatusCodes.Status201Created)
-        .Produces(StatusCodes.Status400BadRequest);
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
 
         group.MapDelete("/devices/{id:guid}", async (Guid id, HttpContext ctx, ISender sender) =>
         {
@@ -387,7 +312,8 @@ public static class UserEndpoints
         .WithName("RevokeDevice")
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .RequireAuth();
 
         group.MapPut("/devices/{id:guid}/trust", async (Guid id, HttpContext ctx, ISender sender) =>
         {
@@ -408,7 +334,212 @@ public static class UserEndpoints
         .WithName("TrustDevice")
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .RequireAuth();
+
+        // ── BOLA-protected endpoints (user can only access own data) ──
+
+        group.MapGet("/{id:guid}", async (Guid id, HttpContext httpContext, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != id)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(new GetUserByIdQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetUserById")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuth();
+
+        // ── Security Settings (BOLA-protected) ───────────────
+
+        group.MapPut("/{id:guid}/security-settings", async (Guid id, HttpContext httpContext, SetSecuritySettingsCommand command, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != id)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(command with { UserId = id });
+            return Results.Ok(new { updated = result });
+        })
+        .WithName("SetSecuritySettings")
+        .Produces(StatusCodes.Status200OK)
+        .RequireAuth();
+
+        group.MapGet("/{id:guid}/security-settings", async (Guid id, HttpContext httpContext, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != id)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(new GetSecuritySettingsQuery(id));
+            return result is not null ? Results.Ok(result) : Results.NotFound();
+        })
+        .WithName("GetSecuritySettings")
+        .Produces<SecuritySettingsResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuth();
+
+        // ── Profile Editing (BOLA-protected) ──────────────────
+
+        group.MapPut("/{id:guid}/email", async (Guid id, HttpContext httpContext, ChangeEmailCommand command, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != id)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("ChangeEmail")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        group.MapPut("/{id:guid}/password", async (Guid id, HttpContext httpContext, ChangePasswordCommand command, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != id)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("ChangePasswordPut")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        // ── Device listing (BOLA-protected) ───────────────────
+
+        group.MapGet("/{userId:guid}/devices", async (Guid userId, HttpContext httpContext, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            var role = httpContext.GetUserRole();
+            if (role != "Admin" && authUserId != userId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(new GetDevicesQuery(userId));
+            return Results.Ok(result);
+        })
+        .WithName("GetDevices")
+        .Produces(StatusCodes.Status200OK)
+        .RequireAuth();
+
+        // ── Parent-only endpoints ─────────────────────────────
+
+        group.MapPost("/{parentId:guid}/children", async (Guid parentId, HttpContext httpContext, CreateChildCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            if (authUserId != parentId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(command with { ParentId = parentId });
+
+            // Auto-provision a checking + savings CZK account for the new child (fire-and-forget)
+            try
+            {
+                var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
+            }
+            catch { /* fire-and-forget */ }
+
+            return Results.Created($"/api/v1/users/{result.Id}", result);
+        })
+        .WithName("CreateChild")
+        .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuth();
+
+        group.MapGet("/{parentId:guid}/children", async (Guid parentId, HttpContext httpContext, ISender sender) =>
+        {
+            var authUserId = httpContext.GetUserId();
+            if (authUserId != parentId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
+            var result = await sender.Send(new GetChildrenQuery(parentId));
+            return Results.Ok(result);
+        })
+        .WithName("GetChildren")
+        .Produces(StatusCodes.Status200OK)
+        .RequireAuth();
+
+        // ── Admin-only / Banker endpoints ─────────────────────
+
+        group.MapGet("/", async (ISender sender, int page = 1, int pageSize = 20, UserRole? role = null, string? search = null) =>
+            Results.Ok(await sender.Send(new GetAllUsersQuery(page, pageSize, role, search))))
+        .WithName("GetAllUsers")
+        .Produces<PagedUsersResponse>(StatusCodes.Status200OK)
+        .RequireAuth()
+        .RequireRole("Admin", "Banker");
+
+        group.MapGet("/bankers", async (ISender sender) =>
+        {
+            var result = await sender.Send(new GetBankersQuery());
+            return Results.Ok(result);
+        })
+        .WithName("GetBankers")
+        .Produces<IEnumerable<UserResponse>>(StatusCodes.Status200OK)
+        .RequireAuth()
+        .RequireRole("Banker", "Admin");
+
+        group.MapPut("/{id:guid}/role", async (Guid id, UpdateUserRoleCommand command, ISender sender) =>
+        {
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("UpdateUserRole")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth()
+        .RequireRole("Admin");
+
+        group.MapPost("/{id:guid}/deactivate", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new DeactivateUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("DeactivateUser")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth()
+        .RequireRole("Admin");
+
+        group.MapPost("/{id:guid}/activate", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new ActivateUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("ActivateUser")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth()
+        .RequireRole("Admin");
+
+        group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new DeleteUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("DeleteUser")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth()
+        .RequireRole("Admin");
+
+        group.MapPost("/{id:guid}/restore", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new RestoreUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("RestoreUser")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth()
+        .RequireRole("Admin");
 
         // ── Admin Audit Logs ─────────────────────────────────
 
@@ -439,4 +570,3 @@ public static class UserEndpoints
         return auth["Bearer ".Length..].Trim();
     }
 }
-

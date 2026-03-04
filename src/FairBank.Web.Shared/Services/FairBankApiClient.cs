@@ -126,6 +126,26 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         return await http.GetFromJsonAsync<List<AccountResponse>>($"api/v1/accounts?ownerId={ownerId}") ?? [];
     }
 
+    public async Task<List<TransactionDto>> GetAccountTransactionsAsync(Guid accountId, DateTime? from = null, DateTime? to = null)
+    {
+        var url = $"api/v1/accounts/{accountId}/transactions";
+        var query = new List<string>();
+        if (from.HasValue) query.Add("from=" + Uri.EscapeDataString(from.Value.ToString("o")));
+        if (to.HasValue) query.Add("to=" + Uri.EscapeDataString(to.Value.ToString("o")));
+        if (query.Count > 0) url += "?" + string.Join("&", query);
+        return await http.GetFromJsonAsync<List<TransactionDto>>(url) ?? [];
+    }
+
+    public async Task<byte[]> DownloadStatementAsync(Guid accountId, DateTime? from, DateTime? to, string format)
+    {
+        var url = $"api/v1/documents/statements/{accountId}?format={Uri.EscapeDataString(format)}";
+        if (from.HasValue) url += "&from=" + Uri.EscapeDataString(from.Value.ToString("o"));
+        if (to.HasValue) url += "&to=" + Uri.EscapeDataString(to.Value.ToString("o"));
+        var response = await http.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
     // ── Pending transactions ────────────────────────────────────
     public async Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId)
     {
@@ -566,6 +586,57 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         var response = await http.GetAsync($"api/v1/chat/conversations/banker/{bankerId}/clients");
         if (!response.IsSuccessStatusCode) return [];
         return await response.Content.ReadFromJsonAsync<List<BankerClientDto>>() ?? [];
+    }
+
+    // ── Exchange ────────────────────────────────────────────
+    public async Task<ExchangeRateDto?> GetExchangeRateAsync(string fromCurrency, string toCurrency)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<ExchangeRateDto>(
+                $"api/v1/exchange/rate?from={Uri.EscapeDataString(fromCurrency)}&to={Uri.EscapeDataString(toCurrency)}");
+        }
+        catch { return null; }
+    }
+
+    public async Task<ExchangeTransactionDto> ExecuteExchangeAsync(ExecuteExchangeRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/exchange/convert", request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ExchangeTransactionDto>())!;
+    }
+
+    public async Task<List<ExchangeTransactionDto>> GetExchangeHistoryAsync(Guid userId, int limit = 20)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ExchangeTransactionDto>>(
+                $"api/v1/exchange/history?userId={userId}&limit={limit}") ?? [];
+        }
+        catch { return []; }
+    }
+
+    public async Task<List<ExchangeFavoriteDto>> GetExchangeFavoritesAsync(Guid userId)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ExchangeFavoriteDto>>(
+                $"api/v1/exchange/favorites?userId={userId}") ?? [];
+        }
+        catch { return []; }
+    }
+
+    public async Task<ExchangeFavoriteDto> AddExchangeFavoriteAsync(AddFavoriteRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/exchange/favorites", request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ExchangeFavoriteDto>())!;
+    }
+
+    public async Task RemoveExchangeFavoriteAsync(Guid favoriteId)
+    {
+        var response = await http.DeleteAsync($"api/v1/exchange/favorites/{favoriteId}");
+        response.EnsureSuccessStatusCode();
     }
 
     private sealed record UnreadCountDto(int Count);

@@ -7,6 +7,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -15,6 +16,7 @@ public class EnableTwoFactorCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ITwoFactorAuthRepository _tfaRepository = Substitute.For<ITwoFactorAuthRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser()
     {
@@ -53,7 +55,7 @@ public class EnableTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(tfa);
 
-        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new EnableTwoFactorCommand(userId, validCode);
 
         // Act
@@ -87,7 +89,7 @@ public class EnableTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(tfa);
 
-        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new EnableTwoFactorCommand(userId, "000000");
 
         // Act
@@ -114,7 +116,7 @@ public class EnableTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(tfa);
 
-        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new EnableTwoFactorCommand(userId, "123456");
 
         // Act
@@ -137,7 +139,7 @@ public class EnableTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns((TwoFactorAuth?)null);
 
-        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new EnableTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new EnableTwoFactorCommand(userId, "123456");
 
         // Act

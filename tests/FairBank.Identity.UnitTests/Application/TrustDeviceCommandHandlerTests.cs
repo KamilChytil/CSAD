@@ -4,6 +4,7 @@ using FairBank.Identity.Application.Users.Commands.TrustDevice;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -11,6 +12,7 @@ public class TrustDeviceCommandHandlerTests
 {
     private readonly IUserDeviceRepository _deviceRepository = Substitute.For<IUserDeviceRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     [Fact]
     public async Task Handle_WithValidDevice_ShouldMarkTrusted()
@@ -23,7 +25,7 @@ public class TrustDeviceCommandHandlerTests
         _deviceRepository.GetByIdAsync(deviceId, Arg.Any<CancellationToken>())
             .Returns(device);
 
-        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new TrustDeviceCommand(deviceId, userId);
 
         // Act
@@ -43,7 +45,7 @@ public class TrustDeviceCommandHandlerTests
         _deviceRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((UserDevice?)null);
 
-        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new TrustDeviceCommand(Guid.NewGuid(), Guid.NewGuid());
 
         // Act
@@ -66,7 +68,7 @@ public class TrustDeviceCommandHandlerTests
         _deviceRepository.GetByIdAsync(deviceId, Arg.Any<CancellationToken>())
             .Returns(device);
 
-        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new TrustDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new TrustDeviceCommand(deviceId, differentUserId);
 
         // Act

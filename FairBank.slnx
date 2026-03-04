@@ -24,6 +24,12 @@
     <Project Path="src/Services/Accounts/FairBank.Accounts.Domain/FairBank.Accounts.Domain.csproj" />
     <Project Path="src/Services/Accounts/FairBank.Accounts.Infrastructure/FairBank.Accounts.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Documents/">
+    <Project Path="src/Services/Documents/FairBank.Documents.Api/FairBank.Documents.Api.csproj" />
+    <Project Path="src/Services/Documents/FairBank.Documents.Application/FairBank.Documents.Application.csproj" />
+    <Project Path="src/Services/Documents/FairBank.Documents.Domain/FairBank.Documents.Domain.csproj" />
+    <Project Path="src/Services/Documents/FairBank.Documents.Infrastructure/FairBank.Documents.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/FairBank.Identity.Api/FairBank.Identity.Api.csproj" />
     <Project Path="src/Services/Identity/FairBank.Identity.Application/FairBank.Identity.Application.csproj" />
@@ -62,10 +68,15 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
+    <Project Path="tests/FairBank.Documents.UnitTests/FairBank.Documents.UnitTests.csproj" />
     <Project Path="tests/FairBank.Identity.UnitTests/FairBank.Identity.UnitTests.csproj" />
     <Project Path="tests/FairBank.Products.UnitTests/FairBank.Products.UnitTests.csproj" />
     <Project Path="tests/FairBank.Payments.UnitTests/FairBank.Payments.UnitTests.csproj" />
     <Project Path="tests/FairBank.Web.Exchange.Tests/FairBank.Web.Exchange.Tests.csproj" />
     <Project Path="tests/FairBank.Web.Products.Tests/FairBank.Web.Products.Tests.csproj" />
+    <Project Path="tests/FairBank.ApiGateway.Tests/FairBank.ApiGateway.Tests.csproj" />
+    <Project Path="tests/FairBank.SharedKernel.Tests/FairBank.SharedKernel.Tests.csproj" />
+    <Project Path="tests/FairBank.Cards.UnitTests/FairBank.Cards.UnitTests.csproj" />
+    <Project Path="tests/FairBank.Chat.UnitTests/FairBank.Chat.UnitTests.csproj" />
   </Folder>
 </Solution>

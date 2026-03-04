@@ -1,5 +1,6 @@
 using FairBank.Admin.Web.Services;
 using FairBank.Admin.Web.Data;
+using FairBank.Web.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
@@ -29,6 +30,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<ThemeService>();
 
 var app = builder.Build();
 

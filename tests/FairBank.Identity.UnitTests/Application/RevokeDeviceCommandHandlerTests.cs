@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -14,6 +15,7 @@ public class RevokeDeviceCommandHandlerTests
     private readonly IUserDeviceRepository _deviceRepository = Substitute.For<IUserDeviceRepository>();
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     [Fact]
     public async Task Handle_WithValidDevice_ShouldRevoke()
@@ -32,7 +34,7 @@ public class RevokeDeviceCommandHandlerTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork);
+        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork, _sender);
         var command = new RevokeDeviceCommand(deviceId, userId);
 
         // Act
@@ -53,7 +55,7 @@ public class RevokeDeviceCommandHandlerTests
         _deviceRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((UserDevice?)null);
 
-        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork);
+        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork, _sender);
         var command = new RevokeDeviceCommand(Guid.NewGuid(), Guid.NewGuid());
 
         // Act
@@ -76,7 +78,7 @@ public class RevokeDeviceCommandHandlerTests
         _deviceRepository.GetByIdAsync(deviceId, Arg.Any<CancellationToken>())
             .Returns(device);
 
-        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork);
+        var handler = new RevokeDeviceCommandHandler(_deviceRepository, _userRepository, _unitOfWork, _sender);
         var command = new RevokeDeviceCommand(deviceId, differentUserId);
 
         // Act

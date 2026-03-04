@@ -4,6 +4,7 @@ using FairBank.Accounts.Api.Seeders;
 using FairBank.Accounts.Application;
 using FairBank.Accounts.Infrastructure;
 using FairBank.SharedKernel;
+using Npgsql;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -46,8 +47,20 @@ app.MapSavingsGoalEndpoints();
 app.MapSavingsRuleEndpoints();
 app.MapInvestmentEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Accounts" }))
-    .WithTags("Health");
+app.MapGet("/health", async (IConfiguration config) =>
+{
+    try
+    {
+        var cs = config.GetConnectionString("DefaultConnection");
+        await using var conn = new NpgsqlConnection(cs);
+        await conn.OpenAsync();
+        return Results.Ok(new { Status = "Healthy", Service = "Accounts" });
+    }
+    catch
+    {
+        return Results.Json(new { Status = "Unhealthy", Service = "Accounts" }, statusCode: 503);
+    }
+}).WithTags("Health");
 
 // Seed demo accounts (idempotent — skips if already exist)
 await AccountSeeder.SeedAsync(app.Services);

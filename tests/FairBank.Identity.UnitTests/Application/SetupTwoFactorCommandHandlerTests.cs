@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -14,6 +15,7 @@ public class SetupTwoFactorCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ITwoFactorAuthRepository _tfaRepository = Substitute.For<ITwoFactorAuthRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser()
     {
@@ -33,7 +35,7 @@ public class SetupTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns((TwoFactorAuth?)null);
 
-        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new SetupTwoFactorCommand(userId);
 
         // Act
@@ -66,7 +68,7 @@ public class SetupTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(existingTfa);
 
-        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new SetupTwoFactorCommand(userId);
 
         // Act
@@ -94,7 +96,7 @@ public class SetupTwoFactorCommandHandlerTests
         _tfaRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(existingTfa);
 
-        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new SetupTwoFactorCommand(userId);
 
         // Act
@@ -116,7 +118,7 @@ public class SetupTwoFactorCommandHandlerTests
         _userRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork);
+        var handler = new SetupTwoFactorCommandHandler(_userRepository, _tfaRepository, _unitOfWork, _sender);
         var command = new SetupTwoFactorCommand(Guid.NewGuid());
 
         // Act

@@ -55,8 +55,18 @@ app.UseSerilogRequestLogging();
 
 app.MapCardEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Cards" }))
-    .WithTags("Health");
+app.MapGet("/health", async (CardsDbContext db) =>
+{
+    try
+    {
+        await db.Database.CanConnectAsync();
+        return Results.Ok(new { Status = "Healthy", Service = "Cards" });
+    }
+    catch
+    {
+        return Results.Json(new { Status = "Unhealthy", Service = "Cards" }, statusCode: 503);
+    }
+}).WithTags("Health");
 
 app.Run();
 

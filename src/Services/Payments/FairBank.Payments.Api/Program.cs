@@ -23,6 +23,7 @@ var accountsApiUrl = builder.Configuration["Services:AccountsApi"]
 var identityApiUrl = builder.Configuration["Services:IdentityApi"]
     ?? "http://identity-api:8080";
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddPaymentsInfrastructure(connectionString, accountsApiUrl, identityApiUrl);
 builder.Services.AddOpenApi();
 
@@ -39,7 +40,7 @@ using (var scope = app.Services.CreateScope())
     await using (var checkCmd = conn.CreateCommand())
     {
         checkCmd.CommandText =
-            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'payments_service' AND table_name = 'payments')";
+            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'payments_service' AND table_name = 'exchange_transactions')";
         var exists = (bool)(await checkCmd.ExecuteScalarAsync())!;
         if (!exists)
         {
@@ -62,9 +63,20 @@ app.UseSerilogRequestLogging();
 app.MapPaymentEndpoints();
 app.MapStandingOrderEndpoints();
 app.MapPaymentTemplateEndpoints();
+app.MapExchangeEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Payments" }))
-    .WithTags("Health");
+app.MapGet("/health", async (PaymentsDbContext db) =>
+{
+    try
+    {
+        await db.Database.CanConnectAsync();
+        return Results.Ok(new { Status = "Healthy", Service = "Payments" });
+    }
+    catch
+    {
+        return Results.Json(new { Status = "Unhealthy", Service = "Payments" }, statusCode: 503);
+    }
+}).WithTags("Health");
 
 app.Run();
 

@@ -29,6 +29,10 @@ public interface IFairBankApi
     // Account queries
     Task<List<AccountResponse>> GetAccountsByOwnerAsync(Guid ownerId);
 
+    // Account history/exports
+    Task<List<TransactionDto>> GetAccountTransactionsAsync(Guid accountId, DateTime? from = null, DateTime? to = null);
+    Task<byte[]> DownloadStatementAsync(Guid accountId, DateTime? from, DateTime? to, string format);
+
     // Pending transactions
     Task<List<PendingTransactionDto>> GetPendingTransactionsAsync(Guid accountId);
     Task<PendingTransactionDto> ApproveTransactionAsync(Guid transactionId, Guid approverId);
@@ -136,4 +140,12 @@ public interface IFairBankApi
 
     // Banker clients
     Task<List<BankerClientDto>> GetBankerClientsAsync(Guid bankerId);
+
+    // Exchange
+    Task<ExchangeRateDto?> GetExchangeRateAsync(string fromCurrency, string toCurrency);
+    Task<ExchangeTransactionDto> ExecuteExchangeAsync(ExecuteExchangeRequest request);
+    Task<List<ExchangeTransactionDto>> GetExchangeHistoryAsync(Guid userId, int limit = 20);
+    Task<List<ExchangeFavoriteDto>> GetExchangeFavoritesAsync(Guid userId);
+    Task<ExchangeFavoriteDto> AddExchangeFavoriteAsync(AddFavoriteRequest request);
+    Task RemoveExchangeFavoriteAsync(Guid favoriteId);
 }

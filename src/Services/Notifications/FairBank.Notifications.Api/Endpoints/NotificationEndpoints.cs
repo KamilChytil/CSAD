@@ -7,6 +7,7 @@ using FairBank.Notifications.Application.Queries.GetNotifications;
 using FairBank.Notifications.Application.Queries.GetPreferences;
 using FairBank.Notifications.Application.Queries.GetUnreadCount;
 using FairBank.Notifications.Domain.Enums;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Notifications.Api.Endpoints;
@@ -24,24 +25,39 @@ public static class NotificationEndpoints
             var result = await sender.Send(command);
             return Results.Created($"/api/v1/notifications/{result.Id}", result);
         })
+        .RequireAuth()
         .WithName("CreateNotification")
         .Produces(StatusCodes.Status201Created);
 
         // GET /api/v1/notifications/?userId=&type=&page=&pageSize= → GetNotifications
-        group.MapGet("/", async (Guid userId, NotificationType? type, int? page, int? pageSize, ISender sender) =>
+        group.MapGet("/", async (Guid userId, NotificationType? type, int? page, int? pageSize, HttpContext httpContext, ISender sender) =>
         {
+            // BOLA: userId must match authenticated user (unless Admin)
+            var authUserId = httpContext.GetUserId();
+            var authRole = httpContext.GetUserRole();
+            if (authRole != "Admin" && authUserId != userId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
             var result = await sender.Send(new GetNotificationsQuery(userId, type, page ?? 1, pageSize ?? 20));
             return Results.Ok(result);
         })
+        .RequireAuth()
         .WithName("GetNotifications")
         .Produces(StatusCodes.Status200OK);
 
         // GET /api/v1/notifications/unread-count?userId= → GetUnreadCount
-        group.MapGet("/unread-count", async (Guid userId, ISender sender) =>
+        group.MapGet("/unread-count", async (Guid userId, HttpContext httpContext, ISender sender) =>
         {
+            // BOLA: userId must match authenticated user (unless Admin)
+            var authUserId = httpContext.GetUserId();
+            var authRole = httpContext.GetUserRole();
+            if (authRole != "Admin" && authUserId != userId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
             var result = await sender.Send(new GetUnreadCountQuery(userId));
             return Results.Ok(new { UnreadCount = result });
         })
+        .RequireAuth()
         .WithName("GetUnreadCount")
         .Produces(StatusCodes.Status200OK);
 
@@ -51,15 +67,23 @@ public static class NotificationEndpoints
             await sender.Send(new MarkAsReadCommand(id));
             return Results.NoContent();
         })
+        .RequireAuth()
         .WithName("MarkAsRead")
         .Produces(StatusCodes.Status204NoContent);
 
         // PUT /api/v1/notifications/read-all?userId= → MarkAllAsRead
-        group.MapPut("/read-all", async (Guid userId, ISender sender) =>
+        group.MapPut("/read-all", async (Guid userId, HttpContext httpContext, ISender sender) =>
         {
+            // BOLA: userId must match authenticated user (unless Admin)
+            var authUserId = httpContext.GetUserId();
+            var authRole = httpContext.GetUserRole();
+            if (authRole != "Admin" && authUserId != userId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
             await sender.Send(new MarkAllAsReadCommand(userId));
             return Results.NoContent();
         })
+        .RequireAuth()
         .WithName("MarkAllAsRead")
         .Produces(StatusCodes.Status204NoContent);
 
@@ -69,15 +93,23 @@ public static class NotificationEndpoints
             await sender.Send(new DeleteNotificationCommand(id));
             return Results.NoContent();
         })
+        .RequireAuth()
         .WithName("DeleteNotification")
         .Produces(StatusCodes.Status204NoContent);
 
         // GET /api/v1/notifications/preferences?userId= → GetPreferences
-        group.MapGet("/preferences", async (Guid userId, ISender sender) =>
+        group.MapGet("/preferences", async (Guid userId, HttpContext httpContext, ISender sender) =>
         {
+            // BOLA: userId must match authenticated user (unless Admin)
+            var authUserId = httpContext.GetUserId();
+            var authRole = httpContext.GetUserRole();
+            if (authRole != "Admin" && authUserId != userId)
+                return Results.Json(new { error = "Forbidden" }, statusCode: 403);
+
             var result = await sender.Send(new GetPreferencesQuery(userId));
             return Results.Ok(result);
         })
+        .RequireAuth()
         .WithName("GetPreferences")
         .Produces(StatusCodes.Status200OK);
 
@@ -87,6 +119,7 @@ public static class NotificationEndpoints
             var result = await sender.Send(command);
             return Results.Ok(result);
         })
+        .RequireAuth()
         .WithName("UpdatePreferences")
         .Produces(StatusCodes.Status200OK);
 

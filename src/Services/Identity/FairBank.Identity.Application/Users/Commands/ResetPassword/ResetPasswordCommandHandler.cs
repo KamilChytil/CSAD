@@ -14,8 +14,10 @@ public sealed class ResetPasswordCommandHandler(
 {
     public async Task<bool> Handle(ResetPasswordCommand request, CancellationToken ct)
     {
-        var user = await userRepository.GetByPasswordResetTokenAsync(request.Token, ct)
-            ?? throw new InvalidOperationException("Invalid reset token.");
+        var user = await userRepository.GetByPasswordResetTokenAsync(request.Token, ct);
+
+        if (user is null)
+            throw new InvalidOperationException("Invalid reset token.");
 
         var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
         user.ResetPassword(request.Token, newHash);

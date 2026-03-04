@@ -4,6 +4,7 @@ using FairBank.Accounts.Application.Commands.UpdateInvestmentValue;
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Queries.GetInvestmentById;
 using FairBank.Accounts.Application.Queries.GetInvestmentsByAccount;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -22,7 +23,8 @@ public static class InvestmentEndpoints
             return Results.Created($"/api/v1/investments/{result.Id}", result);
         })
         .WithName("CreateInvestment")
-        .Produces<InvestmentResponse>(StatusCodes.Status201Created);
+        .Produces<InvestmentResponse>(StatusCodes.Status201Created)
+        .RequireAuth();
 
         // GET /api/v1/accounts/{accountId:guid}/investments — list investments for an account
         group.MapGet("/accounts/{accountId:guid}/investments", async (Guid accountId, ISender sender) =>
@@ -31,7 +33,8 @@ public static class InvestmentEndpoints
             return Results.Ok(result);
         })
         .WithName("GetInvestmentsByAccount")
-        .Produces<IReadOnlyList<InvestmentResponse>>(StatusCodes.Status200OK);
+        .Produces<IReadOnlyList<InvestmentResponse>>(StatusCodes.Status200OK)
+        .RequireAuth();
 
         // GET /api/v1/investments/{id:guid} — get investment by id
         group.MapGet("/investments/{id:guid}", async (Guid id, ISender sender) =>
@@ -41,7 +44,8 @@ public static class InvestmentEndpoints
         })
         .WithName("GetInvestmentById")
         .Produces<InvestmentResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuth();
 
         // PUT /api/v1/investments/{id:guid}/value — update investment value
         group.MapPut("/investments/{id:guid}/value", async (Guid id, UpdateInvestmentValueCommand command, ISender sender) =>
@@ -50,7 +54,8 @@ public static class InvestmentEndpoints
             return Results.NoContent();
         })
         .WithName("UpdateInvestmentValue")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         // POST /api/v1/investments/{id:guid}/sell — sell an investment
         group.MapPost("/investments/{id:guid}/sell", async (Guid id, ISender sender) =>
@@ -59,7 +64,8 @@ public static class InvestmentEndpoints
             return Results.NoContent();
         })
         .WithName("SellInvestment")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         return group;
     }

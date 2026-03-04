@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -13,6 +14,7 @@ public class ChangeEmailCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser(string email = "jan@example.com")
     {
@@ -32,7 +34,7 @@ public class ChangeEmailCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ChangeEmailCommand(userId, "new@example.com");
 
         // Act
@@ -56,7 +58,7 @@ public class ChangeEmailCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ChangeEmailCommand(userId, "existing@example.com");
 
         // Act
@@ -74,7 +76,7 @@ public class ChangeEmailCommandHandlerTests
         _userRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangeEmailCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ChangeEmailCommand(Guid.NewGuid(), "new@example.com");
 
         // Act

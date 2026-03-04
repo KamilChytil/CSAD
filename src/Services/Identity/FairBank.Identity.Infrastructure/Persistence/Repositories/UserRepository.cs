@@ -52,4 +52,11 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
     {
         return await db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token, ct);
     }
+
+    public async Task<User?> GetDeletedByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await db.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted, ct);
+    }
 }

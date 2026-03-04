@@ -19,15 +19,19 @@ public class ConfluentKafkaSink : ILogEventSink, IDisposable
 
     public void Emit(LogEvent logEvent)
     {
-        var message = logEvent.RenderMessage();
-        
-        var logOutput = $"[{logEvent.Timestamp:yyyy-MM-dd HH:mm:ss} {logEvent.Level}] {message}";
-        if (logEvent.Exception != null)
+        var payload = new
         {
-            logOutput += $"\n{logEvent.Exception}";
-        }
+            Timestamp = logEvent.Timestamp.UtcDateTime,
+            Level = logEvent.Level.ToString(),
+            Message = logEvent.RenderMessage(),
+            Properties = logEvent.Properties.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToString().Trim('"')),
+            Exception = logEvent.Exception?.ToString()
+        };
+        var json = JsonSerializer.Serialize(payload);
 
-        _producer.Produce(_topic, new Message<Null, string> { Value = logOutput });
+        _producer.Produce(_topic, new Message<Null, string> { Value = json });
     }
 
     public void Dispose()

@@ -14,6 +14,9 @@ public sealed class GetCardsByAccountQueryHandler(
     {
         var cards = await cardRepository.GetByAccountIdAsync(request.AccountId, ct);
 
+        if (cards is null || cards.Count == 0)
+            return Array.Empty<CardResponse>();
+
         return cards.Select(c => MapToResponse(c)).ToList();
     }
 

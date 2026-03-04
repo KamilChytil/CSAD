@@ -10,12 +10,19 @@ namespace FairBank.Accounts.UnitTests.Application;
 public class CreateAccountCommandHandlerTests
 {
     private readonly IAccountEventStore _eventStore = Substitute.For<IAccountEventStore>();
+    private readonly IAccountNumberGenerator _numberGenerator = Substitute.For<IAccountNumberGenerator>();
+
+    public CreateAccountCommandHandlerTests()
+    {
+        _numberGenerator.NextAsync(Arg.Any<CancellationToken>())
+            .Returns("000001-0000000001/8888");
+    }
 
     [Fact]
     public async Task Handle_WithValidCommand_ShouldCreateAccountWithZeroBalance()
     {
         // Arrange
-        var handler = new CreateAccountCommandHandler(_eventStore);
+        var handler = new CreateAccountCommandHandler(_eventStore, _numberGenerator);
         var command = new CreateAccountCommand(Guid.NewGuid(), Currency.CZK);
 
         // Act
@@ -36,7 +43,7 @@ public class CreateAccountCommandHandlerTests
     public async Task Handle_WithEurCurrency_ShouldCreateEurAccount()
     {
         // Arrange
-        var handler = new CreateAccountCommandHandler(_eventStore);
+        var handler = new CreateAccountCommandHandler(_eventStore, _numberGenerator);
         var command = new CreateAccountCommand(Guid.NewGuid(), Currency.EUR);
 
         // Act

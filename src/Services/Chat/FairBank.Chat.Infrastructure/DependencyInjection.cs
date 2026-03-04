@@ -15,7 +15,8 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
         services.AddDbContext<ChatDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.EnableRetryOnFailure(3)));
 
         services.AddScoped<IChatRepository, ChatRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();

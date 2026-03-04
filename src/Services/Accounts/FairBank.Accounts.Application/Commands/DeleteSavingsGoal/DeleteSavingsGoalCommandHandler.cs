@@ -11,7 +11,8 @@ public sealed class DeleteSavingsGoalCommandHandler(ISavingsGoalEventStore savin
         var goal = await savingsGoalEventStore.LoadAsync(request.GoalId, ct)
             ?? throw new InvalidOperationException($"Savings goal {request.GoalId} not found.");
 
-        // For now, just validate the goal exists.
-        // A future iteration may add a SavingsGoalDeleted event and IsDeleted flag.
+        goal.Delete();
+
+        await savingsGoalEventStore.AppendEventsAsync(goal, ct);
     }
 }

@@ -2,6 +2,7 @@ using FairBank.Accounts.Application.Commands.CreateSavingsRule;
 using FairBank.Accounts.Application.Commands.ToggleSavingsRule;
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Queries.GetSavingsRulesByAccount;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Accounts.Api.Endpoints;
@@ -20,7 +21,8 @@ public static class SavingsRuleEndpoints
             return Results.Created($"/api/v1/savings-rules/{result.Id}", result);
         })
         .WithName("CreateSavingsRule")
-        .Produces<SavingsRuleResponse>(StatusCodes.Status201Created);
+        .Produces<SavingsRuleResponse>(StatusCodes.Status201Created)
+        .RequireAuth();
 
         // GET /api/v1/accounts/{accountId:guid}/savings-rules — list savings rules for an account
         group.MapGet("/accounts/{accountId:guid}/savings-rules", async (Guid accountId, ISender sender) =>
@@ -29,7 +31,8 @@ public static class SavingsRuleEndpoints
             return Results.Ok(result);
         })
         .WithName("GetSavingsRulesByAccount")
-        .Produces<IReadOnlyList<SavingsRuleResponse>>(StatusCodes.Status200OK);
+        .Produces<IReadOnlyList<SavingsRuleResponse>>(StatusCodes.Status200OK)
+        .RequireAuth();
 
         // PUT /api/v1/savings-rules/{id:guid}/toggle — toggle a savings rule on/off
         group.MapPut("/savings-rules/{id:guid}/toggle", async (Guid id, ISender sender) =>
@@ -38,7 +41,8 @@ public static class SavingsRuleEndpoints
             return Results.NoContent();
         })
         .WithName("ToggleSavingsRule")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
 
         return group;
     }
