@@ -145,7 +145,7 @@
             <ChildContent>
                 @foreach (var tx in GetFilteredHistory())
                 {
-                    var isSent = tx.SenderAccountId == _selectedAccountId;
+                    var isSent = _myAccountIds.Contains(tx.SenderAccountId);
                     var counterparty = isSent ? tx.RecipientAccountNumber : tx.SenderAccountNumber;
                     var statusBadge = tx.Status switch { "Completed" => "✓", "Failed" => "✗", "Pending" => "⏳", _ => "" };
                     <TransactionItem
@@ -265,7 +265,7 @@
                             <option value="">— vyberte účet —</option>
                             @foreach (var acc in _accounts)
                             {
-                                <option value="@acc.Id">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                                <option value="@acc.Id">@acc.TypeLabel – @acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
                         </select>
                     </div>
@@ -275,7 +275,7 @@
                             <option value="">— vyberte cílový účet —</option>
                             @foreach (var acc in _accounts.Where(a => a.Id.ToString() != _transferFromAccountId))
                             {
-                                <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
+                                <option value="@acc.AccountNumber">@acc.TypeLabel – @acc.AccountNumber (@acc.Balance.ToString("N0") @acc.Currency)</option>
                             }
                         </select>
                     </div>
@@ -580,6 +580,9 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "view")]
+    public string? View { get; set; }
+
     private string _pageView = "platby";
     private string _activeTab = "payment";
     private bool _isLoading;
@@ -650,14 +653,15 @@
     private string _intlSwiftError = "";
 
     // Helpers for summary and filtering
+    private HashSet<Guid> _myAccountIds = [];
     private List<PaymentDto> CompletedHistory => _history.Where(h => h.Status == "Completed").ToList();
-    private decimal TotalSent => CompletedHistory.Where(h => h.SenderAccountId == _selectedAccountId).Sum(h => h.Amount);
-    private decimal TotalReceived => CompletedHistory.Where(h => h.SenderAccountId != _selectedAccountId).Sum(h => h.Amount);
+    private decimal TotalSent => CompletedHistory.Where(h => _myAccountIds.Contains(h.SenderAccountId)).Sum(h => h.Amount);
+    private decimal TotalReceived => CompletedHistory.Where(h => !_myAccountIds.Contains(h.SenderAccountId)).Sum(h => h.Amount);
 
     private List<PaymentDto> GetFilteredHistory() => _historyFilter switch
     {
-        "sent" => _history.Where(h => h.SenderAccountId == _selectedAccountId).ToList(),
-        "received" => _history.Where(h => h.SenderAccountId != _selectedAccountId).ToList(),
+        "sent" => _history.Where(h => _myAccountIds.Contains(h.SenderAccountId)).ToList(),
+        "received" => _history.Where(h => !_myAccountIds.Contains(h.SenderAccountId)).ToList(),
         _ => _history
     };
 
@@ -701,9 +705,11 @@
             _accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
             if (_accounts.Any())
             {
-                _selectedAccountId = _accounts[0].Id;
-                _selectedAccountCurrency = _accounts[0].Currency;
-                _accountBalance = _accounts[0].Balance;
+                _myAccountIds = _accounts.Select(a => a.Id).ToHashSet();
+                _selectedAccountId = _accounts.FirstOrDefault(a => a.AccountType == "Checking")?.Id ?? _accounts[0].Id;
+                var selected = _accounts.First(a => a.Id == _selectedAccountId);
+                _selectedAccountCurrency = selected.Currency;
+                _accountBalance = _accounts.Sum(a => a.Balance);
                 await LoadData();
             }
         }
@@ -711,6 +717,10 @@
         {
             // Silently handle – data will be empty
         }
+
+        // Apply view from query parameter (e.g. ?view=pohyby from Overview)
+        if (!string.IsNullOrWhiteSpace(View))
+            _pageView = View;
 
         // Build contacts from templates
         _contacts = _templates.Select(t => new ContactVm(
@@ -747,11 +757,18 @@
         if (_selectedAccountId is null) return;
         try
         {
-            var historyTask = Api.GetPaymentsByAccountAsync(_selectedAccountId.Value);
+            // Load history for ALL user accounts and merge (so cross-account transfers show on both sides)
+            var historyTasks = _accounts.Select(a => Api.GetPaymentsByAccountAsync(a.Id)).ToList();
             var standingTask = Api.GetStandingOrdersByAccountAsync(_selectedAccountId.Value);
             var templatesTask = Api.GetPaymentTemplatesByAccountAsync(_selectedAccountId.Value);
-            await Task.WhenAll(historyTask, standingTask, templatesTask);
-            _history = historyTask.Result;
+            await Task.WhenAll(historyTasks.Cast<Task>().Concat([standingTask, templatesTask]));
+            // Deduplicate by Id (a transfer appears in both sender and recipient queries)
+            _history = historyTasks
+                .SelectMany(t => t.Result)
+                .GroupBy(p => p.Id)
+                .Select(g => g.First())
+                .OrderByDescending(p => p.CreatedAt)
+                .ToList();
             _standingOrders = standingTask.Result;
             _templates = templatesTask.Result;
         }
@@ -1031,9 +1048,9 @@
             _soEndDate = null;
             await LoadData();
         }
-        catch
+        catch (Exception ex)
         {
-            _errorMessage = "Vytvoření trvalého příkazu se nezdařilo.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : ex.Message.Contains("nezdaři") ? ex.Message : "Vytvoření trvalého příkazu se nezdařilo.";
         }
         finally
         {

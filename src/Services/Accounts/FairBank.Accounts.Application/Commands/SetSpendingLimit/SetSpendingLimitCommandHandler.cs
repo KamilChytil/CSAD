@@ -22,6 +22,7 @@ public sealed class SetSpendingLimitCommandHandler(IAccountEventStore eventStore
             account.IsActive, account.CreatedAt, account.Alias,
             account.RequiresApproval,
             account.ApprovalThreshold?.Amount,
-            account.SpendingLimit?.Amount);
+            account.SpendingLimit?.Amount,
+            account.AccountType);
     }
 }

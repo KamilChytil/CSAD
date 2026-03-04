@@ -42,6 +42,9 @@ public static class DependencyInjection
         services.AddScoped<ISavingsRuleEventStore, MartenSavingsRuleEventStore>();
         services.AddScoped<IInvestmentEventStore, MartenInvestmentEventStore>();
 
+        services.AddSingleton<IAccountNumberGenerator>(
+            new PostgresAccountNumberGenerator(connectionString));
+
         services.AddHttpClient<INotificationClient, NotificationHttpClient>(client =>
         {
             client.BaseAddress = new Uri(identityApiBaseUrl);

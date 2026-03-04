@@ -33,6 +33,7 @@ using FairBank.Identity.Application.Audit.Queries.GetAuditLogs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Enums;
 using MediatR;
+using System.Net.Http.Json;
 
 namespace FairBank.Identity.Api.Endpoints;
 
@@ -43,9 +44,19 @@ public static class UserEndpoints
         var group = app.MapGroup("/api/v1/users")
             .WithTags("Users");
 
-        group.MapPost("/register", async (RegisterUserCommand command, ISender sender) =>
+        group.MapPost("/register", async (RegisterUserCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
         {
             var result = await sender.Send(command);
+
+            // Auto-provision a checking + savings CZK account for the new user (fire-and-forget)
+            try
+            {
+                var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
+            }
+            catch { /* log silently */ }
+
             return Results.Created($"/api/v1/users/{result.Id}", result);
         })
         .WithName("RegisterUser")
@@ -111,9 +122,18 @@ public static class UserEndpoints
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
-        group.MapPost("/{parentId:guid}/children", async (Guid parentId, CreateChildCommand command, ISender sender) =>
+        group.MapPost("/{parentId:guid}/children", async (Guid parentId, CreateChildCommand command, ISender sender, IHttpClientFactory httpClientFactory) =>
         {
             var result = await sender.Send(command with { ParentId = parentId });
+
+            try
+            {
+                var accountsClient = httpClientFactory.CreateClient("accounts-api");
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 0 }); // Checking
+                await accountsClient.PostAsJsonAsync("/api/v1/accounts", new { OwnerId = result.Id, Currency = "CZK", AccountType = 1 }); // Savings
+            }
+            catch { /* fire-and-forget */ }
+
             return Results.Created($"/api/v1/users/{result.Id}", result);
         })
         .WithName("CreateChild")

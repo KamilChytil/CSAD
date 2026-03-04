@@ -7,4 +7,5 @@ public sealed record AccountCreated(
     Guid OwnerId,
     string AccountNumber,
     Currency Currency,
-    DateTime OccurredAt);
+    DateTime OccurredAt,
+    AccountType AccountType = AccountType.Checking);

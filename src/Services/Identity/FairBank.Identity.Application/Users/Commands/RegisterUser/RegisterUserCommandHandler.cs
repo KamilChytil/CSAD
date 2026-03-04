@@ -1,5 +1,4 @@
 using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
-using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
@@ -11,7 +10,6 @@ namespace FairBank.Identity.Application.Users.Commands.RegisterUser;
 
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
-    IEmailSender emailSender,
     IUnitOfWork unitOfWork,
     ISender sender)
     : IRequestHandler<RegisterUserCommand, UserResponse>
@@ -44,8 +42,6 @@ public sealed class RegisterUserCommandHandler(
             phoneNumber: phoneNumber,
             address: address);
 
-        user.GenerateEmailVerificationToken();
-
         await userRepository.AddAsync(user, ct);
 
         await sender.Send(new RecordAuditLogCommand(
@@ -56,15 +52,6 @@ public sealed class RegisterUserCommandHandler(
         ), ct);
 
         await unitOfWork.SaveChangesAsync(ct);
-
-        // Send verification email (fire-and-forget — failures logged but don't block registration)
-        if (user.EmailVerificationToken is not null)
-        {
-            await emailSender.SendEmailVerificationAsync(
-                user.Email.Value,
-                user.EmailVerificationToken,
-                ct);
-        }
 
         return new UserResponse(
             user.Id,
