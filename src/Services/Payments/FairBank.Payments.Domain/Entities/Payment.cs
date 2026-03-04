@@ -14,6 +14,7 @@ public sealed class Payment : AggregateRoot<Guid>
     public string? Description { get; private set; }
     public PaymentType Type { get; private set; }
     public PaymentStatus Status { get; private set; }
+    public PaymentCategory Category { get; private set; }
     public string? FailureReason { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
@@ -59,6 +60,7 @@ public sealed class Payment : AggregateRoot<Guid>
             Type = type,
             Description = description?.Trim(),
             Status = PaymentStatus.Pending,
+            Category = PaymentCategory.Other,
             CreatedAt = DateTime.UtcNow,
             TemplateId = templateId,
             StandingOrderId = standingOrderId
@@ -87,6 +89,11 @@ public sealed class Payment : AggregateRoot<Guid>
         CompletedAt = DateTime.UtcNow;
     }
 
+    public void SetCategory(PaymentCategory category)
+    {
+        Category = category;
+    }
+
     public void Cancel()
     {
         if (Status != PaymentStatus.Pending)
@@ -94,5 +101,13 @@ public sealed class Payment : AggregateRoot<Guid>
 
         Status = PaymentStatus.Cancelled;
         CompletedAt = DateTime.UtcNow;
+    }
+
+    public void MarkPendingApproval()
+    {
+        if (Status != PaymentStatus.Pending)
+            throw new InvalidOperationException($"Cannot mark as pending approval from {Status}.");
+
+        Status = PaymentStatus.PendingApproval;
     }
 }
