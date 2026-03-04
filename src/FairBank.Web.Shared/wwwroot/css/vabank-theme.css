@@ -3236,7 +3236,50 @@ a:hover { color: var(--vb-red-light); }
 .btn-sm { padding: 6px 12px !important; font-size: 12px !important; }
 .btn-lg { padding: 14px 28px !important; font-size: 16px !important; }
 .btn-full { width: 100% !important; max-width: none !important; }
+.auth-card .vb-button { max-width: none; }
 .vb-button .vb-icon { margin-right: 6px; }
+
+/* ── Confirm/Payment Dialog ──────────────────────────────── */
+.confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.15s ease;
+}
+.confirm-dialog {
+    background: var(--vb-card-bg);
+    border-radius: var(--vb-radius-lg);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    padding: 28px 24px;
+    max-width: 380px; width: 100%;
+    animation: fadeInUp 0.2s ease;
+}
+.confirm-title {
+    font-size: 17px; font-weight: 700;
+    color: var(--vb-text-primary);
+    margin: 0 0 16px;
+    display: flex; align-items: center; gap: 8px;
+}
+.confirm-detail {
+    background: var(--vb-bg);
+    border-radius: var(--vb-radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.confirm-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px; gap: 8px;
+}
+.confirm-row span { color: var(--vb-text-secondary); white-space: nowrap; }
+.confirm-row strong { color: var(--vb-text-primary); font-weight: 700; word-break: break-all; text-align: right; }
+.confirm-row.confirm-amount strong { font-size: 20px; color: var(--vb-red); }
+.confirm-actions { display: flex; gap: 12px; }
+.confirm-actions .vb-button { flex: 1; max-width: none; }
 .btn-icon {
     width: 36px; height: 36px; border-radius: var(--vb-radius-full);
     border: 1px solid var(--vb-divider); background: var(--vb-bg);

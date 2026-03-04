@@ -207,9 +207,9 @@
                     <div class="form-group">
                         <label class="form-label">Číslo účtu příjemce</label>
                         <div class="account-number-row">
-                            <input class="form-input account-prefix" @bind="_recipientPrefix" placeholder="000000" maxlength="6" />
+                            <input class="form-input account-prefix" @bind="_recipientPrefix" @onblur="ValidateAccountNumber" placeholder="000000" maxlength="6" />
                             <span class="account-sep">-</span>
-                            <input class="form-input account-number" @bind="_recipientNumber" placeholder="0000000000" maxlength="10" />
+                            <input class="form-input account-number" @bind="_recipientNumber" @onblur="ValidateAccountNumber" placeholder="0000000000" maxlength="10" />
                             <span class="account-sep">/</span>
                             <select class="form-input account-bank" @bind="_recipientBankCode">
                                 @foreach (var bank in BankCodes)
@@ -238,7 +238,7 @@
                         <label class="form-label">Popis</label>
                         <input class="form-input" @bind="_description" placeholder="Volitelný popis platby" />
                     </div>
-                    <VbButton OnClick="SendPayment" FullWidth="true" Disabled="@(!IsPaymentFormValid() || _isLoading)">
+                    <VbButton OnClick="RequestPayment" FullWidth="true" Disabled="@(!CanSendPayment() || _isLoading)">
                         @if (_isLoading) { <span>Odesílám...</span> } else { <span>Odeslat platbu</span> }
                     </VbButton>
                     @if (!string.IsNullOrWhiteSpace(_errorMessage))
@@ -508,6 +508,10 @@
                     {
                         <div class="success-banner"><VbIcon Name="shield" Size="xs" /> Šablona uložena</div>
                     }
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="error-banner">@_errorMessage</div>
+                    }
                 </ChildContent>
             </ContentCard>
 
@@ -540,6 +544,39 @@
         }
     }
 
+    @* ── PAYMENT CONFIRM MODAL ─────────────────────── *@
+    @if (_showConfirmModal)
+    {
+        <div class="confirm-overlay" @onclick="CancelPayment">
+            <div class="confirm-dialog" @onclick:stopPropagation="true">
+                <h3 class="confirm-title"><VbIcon Name="send" Size="sm" Color="var(--vb-red)" />&nbsp;Potvrdit platbu</h3>
+                <div class="confirm-detail">
+                    <div class="confirm-row">
+                        <span>Příjemce:</span>
+                        <strong>@_pendingRecipient</strong>
+                    </div>
+                    <div class="confirm-row confirm-amount">
+                        <span>Částka:</span>
+                        <strong>@_pendingAmount.ToString("N2") Kč</strong>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_pendingDescription))
+                    {
+                        <div class="confirm-row">
+                            <span>Popis:</span>
+                            <strong>@_pendingDescription</strong>
+                        </div>
+                    }
+                </div>
+                <div class="confirm-actions">
+                    <VbButton Variant="outline" OnClick="CancelPayment" Disabled="@_isLoading">Zrušit</VbButton>
+                    <VbButton OnClick="ConfirmPayment" Disabled="@_isLoading">
+                        @if (_isLoading) { <span>Odesílám...</span> } else { <span>Potvrdit platbu</span> }
+                    </VbButton>
+                </div>
+            </div>
+        </div>
+    }
+
 </div>
 
 @code {
@@ -548,6 +585,12 @@
     private bool _isLoading;
     private string _errorMessage = "";
     private bool _paymentSuccess;
+
+    // Confirm modal
+    private bool _showConfirmModal;
+    private string _pendingRecipient = "";
+    private decimal _pendingAmount;
+    private string _pendingDescription = "";
 
     // Calendar
     private DateTime _calendarDate = DateTime.Today;
@@ -869,9 +912,34 @@
     }
 
     // ── Actions ──
-    private async Task SendPayment()
+    private bool CanSendPayment() => _amount > 0 && !string.IsNullOrWhiteSpace(_recipientNumber);
+
+    private void ValidateAccountNumber()
     {
+        if (string.IsNullOrWhiteSpace(_recipientNumber)) { _accountNumberError = ""; return; }
+        if (!_recipientNumber.All(char.IsDigit)) { _accountNumberError = "Číslo účtu musí obsahovat pouze číslice"; return; }
+        if (_recipientNumber.Length < 2 || _recipientNumber.Length > 10) { _accountNumberError = "Číslo účtu: 2–10 číslic"; return; }
+        if (!string.IsNullOrWhiteSpace(_recipientPrefix) && (!_recipientPrefix.All(char.IsDigit) || _recipientPrefix.Length > 6))
+        { _accountNumberError = "Předčíslí: max 6 číslic"; return; }
+        _accountNumberError = "";
+    }
+
+    private void RequestPayment()
+    {
+        ValidateAccountNumber();
         if (!IsPaymentFormValid() || _selectedAccountId is null) return;
+
+        _pendingRecipient = ComposeAccountNumber(_recipientPrefix, _recipientNumber, _recipientBankCode);
+        _pendingAmount = _amount;
+        _pendingDescription = _description;
+        _errorMessage = "";
+        _paymentSuccess = false;
+        _showConfirmModal = true;
+    }
+
+    private async Task ConfirmPayment()
+    {
+        if (_selectedAccountId is null) return;
 
         _isLoading = true;
         _errorMessage = "";
@@ -879,23 +947,40 @@
 
         try
         {
-            var fullAccountNumber = ComposeAccountNumber(_recipientPrefix, _recipientNumber, _recipientBankCode);
-            await Api.SendPaymentAsync(_selectedAccountId.Value, fullAccountNumber, _amount, _selectedAccountCurrency, _description);
+            await Api.SendPaymentAsync(_selectedAccountId.Value, _pendingRecipient, _pendingAmount, _selectedAccountCurrency, _pendingDescription);
             _paymentSuccess = true;
             _amount = 0;
             _description = "";
             _recipientPrefix = "";
             _recipientNumber = "";
+            _accountNumberError = "";
+            _showConfirmModal = false;
             await LoadData();
         }
         catch (Exception ex)
         {
             _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : "Platba se nezdařila. Zkuste to znovu.";
+            _showConfirmModal = false;
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private void CancelPayment()
+    {
+        _showConfirmModal = false;
+        _pendingRecipient = "";
+        _pendingAmount = 0;
+        _pendingDescription = "";
+    }
+
+    private async Task SendPayment()
+    {
+        // Legacy — kept for compatibility; delegates to confirm flow
+        RequestPayment();
+        await Task.CompletedTask;
     }
 
     private async Task SendTransfer()
@@ -975,6 +1060,7 @@
 
         _isLoading = true;
         _paymentSuccess = false;
+        _errorMessage = "";
 
         try
         {

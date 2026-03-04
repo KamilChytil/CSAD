@@ -218,11 +218,11 @@ public static class UserEndpoints
 
         // ── Two-Factor Authentication ────────────────────────
 
-        group.MapPost("/2fa/setup", async (SetupTwoFactorCommand command, ISender sender) =>
+        group.MapPost("/2fa/setup", async (Guid userId, ISender sender) =>
         {
             try
             {
-                var result = await sender.Send(command);
+                var result = await sender.Send(new SetupTwoFactorCommand(userId));
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)

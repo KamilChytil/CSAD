@@ -58,17 +58,17 @@
             @foreach (var challenge in _challenges)
             {
                 <div class="challenge-card">
-                    <div class="challenge-info">
-                        <div class="challenge-icon-wrap">
-                            <VbIcon Name="@challenge.Icon" Size="sm" Color="var(--vb-gold)" />
-                        </div>
-                        <div class="challenge-text">
-                            <span class="challenge-name">@challenge.Name</span>
-                            <span class="challenge-progress-text">@challenge.ProgressPercent% hotovo</span>
-                        </div>
+                    <div class="challenge-icon">
+                        <VbIcon Name="@challenge.Icon" Size="sm" Color="var(--vb-gold)" />
                     </div>
-                    <div class="progress-bar-track">
-                        <div class="progress-bar-fill" style="width: @challenge.ProgressPercent%"></div>
+                    <div class="challenge-info">
+                        <span class="challenge-name">@challenge.Name</span>
+                        <div class="challenge-progress-row">
+                            <div class="progress-bar-track" style="flex:1;margin-top:0">
+                                <div class="progress-bar-fill" style="width:@(challenge.ProgressPercent)%"></div>
+                            </div>
+                            <span class="challenge-percent">@challenge.ProgressPercent%</span>
+                        </div>
                     </div>
                 </div>
             }

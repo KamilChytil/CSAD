@@ -48,7 +48,7 @@
                 }
             </div>
 
-            <VbButton OnClick="HandleVerifyTwoFactor" Disabled="@_isLoading">
+            <VbButton OnClick="HandleVerifyTwoFactor" FullWidth="true" Disabled="@_isLoading">
                 @if (_isLoading)
                 {
                     <span class="btn-loading">Ověřování...</span>
@@ -136,7 +136,7 @@
                 </div>
             }
 
-            <VbButton OnClick="HandleLogin" Disabled="@(Auth.IsLocked || _isLoading)">
+            <VbButton OnClick="HandleLogin" FullWidth="true" Disabled="@(Auth.IsLocked || _isLoading)">
                 @if (_isLoading)
                 {
                     <span class="btn-loading">Přihlašování...</span>
