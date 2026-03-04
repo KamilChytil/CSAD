@@ -40,6 +40,7 @@ public sealed class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbC
         msg.Property(m => m.Content).IsRequired().HasMaxLength(2000);
         msg.Property(m => m.SentAt).IsRequired();
         msg.Property(m => m.ReadAt);
+        msg.Property(m => m.IsSystem).IsRequired().HasDefaultValue(false);
         msg.HasOne<Conversation>()
            .WithMany()
            .HasForeignKey(m => m.ConversationId)
