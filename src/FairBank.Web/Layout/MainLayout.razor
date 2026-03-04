@@ -12,6 +12,10 @@
                 <div class="topbar-brand">
                     <img src="icons/logo.svg" alt="Va-bank" class="topbar-logo" />
                     <span class="topbar-title">Va-bank</span>
+                    @if (Auth.CurrentSession is not null)
+                    {
+                        <span class="topbar-user-name">@Auth.CurrentSession.FirstName @Auth.CurrentSession.LastName</span>
+                    }
                 </div>
                 <div class="topbar-actions">
                     <div class="notification-wrapper">

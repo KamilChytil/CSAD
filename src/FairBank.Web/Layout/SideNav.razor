@@ -12,6 +12,13 @@
             <span class="side-nav-subtitle">Internet Banking</span>
         </div>
     </div>
+    @if (Auth.CurrentSession is not null)
+    {
+        <div class="side-nav-user">
+            <VbIcon Name="user" Size="xs" />
+            <span>@Auth.CurrentSession.FirstName @Auth.CurrentSession.LastName</span>
+        </div>
+    }
 
     <div class="side-nav-section-label">Menu</div>
 
