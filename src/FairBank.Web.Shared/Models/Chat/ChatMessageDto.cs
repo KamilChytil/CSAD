@@ -6,5 +6,7 @@ public sealed record ChatMessageDto(
     Guid SenderId,
     string SenderName,
     string Content,
-    DateTime SentAt
+    DateTime SentAt,
+    bool IsSystem = false,
+    DateTime? ReadAt = null
 );

@@ -8,7 +8,8 @@ public sealed record SendMessageCommand(
     Guid ConversationId,
     Guid SenderId,
     string SenderName,
-    string Content) : IRequest<ChatMessageResponse>;
+    string Content,
+    bool IsSystem = false) : IRequest<ChatMessageResponse>;
 
 public sealed class SendMessageCommandHandler(IChatRepository msgRepo, IConversationRepository convRepo) : IRequestHandler<SendMessageCommand, ChatMessageResponse>
 {
@@ -24,7 +25,8 @@ public sealed class SendMessageCommandHandler(IChatRepository msgRepo, IConversa
             request.ConversationId,
             request.SenderId,
             request.SenderName,
-            request.Content);
+            request.Content,
+            request.IsSystem);
 
         // Record activity to know if it's Banker or Client typing
         // If it's a Support chat, client sends if SenderId == ClientOrChildId
@@ -47,6 +49,7 @@ public sealed class SendMessageCommandHandler(IChatRepository msgRepo, IConversa
             message.SenderName,
             message.Content,
             message.SentAt,
+            message.IsSystem,
             message.ReadAt);
     }
 }

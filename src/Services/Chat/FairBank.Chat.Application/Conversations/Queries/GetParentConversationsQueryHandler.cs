@@ -24,7 +24,8 @@ public sealed class GetParentConversationsQueryHandler(
                 conv.Id, "Family", conv.Label,
                 last?.Content, last?.SentAt,
                 conv.Status.ToString(), conv.ClosedAt,
-                conv.BankerOrParentId, conv.InternalNotes));
+                conv.BankerOrParentId, conv.InternalNotes,
+                conv.ClientOrChildId));
         }
 
         return results;

@@ -9,5 +9,6 @@ public sealed record ConversationDto(
     string Status,
     DateTime? ClosedAt,
     Guid? AssignedBankerId,
-    string? InternalNotes
+    string? InternalNotes,
+    Guid? ClientOrChildId
 );

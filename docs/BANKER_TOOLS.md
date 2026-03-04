@@ -35,15 +35,33 @@ Enables bankers to hand off active conversations to other bankers or administrat
     - Implemented a dropdown menu that displays available bankers/admins for transfer.
     - Users can select a colleague, and the system reassigns the conversation and redirects the current banker back to the message list.
 
-## 3. Stability and Authentication Improvements
+## 4. Chat UI Refinements
+
+A series of improvements to make the chat experience more informative and responsive.
+
+### System Notifications
+- Automatically broadcasts messages like "Bankéř [Jméno] se připojil k chatu" or "Chat byl předán bankéři [Jméno]".
+- These messages are flagged as `IsSystem` and rendered in the center of the chat thread with a distinct style.
+
+### Message Coloring and Identification
+- Messages are visually differentiated based on the sender:
+  - **Sent (You)**: Red bubble on the right.
+  - **Received (Client)**: Gray bubble on the left.
+  - **Received (Other Banker)**: Light blue bubble on the left (for Support chats).
+- storing the `ClientOrChildId` in the `ConversationDto` allows the frontend to correctly identify the original participant.
+
+### UX Improvements
+- **Send Button**: Changed from standard `@bind` to `@bind:event="oninput"`. The "Odeslat" button now enables/disables immediately as the user types.
+
+## 5. Stability and Authentication Improvements
 
 ### ChatService Refactoring
 The `ChatService` was refactored to ensure all HTTP requests are properly authenticated:
 - **Token Management**: The service now stores the JWT `_token` during initialization.
-- **Request Metadata**: All HTTP calls (GET, POST, PATCH) now explicitly attach a `Bearer` token to the `Authorization` header. This resolved issues where API calls were failing silently or returning empty results due to missing authorization at the API Gateway level.
+- **Request Metadata**: All HTTP calls now explicitly attach a `Bearer` token to the `Authorization` header.
 
 ### Payments UI Fixes
-- **`Payments.razor`**: Fixed build and syntax errors related to Blazor code blocks and malformed tag helpers (`ContentCard`). Calculated summary statistics were moved to the `@code` block for better maintainability.
+- **`Payments.razor`**: Fixed build and syntax errors related to Blazor code blocks.
 
 ---
 *Created by Antigravity AI Assistant - March 2026*
