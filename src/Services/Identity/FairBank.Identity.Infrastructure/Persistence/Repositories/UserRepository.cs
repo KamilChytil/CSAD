@@ -23,12 +23,12 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
         return Task.CompletedTask;
     }
 
-    public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
+    public async Task<User?> GetByEmailAsync(FairBank.Identity.Domain.ValueObjects.Email email, CancellationToken ct = default)
     {
         return await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
     }
 
-    public async Task<bool> ExistsWithEmailAsync(Email email, CancellationToken ct = default)
+    public async Task<bool> ExistsWithEmailAsync(FairBank.Identity.Domain.ValueObjects.Email email, CancellationToken ct = default)
     {
         return await db.Users.AnyAsync(u => u.Email == email, ct);
     }
@@ -41,5 +41,15 @@ public sealed class UserRepository(IdentityDbContext db) : IUserRepository
     public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
     {
         return await db.Users.ToListAsync(ct);
+    }
+
+    public async Task<User?> GetByEmailVerificationTokenAsync(string token, CancellationToken ct = default)
+    {
+        return await db.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token, ct);
+    }
+
+    public async Task<User?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default)
+    {
+        return await db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token, ct);
     }
 }
