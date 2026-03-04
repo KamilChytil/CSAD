@@ -6,11 +6,14 @@ using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.CreateChild;
 
 public sealed class CreateChildCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<CreateChildCommand, UserResponse>
 {
     public async Task<UserResponse> Handle(CreateChildCommand request, CancellationToken ct)
@@ -37,6 +40,14 @@ public sealed class CreateChildCommandHandler(
 
         await userRepository.AddAsync(child, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "CreateChild",
+            parent.Id,
+            parent.Email.Value,
+            "User",
+            child.Id.ToString(),
+            $"Created child user {child.Email.Value}"), ct);
 
         return new UserResponse(
             child.Id, child.FirstName, child.LastName,

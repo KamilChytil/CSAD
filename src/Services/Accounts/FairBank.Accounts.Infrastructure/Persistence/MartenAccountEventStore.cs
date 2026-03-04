@@ -43,4 +43,11 @@ public sealed class MartenAccountEventStore(IDocumentSession session) : IAccount
         account.ClearUncommittedEvents();
         await session.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<object>> GetStreamEventsAsync(Guid accountId, CancellationToken ct = default)
+    {
+        // Marten has FetchStreamAsync which returns events; we'll map to objects
+        var events = await session.Events.FetchStreamAsync(accountId, token: ct);
+        return events.Select(e => e.Data).ToList();
+    }
 }

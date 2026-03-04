@@ -1,14 +1,15 @@
 using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
-using FairBank.SharedKernel.Logging;
 using MediatR;
+
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
 
 namespace FairBank.Identity.Application.Users.Commands.LogoutUser;
 
 public sealed class LogoutUserCommandHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
-    IAuditLogger auditLogger)
+    ISender sender)
     : IRequestHandler<LogoutUserCommand>
 {
     public async Task Handle(LogoutUserCommand request, CancellationToken ct)
@@ -19,6 +20,12 @@ public sealed class LogoutUserCommandHandler(
         user.InvalidateSession(request.SessionId);
         await unitOfWork.SaveChangesAsync(ct);
 
-        auditLogger.LogSecurityEvent("Logout", "Success", request.UserId);
+        await sender.Send(new RecordAuditLogCommand(
+            "LogoutUser",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            $"User logged out and invalidated session {request.SessionId}"), ct);
     }
 }

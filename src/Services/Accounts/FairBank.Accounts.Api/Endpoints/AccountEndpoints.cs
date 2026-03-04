@@ -14,6 +14,7 @@ using FairBank.Accounts.Application.Queries.GetAccountByNumber;
 using FairBank.Accounts.Application.Queries.GetAccountLimits;
 using FairBank.Accounts.Application.Queries.GetAccountsByOwner;
 using FairBank.Accounts.Application.Queries.GetPendingTransactions;
+using FairBank.Accounts.Application.Queries.GetAccountTransactions;
 using FairBank.Accounts.Domain.Enums;
 using FairBank.SharedKernel.Security;
 using MediatR;
@@ -150,6 +151,15 @@ public static class AccountEndpoints
         .WithName("GetPendingTransactions")
         .Produces(StatusCodes.Status200OK)
         .RequireAuth();
+
+        // GET /api/v1/accounts/{id}/transactions?from={}&to={}  — historical ledger
+        group.MapGet("/{id:guid}/transactions", async (Guid id, DateTime? from, DateTime? to, ISender sender) =>
+        {
+            var result = await sender.Send(new GetAccountTransactionsQuery(id, from, to));
+            return Results.Ok(result);
+        })
+        .WithName("GetAccountTransactions")
+        .Produces<IReadOnlyList<FairBank.Accounts.Application.DTOs.TransactionDto>>(StatusCodes.Status200OK);
 
         // Approve/Reject pending transactions
         var pendingGroup = app.MapGroup("/api/v1/accounts/pending")

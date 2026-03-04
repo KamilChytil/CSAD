@@ -2,12 +2,15 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.RevokeDevice;
 
 public sealed class RevokeDeviceCommandHandler(
     IUserDeviceRepository deviceRepo,
     IUserRepository userRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<RevokeDeviceCommand>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<RevokeDeviceCommand>
 {
     public async Task Handle(RevokeDeviceCommand request, CancellationToken ct)
     {
@@ -31,5 +34,13 @@ public sealed class RevokeDeviceCommandHandler(
         device.Revoke();
         await deviceRepo.UpdateAsync(device, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "RevokeDevice",
+            request.UserId,
+            null, // User email might not be handy
+            "UserDevice",
+            device.Id.ToString(),
+            $"Revoked device {device.DeviceName}"), ct);
     }
 }

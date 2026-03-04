@@ -134,7 +134,7 @@ public class AdminCommandsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new DeleteUserCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new DeleteUserCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new DeleteUserCommand(userId);
 
         // Act

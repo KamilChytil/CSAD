@@ -6,7 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
-using FairBank.SharedKernel.Logging;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -14,7 +14,7 @@ public class ResetPasswordCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUserWithResetToken()
     {
@@ -27,20 +27,17 @@ public class ResetPasswordCommandHandlerTests
     [Fact]
     public async Task Handle_WithValidToken_ShouldResetPassword()
     {
-        // Arrange
         var user = CreateUserWithResetToken();
         var token = user.PasswordResetToken!;
 
         _userRepository.GetByPasswordResetTokenAsync(token, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new ResetPasswordCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new ResetPasswordCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ResetPasswordCommand(token, "NewPassword1!");
 
-        // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Should().BeTrue();
         user.PasswordResetToken.Should().BeNull();
         user.PasswordResetTokenExpiresAt.Should().BeNull();
@@ -52,17 +49,14 @@ public class ResetPasswordCommandHandlerTests
     [Fact]
     public async Task Handle_WithInvalidToken_ShouldThrow()
     {
-        // Arrange
         _userRepository.GetByPasswordResetTokenAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new ResetPasswordCommandHandler(_userRepository, _unitOfWork, _auditLogger);
+        var handler = new ResetPasswordCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new ResetPasswordCommand("invalid-token", "NewPassword1!");
 
-        // Act
         var act = () => handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*Invalid reset token*");
     }

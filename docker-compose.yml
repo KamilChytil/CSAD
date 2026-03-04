@@ -209,6 +209,22 @@ services:
       retries: 3
       start_period: 30s
 
+  documents-api:
+    build:
+      context: .
+      dockerfile: src/Services/Documents/FairBank.Documents.Api/Dockerfile
+    container_name: fairbank-documents-api
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Services__AccountsApi: "http://accounts-api:8080"
+    depends_on:
+      accounts-api:
+        condition: service_started
+    networks:
+      - backend
+
   cards-api:
     build:
       context: .

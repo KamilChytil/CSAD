@@ -5,5 +5,13 @@ namespace FairBank.Identity.Domain.Ports;
 
 public interface IAuditLogRepository : IRepository<AuditLog, Guid>
 {
-    Task<(IEnumerable<AuditLog> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct);
+    Task<(IEnumerable<AuditLog> Items, int TotalCount)> GetPagedAsync(
+        int page,
+        int pageSize,
+        Guid? userId,
+        string? action,
+        string? entityName,
+        DateTime? startDate,
+        DateTime? endDate,
+        CancellationToken ct);
 }

@@ -2,8 +2,9 @@ using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
-using FairBank.SharedKernel.Logging;
 using MediatR;
+
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
 
 namespace FairBank.Identity.Application.Users.Commands.ForgotPassword;
 
@@ -11,7 +12,7 @@ public sealed class ForgotPasswordCommandHandler(
     IUserRepository userRepository,
     IEmailSender emailSender,
     IUnitOfWork unitOfWork,
-    IAuditLogger auditLogger)
+    ISender sender)
     : IRequestHandler<ForgotPasswordCommand>
 {
     public async Task Handle(ForgotPasswordCommand request, CancellationToken ct)
@@ -38,6 +39,12 @@ public sealed class ForgotPasswordCommandHandler(
 
         await emailSender.SendPasswordResetAsync(user.Email.Value, resetToken, ct);
 
-        auditLogger.LogSecurityEvent("PasswordResetRequest", "Success", details: $"Email={request.Email}");
+        await sender.Send(new RecordAuditLogCommand(
+            "ForgotPassword",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            $"Requested password reset token to be sent to {email.Value}"), ct);
     }
 }

@@ -2,11 +2,14 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.VerifyEmail;
 
 public sealed class VerifyEmailCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<VerifyEmailCommand, bool>
 {
     public async Task<bool> Handle(VerifyEmailCommand request, CancellationToken ct)
@@ -17,6 +20,14 @@ public sealed class VerifyEmailCommandHandler(
         user.VerifyEmail(request.Token);
         await userRepository.UpdateAsync(user, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "VerifyEmail",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Successfully verified email"), ct);
 
         return true;
     }
