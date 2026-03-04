@@ -14,6 +14,7 @@ services:
       - api-gateway
     networks:
       - frontend
+    restart: unless-stopped
 
   # ─── Admin Web App (Standalone Logging UI) ────────
   admin-web-app:
@@ -28,6 +29,13 @@ services:
     networks:
       - frontend
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # ─── API Gateway (bridges frontend ↔ backend) ───────────
   api-gateway:
@@ -48,6 +56,13 @@ services:
     networks:
       - frontend
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   identity-api:
     build:
@@ -64,6 +79,13 @@ services:
         condition: service_healthy
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   accounts-api:
     build:
@@ -83,6 +105,13 @@ services:
         condition: service_started
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # ─── Kafka ──────────────────────────────────────────────
   kafka:
@@ -101,6 +130,7 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
     networks:
       - backend
+    restart: unless-stopped
 
   payments-api:
     build:
@@ -123,6 +153,14 @@ services:
         condition: service_started
     networks:
       - backend
+      - frontend   # needed for external API access (exchange rates)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   chat-api:
     build:
@@ -139,6 +177,13 @@ services:
         condition: service_healthy
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   products-api:
     build:
@@ -156,6 +201,12 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   cards-api:
     build:
@@ -172,6 +223,13 @@ services:
         condition: service_healthy
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   notifications-api:
     build:
@@ -188,6 +246,13 @@ services:
         condition: service_healthy
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # ─── PostgreSQL Primary ──────────────────────────────────
   postgres-primary:
@@ -223,6 +288,7 @@ services:
       retries: 5
     networks:
       - backend
+    restart: unless-stopped
 
   # ─── PostgreSQL Replica ──────────────────────────────────
   postgres-replica:
@@ -247,6 +313,7 @@ services:
       retries: 5
     networks:
       - backend
+    restart: unless-stopped
 
 networks:
   frontend:

@@ -9,5 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="../FairBank.Cards.Application/FairBank.Cards.Application.csproj" />
     <ProjectReference Include="../FairBank.Cards.Infrastructure/FairBank.Cards.Infrastructure.csproj" />
+    <ProjectReference Include="../../../FairBank.SharedKernel/FairBank.SharedKernel.csproj" />
   </ItemGroup>
 </Project>

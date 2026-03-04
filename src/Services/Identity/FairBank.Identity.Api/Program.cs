@@ -62,8 +62,18 @@ app.MapUserEndpoints();
 app.MapNotificationEndpoints();
 
 // Health check
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Identity" }))
-    .WithTags("Health");
+app.MapGet("/health", async (IdentityDbContext db) =>
+{
+    try
+    {
+        await db.Database.CanConnectAsync();
+        return Results.Ok(new { Status = "Healthy", Service = "Identity" });
+    }
+    catch
+    {
+        return Results.Json(new { Status = "Unhealthy", Service = "Identity" }, statusCode: 503);
+    }
+}).WithTags("Health");
 
 // Seed default admin user
 await AdminSeeder.SeedAsync(app.Services);

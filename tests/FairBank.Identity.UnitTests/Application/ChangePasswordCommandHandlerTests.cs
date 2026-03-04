@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Logging;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -13,6 +14,7 @@ public class ChangePasswordCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
 
     private User CreateUser(string password = "OldPassword1!")
     {
@@ -30,7 +32,7 @@ public class ChangePasswordCommandHandlerTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork, _auditLogger);
         var command = new ChangePasswordCommand(userId, "OldPassword1!", "NewPassword1!");
 
         // Act
@@ -53,7 +55,7 @@ public class ChangePasswordCommandHandlerTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork, _auditLogger);
         var command = new ChangePasswordCommand(userId, "WrongPassword1!", "NewPassword1!");
 
         // Act
@@ -71,7 +73,7 @@ public class ChangePasswordCommandHandlerTests
         _userRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork);
+        var handler = new ChangePasswordCommandHandler(_userRepository, _unitOfWork, _auditLogger);
         var command = new ChangePasswordCommand(Guid.NewGuid(), "OldPassword1!", "NewPassword1!");
 
         // Act

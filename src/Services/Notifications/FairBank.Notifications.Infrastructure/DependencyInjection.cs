@@ -15,7 +15,8 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
         services.AddDbContext<NotificationsDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.EnableRetryOnFailure(3)));
 
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();

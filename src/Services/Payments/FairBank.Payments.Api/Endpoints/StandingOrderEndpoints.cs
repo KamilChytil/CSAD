@@ -1,6 +1,7 @@
 using FairBank.Payments.Application.StandingOrders.Commands.CancelStandingOrder;
 using FairBank.Payments.Application.StandingOrders.Commands.CreateStandingOrder;
 using FairBank.Payments.Application.StandingOrders.Queries.GetStandingOrdersByAccount;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Payments.Api.Endpoints;
@@ -18,7 +19,8 @@ public static class StandingOrderEndpoints
         })
         .WithName("CreateStandingOrder")
         .Produces(StatusCodes.Status201Created)
-        .ProducesValidationProblem();
+        .ProducesValidationProblem()
+        .RequireAuth();
 
         group.MapGet("/account/{accountId:guid}", async (Guid accountId, ISender sender) =>
         {
@@ -26,7 +28,8 @@ public static class StandingOrderEndpoints
             return Results.Ok(result);
         })
         .WithName("GetStandingOrdersByAccount")
-        .Produces(StatusCodes.Status200OK);
+        .Produces(StatusCodes.Status200OK)
+        .RequireAuth();
 
         group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
         {
@@ -34,6 +37,7 @@ public static class StandingOrderEndpoints
             return Results.NoContent();
         })
         .WithName("CancelStandingOrder")
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuth();
     }
 }

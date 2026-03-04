@@ -14,8 +14,10 @@ public sealed class SavingsGoal
     [JsonInclude] public Money TargetAmount { get; private set; } = null!;
     [JsonInclude] public Money CurrentAmount { get; private set; } = null!;
     [JsonInclude] public bool IsCompleted { get; private set; }
+    [JsonInclude] public bool IsDeleted { get; private set; }
     [JsonInclude] public DateTime CreatedAt { get; private set; }
     [JsonInclude] public DateTime? CompletedAt { get; private set; }
+    [JsonInclude] public DateTime? DeletedAt { get; private set; }
 
     private readonly List<object> _uncommittedEvents = [];
 
@@ -82,6 +84,17 @@ public sealed class SavingsGoal
         RaiseEvent(new SavingsWithdrawn(Id, amount.Amount, amount.Currency, DateTime.UtcNow));
     }
 
+    public void Delete()
+    {
+        if (IsDeleted)
+            throw new InvalidOperationException("Savings goal is already deleted.");
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+
+        RaiseEvent(new SavingsGoalDeleted(Id, DeletedAt.Value));
+    }
+
     // --- Event Sourcing support ---
 
     public IReadOnlyList<object> GetUncommittedEvents() => _uncommittedEvents.AsReadOnly();
@@ -117,5 +130,11 @@ public sealed class SavingsGoal
     {
         IsCompleted = true;
         CompletedAt = @event.OccurredAt;
+    }
+
+    public void Apply(SavingsGoalDeleted @event)
+    {
+        IsDeleted = true;
+        DeletedAt = @event.OccurredAt;
     }
 }

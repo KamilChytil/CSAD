@@ -4,13 +4,15 @@ using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Logging;
 using MediatR;
 
 namespace FairBank.Identity.Application.Users.Commands.LoginUser;
 
 public sealed class LoginUserCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuditLogger auditLogger)
     : IRequestHandler<LoginUserCommand, LoginResponse?>
 {
     public async Task<LoginResponse?> Handle(LoginUserCommand request, CancellationToken ct)
@@ -22,17 +24,24 @@ public sealed class LoginUserCommandHandler(
         }
         catch (ArgumentException)
         {
+            auditLogger.LogSecurityEvent("Login", "Failed", details: $"InvalidEmail={request.Email}");
             return null;
         }
 
         var user = await userRepository.GetByEmailAsync(email, ct);
 
         if (user is null || !user.IsActive)
+        {
+            auditLogger.LogSecurityEvent("Login", "Failed", details: $"Email={request.Email}");
             return null;
+        }
 
         // Server-side lockout check (throws so the endpoint can return 429)
         if (user.IsLockedOut)
+        {
+            auditLogger.LogSecurityEvent("Login", "Locked", user.Id, details: $"LockedUntil={user.LockedUntil}");
             throw new UserLockedOutException(user.LockedUntil!.Value);
+        }
 
         // BCrypt password verification
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
@@ -42,8 +51,12 @@ public sealed class LoginUserCommandHandler(
 
             // After recording, throw lockout if threshold just crossed
             if (user.IsLockedOut)
+            {
+                auditLogger.LogSecurityEvent("Login", "Locked", user.Id, details: $"LockedUntil={user.LockedUntil}");
                 throw new UserLockedOutException(user.LockedUntil!.Value);
+            }
 
+            auditLogger.LogSecurityEvent("Login", "Failed", user.Id, details: "InvalidPassword");
             return null;
         }
 
@@ -77,6 +90,8 @@ public sealed class LoginUserCommandHandler(
         await unitOfWork.SaveChangesAsync(ct);
 
         var token = SessionTokenHelper.Encode(user.Id, sessionId);
+
+        auditLogger.LogSecurityEvent("Login", "Success", user.Id);
 
         return new LoginResponse(
             Token: token,

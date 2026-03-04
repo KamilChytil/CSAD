@@ -7,6 +7,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Logging;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -15,6 +16,7 @@ public class RegisterUserCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IEmailSender _emailSender = Substitute.For<IEmailSender>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
 
     [Fact]
     public async Task Handle_WithValidCommand_ShouldCreateUser()
@@ -23,7 +25,7 @@ public class RegisterUserCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork);
+        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork, _auditLogger);
         var command = new RegisterUserCommand("Jan", "Novák", "jan@example.com", "Password1!", UserRole.Client);
 
         // Act
@@ -49,7 +51,7 @@ public class RegisterUserCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork);
+        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork, _auditLogger);
         var command = new RegisterUserCommand("Jan", "Novák", "jan@example.com", "Password1!", UserRole.Client);
 
         // Act

@@ -7,6 +7,7 @@ using FairBank.Payments.Application.Payments.Queries.GetPaymentStatistics;
 using FairBank.Payments.Application.Payments.Queries.SearchPayments;
 using FairBank.Payments.Application.Queries.GenerateQrCode;
 using FairBank.Payments.Application.Services;
+using FairBank.SharedKernel.Security;
 using MediatR;
 
 namespace FairBank.Payments.Api.Endpoints;
@@ -24,7 +25,8 @@ public static class PaymentEndpoints
         })
         .WithName("SendPayment")
         .Produces(StatusCodes.Status201Created)
-        .ProducesValidationProblem();
+        .ProducesValidationProblem()
+        .RequireAuth();
 
         group.MapGet("/account/{accountId:guid}", async (Guid accountId, ISender sender, int? limit) =>
         {
@@ -32,7 +34,8 @@ public static class PaymentEndpoints
             return Results.Ok(result);
         })
         .WithName("GetPaymentsByAccount")
-        .Produces(StatusCodes.Status200OK);
+        .Produces(StatusCodes.Status200OK)
+        .RequireAuth();
 
         group.MapGet("/qr-code", async (
             string accountNumber,
@@ -46,14 +49,16 @@ public static class PaymentEndpoints
             return Results.Ok(result);
         })
         .WithName("GenerateQrCode")
-        .Produces<QrCodeResult>(StatusCodes.Status200OK);
+        .Produces<QrCodeResult>(StatusCodes.Status200OK)
+        .RequireAuth();
 
         group.MapPost("/parse-qr", async (ParseQrPaymentCommand command, ISender sender) =>
         {
             var result = await sender.Send(command);
             return result is not null ? Results.Ok(result) : Results.BadRequest("Invalid SPAYD format.");
         })
-        .WithName("ParseQrPayment");
+        .WithName("ParseQrPayment")
+        .RequireAuth();
 
         group.MapGet("/account/{accountId:guid}/search", async (
             Guid accountId,
@@ -63,7 +68,8 @@ public static class PaymentEndpoints
             var result = await sender.Send(query with { AccountId = accountId });
             return Results.Ok(result);
         })
-        .WithName("SearchPayments");
+        .WithName("SearchPayments")
+        .RequireAuth();
 
         group.MapGet("/account/{accountId:guid}/statistics", async (
             Guid accountId,
@@ -75,7 +81,8 @@ public static class PaymentEndpoints
             var result = await sender.Send(new GetPaymentStatisticsQuery(accountId, period ?? "monthly", dateFrom, dateTo));
             return Results.Ok(result);
         })
-        .WithName("GetPaymentStatistics");
+        .WithName("GetPaymentStatistics")
+        .RequireAuth();
 
         group.MapGet("/account/{accountId:guid}/export", async (
             Guid accountId,
@@ -87,13 +94,15 @@ public static class PaymentEndpoints
             var result = await sender.Send(new ExportPaymentsQuery(accountId, format ?? "csv", dateFrom, dateTo));
             return Results.File(result.Data, result.ContentType, result.FileName);
         })
-        .WithName("ExportPayments");
+        .WithName("ExportPayments")
+        .RequireAuth();
 
         group.MapPut("/{id:guid}/category", async (Guid id, SetPaymentCategoryCommand command, ISender sender) =>
         {
             var result = await sender.Send(command with { PaymentId = id });
             return Results.Ok(result);
         })
-        .WithName("SetPaymentCategory");
+        .WithName("SetPaymentCategory")
+        .RequireAuth();
     }
 }

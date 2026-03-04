@@ -10,6 +10,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Logging;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -17,6 +18,7 @@ public class AdminCommandsTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
 
     private User CreateUser(string email = "jan@example.com", UserRole role = UserRole.Client)
     {
@@ -130,7 +132,7 @@ public class AdminCommandsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new DeleteUserCommandHandler(_userRepository, _unitOfWork);
+        var handler = new DeleteUserCommandHandler(_userRepository, _unitOfWork, _auditLogger);
         var command = new DeleteUserCommand(userId);
 
         // Act

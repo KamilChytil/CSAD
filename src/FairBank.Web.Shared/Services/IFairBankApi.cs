@@ -124,4 +124,12 @@ public interface IFairBankApi
 
     // Banker clients
     Task<List<BankerClientDto>> GetBankerClientsAsync(Guid bankerId);
+
+    // Exchange
+    Task<ExchangeRateDto?> GetExchangeRateAsync(string fromCurrency, string toCurrency);
+    Task<ExchangeTransactionDto> ExecuteExchangeAsync(ExecuteExchangeRequest request);
+    Task<List<ExchangeTransactionDto>> GetExchangeHistoryAsync(Guid userId, int limit = 20);
+    Task<List<ExchangeFavoriteDto>> GetExchangeFavoritesAsync(Guid userId);
+    Task<ExchangeFavoriteDto> AddExchangeFavoriteAsync(AddFavoriteRequest request);
+    Task RemoveExchangeFavoriteAsync(Guid favoriteId);
 }

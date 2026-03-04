@@ -7,6 +7,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using FairBank.SharedKernel.Logging;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -15,6 +16,7 @@ public class ForgotPasswordCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IEmailSender _emailSender = Substitute.For<IEmailSender>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAuditLogger _auditLogger = Substitute.For<IAuditLogger>();
 
     [Fact]
     public async Task Handle_WithExistingUser_ShouldGenerateTokenAndSendEmail()
@@ -27,7 +29,7 @@ public class ForgotPasswordCommandHandlerTests
         _userRepository.GetByEmailAsync(email, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork);
+        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork, _auditLogger);
         var command = new ForgotPasswordCommand("jan@example.com");
 
         // Act
@@ -51,7 +53,7 @@ public class ForgotPasswordCommandHandlerTests
         _userRepository.GetByEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork);
+        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork, _auditLogger);
         var command = new ForgotPasswordCommand("nonexistent@example.com");
 
         // Act
@@ -67,7 +69,7 @@ public class ForgotPasswordCommandHandlerTests
     public async Task Handle_WithInvalidEmail_ShouldSilentlySucceed()
     {
         // Arrange
-        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork);
+        var handler = new ForgotPasswordCommandHandler(_userRepository, _emailSender, _unitOfWork, _auditLogger);
         var command = new ForgotPasswordCommand("not-an-email");
 
         // Act

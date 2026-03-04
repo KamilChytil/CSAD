@@ -527,5 +527,56 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         return await response.Content.ReadFromJsonAsync<List<BankerClientDto>>() ?? [];
     }
 
+    // ── Exchange ────────────────────────────────────────────
+    public async Task<ExchangeRateDto?> GetExchangeRateAsync(string fromCurrency, string toCurrency)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<ExchangeRateDto>(
+                $"api/v1/exchange/rate?from={Uri.EscapeDataString(fromCurrency)}&to={Uri.EscapeDataString(toCurrency)}");
+        }
+        catch { return null; }
+    }
+
+    public async Task<ExchangeTransactionDto> ExecuteExchangeAsync(ExecuteExchangeRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/exchange/convert", request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ExchangeTransactionDto>())!;
+    }
+
+    public async Task<List<ExchangeTransactionDto>> GetExchangeHistoryAsync(Guid userId, int limit = 20)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ExchangeTransactionDto>>(
+                $"api/v1/exchange/history?userId={userId}&limit={limit}") ?? [];
+        }
+        catch { return []; }
+    }
+
+    public async Task<List<ExchangeFavoriteDto>> GetExchangeFavoritesAsync(Guid userId)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ExchangeFavoriteDto>>(
+                $"api/v1/exchange/favorites?userId={userId}") ?? [];
+        }
+        catch { return []; }
+    }
+
+    public async Task<ExchangeFavoriteDto> AddExchangeFavoriteAsync(AddFavoriteRequest request)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/exchange/favorites", request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ExchangeFavoriteDto>())!;
+    }
+
+    public async Task RemoveExchangeFavoriteAsync(Guid favoriteId)
+    {
+        var response = await http.DeleteAsync($"api/v1/exchange/favorites/{favoriteId}");
+        response.EnsureSuccessStatusCode();
+    }
+
     private sealed record UnreadCountDto(int Count);
 }
