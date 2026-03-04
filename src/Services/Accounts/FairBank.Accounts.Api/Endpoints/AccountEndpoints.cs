@@ -35,8 +35,10 @@ public static class AccountEndpoints
 
             var authUserId = httpContext.GetUserId();
             var role = httpContext.GetUserRole();
-            // Clients can only query their own accounts, Admin/Banker can query any
-            if (role != "Admin" && role != "Banker" && ownerId != authUserId)
+            // Child role: can only query their own accounts.
+            // Client (parent), Admin, Banker: can query any account by ownerId.
+            // Parents need to view children's accounts for family management.
+            if (role == "Child" && ownerId != authUserId)
                 return Results.Json(new { error = "Forbidden" }, statusCode: 403);
 
             var result = await sender.Send(new GetAccountsByOwnerQuery(ownerId.Value));

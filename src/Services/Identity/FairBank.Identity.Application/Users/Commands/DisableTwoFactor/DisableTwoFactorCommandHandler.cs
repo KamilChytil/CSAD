@@ -54,6 +54,6 @@ public sealed class DisableTwoFactorCommandHandler(
         if (string.IsNullOrEmpty(tfa.BackupCodes)) return false;
 
         var hashedCodes = System.Text.Json.JsonSerializer.Deserialize<string[]>(tfa.BackupCodes);
-        return hashedCodes?.Any(h => BCrypt.Net.BCrypt.Verify(code, h)) == true;
+        return hashedCodes?.Any(h => FairBank.SharedKernel.Security.PasswordHasher.Verify(code, h)) == true;
     }
 }

@@ -401,6 +401,9 @@
             }
 
             _registrationSuccess = true;
+            // Auto-navigate to login after short delay so user sees success message
+            await Task.Delay(1500);
+            Nav.NavigateTo("/login");
         }
         catch
         {

@@ -48,7 +48,7 @@ public static class AdminSeeder
             if (await userRepository.ExistsWithEmailAsync(email))
                 continue;
 
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+            var passwordHash = FairBank.SharedKernel.Security.PasswordHasher.Hash(password);
 
             var user = User.Create(firstName, lastName, email, passwordHash, role, seedId);
 

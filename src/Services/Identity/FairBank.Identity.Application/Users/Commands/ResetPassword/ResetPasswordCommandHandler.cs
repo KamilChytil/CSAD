@@ -19,7 +19,7 @@ public sealed class ResetPasswordCommandHandler(
         if (user is null)
             throw new InvalidOperationException("Invalid reset token.");
 
-        var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
+        var newHash = FairBank.SharedKernel.Security.PasswordHasher.Hash(request.NewPassword);
         user.ResetPassword(request.Token, newHash);
 
         await userRepository.UpdateAsync(user, ct);

@@ -29,7 +29,7 @@ public sealed class CreateChildCommandHandler(
         if (await userRepository.ExistsWithEmailAsync(email, ct))
             throw new InvalidOperationException($"User with email '{request.Email}' already exists.");
 
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
+        var passwordHash = FairBank.SharedKernel.Security.PasswordHasher.Hash(request.Password);
 
         var child = User.CreateChild(
             request.FirstName,

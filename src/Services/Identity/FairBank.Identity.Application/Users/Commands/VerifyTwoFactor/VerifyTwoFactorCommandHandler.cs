@@ -33,7 +33,7 @@ public sealed class VerifyTwoFactorCommandHandler(
                 for (var i = 0; i < hashedCodes.Length; i++)
                 {
                     if (!string.IsNullOrEmpty(hashedCodes[i]) &&
-                        BCrypt.Net.BCrypt.Verify(request.Code, hashedCodes[i]))
+                        FairBank.SharedKernel.Security.PasswordHasher.Verify(request.Code, hashedCodes[i]))
                     {
                         isValid = true;
                         // Invalidate used backup code

@@ -3,7 +3,6 @@
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
-    <PackageReference Include="BCrypt.Net-Next" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../FairBank.Cards.Domain/FairBank.Cards.Domain.csproj" />

@@ -30,7 +30,7 @@ public sealed class EnableTwoFactorCommandHandler(
         // Generate backup codes
         var backupCodes = TotpHelper.GenerateBackupCodes();
         var hashedCodes = System.Text.Json.JsonSerializer.Serialize(
-            backupCodes.Select(c => BCrypt.Net.BCrypt.HashPassword(c, workFactor: 10)).ToArray());
+            backupCodes.Select(c => FairBank.SharedKernel.Security.PasswordHasher.Hash(c)).ToArray());
 
         tfa.Enable(hashedCodes);
         await tfaRepo.UpdateAsync(tfa, ct);

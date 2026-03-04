@@ -17,10 +17,10 @@ public sealed class ChangePasswordCommandHandler(
         var user = await userRepository.GetByIdAsync(request.UserId, ct)
             ?? throw new InvalidOperationException("User not found.");
 
-        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+        if (!FairBank.SharedKernel.Security.PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
             throw new InvalidOperationException("Current password is incorrect.");
 
-        var newHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
+        var newHash = FairBank.SharedKernel.Security.PasswordHasher.Hash(request.NewPassword);
         user.ChangePassword(request.CurrentPassword, newHash);
 
         await userRepository.UpdateAsync(user, ct);

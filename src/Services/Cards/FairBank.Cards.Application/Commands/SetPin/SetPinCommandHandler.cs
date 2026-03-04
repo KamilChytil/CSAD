@@ -13,7 +13,7 @@ public sealed class SetPinCommandHandler(
         var card = await cardRepository.GetByIdAsync(request.CardId, ct)
             ?? throw new InvalidOperationException($"Card {request.CardId} not found.");
 
-        var pinHash = BCrypt.Net.BCrypt.HashPassword(request.Pin);
+        var pinHash = FairBank.SharedKernel.Security.PasswordHasher.Hash(request.Pin);
         card.SetPin(pinHash);
 
         await cardRepository.UpdateAsync(card, ct);

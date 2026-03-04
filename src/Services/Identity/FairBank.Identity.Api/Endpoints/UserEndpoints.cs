@@ -84,6 +84,12 @@ public static class UserEndpoints
                     new LoginLockoutResponse(true, ex.LockedUntil, remaining),
                     statusCode: StatusCodes.Status429TooManyRequests);
             }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("verified", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.Json(
+                    new { error = "EmailNotVerified", message = ex.Message },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         })
         .WithName("LoginUser")
         .Produces<LoginResponse>(StatusCodes.Status200OK)

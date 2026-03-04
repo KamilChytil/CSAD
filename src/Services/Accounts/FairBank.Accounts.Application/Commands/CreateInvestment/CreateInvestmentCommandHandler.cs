@@ -1,15 +1,28 @@
 using FairBank.Accounts.Application.DTOs;
 using FairBank.Accounts.Application.Ports;
 using FairBank.Accounts.Domain.Aggregates;
+using FairBank.Accounts.Domain.ValueObjects;
 using MediatR;
 
 namespace FairBank.Accounts.Application.Commands.CreateInvestment;
 
-public sealed class CreateInvestmentCommandHandler(IInvestmentEventStore investmentEventStore)
+public sealed class CreateInvestmentCommandHandler(
+    IInvestmentEventStore investmentEventStore,
+    IAccountEventStore accountEventStore)
     : IRequestHandler<CreateInvestmentCommand, InvestmentResponse>
 {
     public async Task<InvestmentResponse> Handle(CreateInvestmentCommand request, CancellationToken ct)
     {
+        // Withdraw the invested amount from the source account
+        var account = await accountEventStore.LoadAsync(request.AccountId, ct)
+            ?? throw new InvalidOperationException($"Account {request.AccountId} not found.");
+
+        account.Withdraw(
+            Money.Create(request.Amount, request.Currency),
+            $"Investice: {request.Name}");
+
+        await accountEventStore.AppendEventsAsync(account, ct);
+
         var investment = Investment.Create(
             request.AccountId,
             request.Name,

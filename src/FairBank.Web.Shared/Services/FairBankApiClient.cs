@@ -438,7 +438,8 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
 
     public async Task SellInvestmentAsync(Guid investmentId)
     {
-        await http.PostAsync($"api/v1/investments/{investmentId}/sell", null);
+        var response = await http.PostAsync($"api/v1/investments/{investmentId}/sell", null);
+        response.EnsureSuccessStatusCode();
     }
 
     // ── Admin ─────────────────────────────────────────────────

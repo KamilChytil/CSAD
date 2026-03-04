@@ -45,8 +45,8 @@ public sealed class LoginUserCommandHandler(
             throw new UserLockedOutException(user.LockedUntil!.Value);
         }
 
-        // BCrypt password verification
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        // Argon2id password verification (with BCrypt backward compatibility)
+        if (!FairBank.SharedKernel.Security.PasswordHasher.Verify(request.Password, user.PasswordHash))
         {
             user.RecordFailedLogin();
 
