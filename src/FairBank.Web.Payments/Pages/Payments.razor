@@ -842,11 +842,11 @@
         {
             var bytes = await Api.DownloadStatementAsync(_selectedAccountId.Value, _statementFrom, _statementTo, _statementFormat);
             var base64 = Convert.ToBase64String(bytes);
-            await Js.InvokeVoidAsync("vabank.downloadFile", base64, $"statement-{_selectedAccountId}.{_statementFormat}");
+            await Js.InvokeVoidAsync("vabank.downloadFile", base64, $"vypis-{DateTime.UtcNow:yyyyMMdd}.{_statementFormat}");
         }
         catch
         {
-            // ignore failure
+            _errorMessage = "Nepodařilo se vygenerovat výpis. Zkuste to prosím znovu.";
         }
     }
 

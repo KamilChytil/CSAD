@@ -7,7 +7,7 @@ services:
       dockerfile: src/FairBank.Web/Dockerfile
     container_name: fairbank-web
     ports:
-      - "8080:80"
+      - "80:80"
     environment:
       ENABLE_CACHE: "false"    # set to "false" to disable FE caching (for testing)
     depends_on:
