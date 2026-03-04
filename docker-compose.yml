@@ -75,9 +75,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Host=postgres-primary;Port=5432;Database=fairbank;Username=fairbank_app;Password=fairbank_app_2026;Search Path=accounts_service"
+      Services__IdentityApi: "http://identity-api:8080"
     depends_on:
       postgres-primary:
         condition: service_healthy
+      identity-api:
+        condition: service_started
     networks:
       - backend
 

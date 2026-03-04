@@ -6,7 +6,8 @@ namespace FairBank.Accounts.Application.Commands.ApproveTransaction;
 
 public sealed class ApproveTransactionCommandHandler(
     IPendingTransactionStore pendingStore,
-    IAccountEventStore accountStore)
+    IAccountEventStore accountStore,
+    INotificationClient notificationClient)
     : IRequestHandler<ApproveTransactionCommand, PendingTransactionResponse>
 {
     public async Task<PendingTransactionResponse> Handle(ApproveTransactionCommand request, CancellationToken ct)
@@ -23,6 +24,14 @@ public sealed class ApproveTransactionCommandHandler(
 
         account.Withdraw(tx.Amount, tx.Description);
         await accountStore.AppendEventsAsync(account, ct);
+
+        // Notify child about approval
+        await notificationClient.SendAsync(
+            tx.RequestedBy,
+            "TransactionApproved",
+            "Platba schválena",
+            $"Tvá platba {tx.Amount.Amount} {tx.Amount.Currency} byla schválena.",
+            tx.Id, "PendingTransaction", ct);
 
         return new PendingTransactionResponse(
             tx.Id, tx.AccountId, tx.Amount.Amount, tx.Amount.Currency,
