@@ -2,6 +2,7 @@
 @namespace FairBank.Web.Payments.Pages
 @inject IFairBankApi Api
 @inject IAuthService Auth
+@inject IJSRuntime Js
 
 <PageHeader Title="PLATBY" ShowChip="false">
     <Actions>
@@ -129,6 +130,23 @@
             <div class="stat-item">
                 <div class="stat-value">@CompletedHistory.Count</div>
                 <div class="stat-label">Transakcí</div>
+            </div>
+        </div>
+
+        <div class="statement-controls">
+            <div class="statement-inputs">
+                <label>Od:<InputDate class="form-input" @bind-Value="_statementFrom" /></label>
+                <label>Do:<InputDate class="form-input" @bind-Value="_statementTo" /></label>
+                <label>Format:
+                    <select class="form-input" @bind="_statementFormat">
+                        <option value="pdf">PDF</option>
+                        <option value="docx">DOCX</option>
+                        <option value="xlsx">Excel</option>
+                    </select>
+                </label>
+            </div>
+            <div class="statement-actions">
+                <VbButton Variant="outline" OnClick="DownloadStatement">Stáhnout výpis</VbButton>
             </div>
         </div>
 
@@ -608,6 +626,11 @@
     private string _selectedAccountCurrency = "CZK";
     private decimal _accountBalance;
 
+    // Statement export controls
+    private DateTime? _statementFrom;
+    private DateTime? _statementTo;
+    private string _statementFormat = "pdf";
+
     // ── New payment (split account number) ──
     private string _recipientPrefix = "";
     private string _recipientNumber = "";
@@ -810,6 +833,21 @@
             await LoadData();
         }
         catch { /* keep existing data */ }
+    }
+
+    private async Task DownloadStatement()
+    {
+        if (_selectedAccountId is null) return;
+        try
+        {
+            var bytes = await Api.DownloadStatementAsync(_selectedAccountId.Value, _statementFrom, _statementTo, _statementFormat);
+            var base64 = Convert.ToBase64String(bytes);
+            await Js.InvokeVoidAsync("vabank.downloadFile", base64, $"statement-{_selectedAccountId}.{_statementFormat}");
+        }
+        catch
+        {
+            // ignore failure
+        }
     }
 
     // ── Account number helpers ──
