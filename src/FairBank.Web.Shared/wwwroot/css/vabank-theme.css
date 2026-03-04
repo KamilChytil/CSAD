@@ -1739,6 +1739,68 @@ a:hover { color: var(--vb-red-light); }
     margin-top: 12px;
 }
 
+/* ── Account Number Row ──────────────────────────────────── */
+.account-number-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.account-number-row .account-prefix {
+    width: 90px;
+    min-width: 80px;
+    flex-shrink: 0;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.account-number-row .account-number {
+    flex: 1;
+    min-width: 120px;
+    font-variant-numeric: tabular-nums;
+}
+
+.account-number-row .account-bank {
+    width: auto;
+    min-width: 160px;
+    flex-shrink: 0;
+}
+
+.account-number-row .account-sep {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--vb-text-muted);
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.field-error {
+    display: block;
+    font-size: 12px;
+    color: var(--vb-red);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* ── Currency Select in international payments ───────────── */
+.input-with-suffix .currency-select {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 90px;
+    height: 100%;
+    border: none;
+    border-left: 2px solid var(--vb-input-border);
+    border-radius: 0 var(--vb-radius-sm) var(--vb-radius-sm) 0;
+    text-align: center;
+    font-weight: 600;
+    padding: 0 8px;
+}
+
+.input-with-suffix:has(.currency-select) .form-input {
+    padding-right: 100px;
+}
+
 .progress-chips { display: flex; flex-direction: column; gap: 8px; }
 
 /* ── Badges ──────────────────────────────────────────────── */

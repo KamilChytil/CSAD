@@ -42,6 +42,7 @@ services:
       - accounts-api
       - payments-api
       - products-api
+      - chat-api
     networks:
       - frontend
       - backend

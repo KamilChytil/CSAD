@@ -5,6 +5,7 @@ using FairBank.Identity.Application.Users.Commands.LogoutUser;
 using FairBank.Identity.Application.Users.Commands.RegisterUser;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Application.Users.Queries.GetChildren;
+using FairBank.Identity.Application.Users.Queries.GetBankers;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
 using FairBank.Identity.Domain.Entities;
@@ -103,6 +104,14 @@ public static class UserEndpoints
         })
         .WithName("GetChildren")
         .Produces(StatusCodes.Status200OK);
+
+        group.MapGet("/bankers", async (ISender sender) =>
+        {
+            var result = await sender.Send(new GetBankersQuery());
+            return Results.Ok(result);
+        })
+        .WithName("GetBankers")
+        .Produces<IEnumerable<UserResponse>>(StatusCodes.Status200OK);
 
         return group;
     }

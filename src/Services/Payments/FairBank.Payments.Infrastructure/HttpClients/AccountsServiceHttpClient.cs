@@ -16,7 +16,7 @@ public sealed class AccountsServiceHttpClient(HttpClient httpClient) : IAccounts
 
     public async Task<AccountInfo?> GetAccountByNumberAsync(string accountNumber, CancellationToken ct = default)
     {
-        var response = await httpClient.GetAsync($"api/v1/accounts/by-number/{Uri.EscapeDataString(accountNumber)}", ct);
+        var response = await httpClient.GetAsync($"api/v1/accounts/by-number?accountNumber={Uri.EscapeDataString(accountNumber)}", ct);
         if (!response.IsSuccessStatusCode) return null;
 
         var dto = await response.Content.ReadFromJsonAsync<AccountApiDto>(ct);
