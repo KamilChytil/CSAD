@@ -4,12 +4,15 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.VerifyTwoFactor;
 
 public sealed class VerifyTwoFactorCommandHandler(
     IUserRepository userRepo,
     ITwoFactorAuthRepository tfaRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<VerifyTwoFactorCommand, LoginResponse>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<VerifyTwoFactorCommand, LoginResponse>
 {
     public async Task<LoginResponse> Handle(VerifyTwoFactorCommand request, CancellationToken ct)
     {
@@ -55,6 +58,14 @@ public sealed class VerifyTwoFactorCommandHandler(
         await unitOfWork.SaveChangesAsync(ct);
 
         var token = SessionTokenHelper.Encode(user.Id, sessionId);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "VerifyTwoFactor",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Successfully verified 2FA and logged in"), ct);
 
         return new LoginResponse(
             Token: token,

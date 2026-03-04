@@ -22,9 +22,33 @@ public sealed class AuditLogRepository(IdentityDbContext db) : IAuditLogReposito
         return Task.CompletedTask;
     }
 
-    public async Task<(IEnumerable<AuditLog> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct)
+    public async Task<(IEnumerable<AuditLog> Items, int TotalCount)> GetPagedAsync(
+        int page,
+        int pageSize,
+        Guid? userId,
+        string? action,
+        string? entityName,
+        DateTime? startDate,
+        DateTime? endDate,
+        CancellationToken ct)
     {
         var query = db.AuditLogs.AsNoTracking();
+
+        if (userId.HasValue)
+            query = query.Where(l => l.UserId == userId.Value);
+
+        if (!string.IsNullOrWhiteSpace(action))
+            query = query.Where(l => l.Action == action);
+
+        if (!string.IsNullOrWhiteSpace(entityName))
+            query = query.Where(l => l.EntityName == entityName);
+
+        if (startDate.HasValue)
+            query = query.Where(l => l.Timestamp >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(l => l.Timestamp <= endDate.Value);
+
         var totalCount = await query.CountAsync(ct);
         var items = await query
             .OrderByDescending(l => l.Timestamp)

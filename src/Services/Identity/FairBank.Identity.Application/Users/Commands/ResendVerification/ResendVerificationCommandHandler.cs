@@ -4,12 +4,15 @@ using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.ResendVerification;
 
 public sealed class ResendVerificationCommandHandler(
     IUserRepository userRepository,
     IEmailSender emailSender,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<ResendVerificationCommand>
 {
     public async Task Handle(ResendVerificationCommand request, CancellationToken ct)
@@ -38,5 +41,13 @@ public sealed class ResendVerificationCommandHandler(
             user.Email.Value,
             user.EmailVerificationToken!,
             ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "ResendVerification",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            $"Resent email verification to {email.Value}"), ct);
     }
 }

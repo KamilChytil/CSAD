@@ -412,8 +412,16 @@ public static class UserEndpoints
 
         // ── Admin Audit Logs ─────────────────────────────────
 
-        group.MapGet("/admin/audit-logs", async (ISender sender, int page = 1, int pageSize = 20) =>
-            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize))))
+        group.MapGet("/admin/audit-logs", async (
+            ISender sender, 
+            int page = 1, 
+            int pageSize = 20,
+            Guid? userId = null,
+            string? action = null,
+            string? entityName = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null) =>
+            Results.Ok(await sender.Send(new GetAuditLogsQuery(page, pageSize, userId, action, entityName, startDate, endDate))))
         .WithName("GetAuditLogs")
         .Produces<PagedAuditLogsResponse>(StatusCodes.Status200OK);
 

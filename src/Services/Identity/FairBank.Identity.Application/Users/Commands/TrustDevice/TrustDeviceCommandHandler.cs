@@ -2,11 +2,14 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.TrustDevice;
 
 public sealed class TrustDeviceCommandHandler(
     IUserDeviceRepository deviceRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<TrustDeviceCommand>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<TrustDeviceCommand>
 {
     public async Task Handle(TrustDeviceCommand request, CancellationToken ct)
     {
@@ -19,5 +22,13 @@ public sealed class TrustDeviceCommandHandler(
         device.MarkTrusted();
         await deviceRepo.UpdateAsync(device, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "TrustDevice",
+            request.UserId,
+            null,
+            "UserDevice",
+            device.Id.ToString(),
+            $"Marked device {device.DeviceName} as trusted"), ct);
     }
 }

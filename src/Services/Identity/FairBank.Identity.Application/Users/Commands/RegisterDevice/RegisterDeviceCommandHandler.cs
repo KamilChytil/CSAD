@@ -4,11 +4,14 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.RegisterDevice;
 
 public sealed class RegisterDeviceCommandHandler(
     IUserDeviceRepository deviceRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<RegisterDeviceCommand, DeviceResponse>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<RegisterDeviceCommand, DeviceResponse>
 {
     public async Task<DeviceResponse> Handle(RegisterDeviceCommand request, CancellationToken ct)
     {
@@ -32,6 +35,15 @@ public sealed class RegisterDeviceCommandHandler(
 
         await deviceRepo.AddAsync(device, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "RegisterDevice",
+            request.UserId,
+            null, // UserEmail may not be readily available here
+            "UserDevice",
+            device.Id.ToString(),
+            $"Registered new device {request.DeviceName}"), ct);
+
         return MapToResponse(device);
     }
 

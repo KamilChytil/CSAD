@@ -4,12 +4,15 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.DisableTwoFactor;
 
 public sealed class DisableTwoFactorCommandHandler(
     IUserRepository userRepo,
     ITwoFactorAuthRepository tfaRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<DisableTwoFactorCommand>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<DisableTwoFactorCommand>
 {
     public async Task Handle(DisableTwoFactorCommand request, CancellationToken ct)
     {
@@ -36,6 +39,14 @@ public sealed class DisableTwoFactorCommandHandler(
         user.DisableTwoFactor();
         await userRepo.UpdateAsync(user, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "DisableTwoFactor",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Disabled two-factor authentication"), ct);
     }
 
     private static bool VerifyBackupCode(TwoFactorAuth tfa, string code)

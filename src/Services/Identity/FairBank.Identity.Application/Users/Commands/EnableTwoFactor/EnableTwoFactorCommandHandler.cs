@@ -3,12 +3,15 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.EnableTwoFactor;
 
 public sealed class EnableTwoFactorCommandHandler(
     IUserRepository userRepo,
     ITwoFactorAuthRepository tfaRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<EnableTwoFactorCommand, string[]>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<EnableTwoFactorCommand, string[]>
 {
     public async Task<string[]> Handle(EnableTwoFactorCommand request, CancellationToken ct)
     {
@@ -35,6 +38,14 @@ public sealed class EnableTwoFactorCommandHandler(
         user.EnableTwoFactor();
         await userRepo.UpdateAsync(user, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "EnableTwoFactor",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Enabled two-factor authentication"), ct);
 
         return backupCodes; // Return plaintext codes once, user must save them
     }

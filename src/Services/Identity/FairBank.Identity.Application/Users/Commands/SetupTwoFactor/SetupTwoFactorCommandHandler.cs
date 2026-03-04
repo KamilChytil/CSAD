@@ -5,12 +5,15 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.SetupTwoFactor;
 
 public sealed class SetupTwoFactorCommandHandler(
     IUserRepository userRepo,
     ITwoFactorAuthRepository tfaRepo,
-    IUnitOfWork unitOfWork) : IRequestHandler<SetupTwoFactorCommand, TwoFactorSetupResponse>
+    IUnitOfWork unitOfWork,
+    ISender sender) : IRequestHandler<SetupTwoFactorCommand, TwoFactorSetupResponse>
 {
     public async Task<TwoFactorSetupResponse> Handle(SetupTwoFactorCommand request, CancellationToken ct)
     {
@@ -36,6 +39,14 @@ public sealed class SetupTwoFactorCommandHandler(
         var tfa = TwoFactorAuth.Create(request.UserId, secret);
         await tfaRepo.AddAsync(tfa, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "SetupTwoFactor",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Initiated 2FA setup"), ct);
 
         return new TwoFactorSetupResponse(
             Secret: secret,

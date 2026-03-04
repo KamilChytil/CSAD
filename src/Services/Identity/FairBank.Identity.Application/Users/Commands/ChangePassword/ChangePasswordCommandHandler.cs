@@ -2,11 +2,14 @@ using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
 using MediatR;
 
+using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
+
 namespace FairBank.Identity.Application.Users.Commands.ChangePassword;
 
 public sealed class ChangePasswordCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ISender sender)
     : IRequestHandler<ChangePasswordCommand, bool>
 {
     public async Task<bool> Handle(ChangePasswordCommand request, CancellationToken ct)
@@ -22,6 +25,14 @@ public sealed class ChangePasswordCommandHandler(
 
         await userRepository.UpdateAsync(user, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await sender.Send(new RecordAuditLogCommand(
+            "ChangePassword",
+            user.Id,
+            user.Email.Value,
+            "User",
+            user.Id.ToString(),
+            "Successfully changed password"), ct);
 
         return true;
     }
