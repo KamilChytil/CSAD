@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
 @inject ThemeService Theme
+@inject IAuthService Auth
+@inject IFairBankApi Api
 @implements IDisposable
 
 <AuthGuard>
@@ -14,9 +16,39 @@
                     <span class="topbar-title">Va-bank</span>
                 </div>
                 <div class="topbar-actions">
-                    <button class="topbar-btn" title="Notifikace">
-                        <VbIcon Name="bell" Size="sm" />
-                    </button>
+                    <div class="notification-wrapper">
+                        <button class="topbar-btn" @onclick="ToggleNotifications" title="Notifikace">
+                            <VbIcon Name="bell" Size="sm" />
+                            @if (_unreadCount > 0)
+                            {
+                                <span class="notification-badge">@(_unreadCount > 9 ? "9+" : _unreadCount.ToString())</span>
+                            }
+                        </button>
+                        @if (_showNotifications)
+                        {
+                            <div class="notification-dropdown">
+                                <div class="notification-header">
+                                    <span>Notifikace</span>
+                                    @if (_unreadCount > 0)
+                                    {
+                                        <button class="mark-all-btn" @onclick="MarkAllRead">Označit vše</button>
+                                    }
+                                </div>
+                                @if (_notifications.Count == 0)
+                                {
+                                    <div class="notification-empty">Žádné notifikace</div>
+                                }
+                                @foreach (var n in _notifications.Take(10))
+                                {
+                                    <div class="notification-item @(n.IsRead ? "" : "unread")" @onclick="() => MarkRead(n.Id)">
+                                        <div class="notification-title">@n.Title</div>
+                                        <div class="notification-message">@n.Message</div>
+                                        <div class="notification-time">@n.CreatedAt.ToString("dd.MM. HH:mm")</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
                     <button class="topbar-btn theme-toggle" @onclick="ToggleTheme" title="@(Theme.IsDarkMode ? "Světlý režim" : "Tmavý režim")">
                         <VbIcon Name="@(Theme.IsDarkMode ? "sun" : "moon")" Size="sm" />
                     </button>
@@ -31,9 +63,57 @@
 </AuthGuard>
 
 @code {
+    private int _unreadCount;
+    private bool _showNotifications;
+    private List<NotificationDto> _notifications = [];
+    private System.Threading.Timer? _pollTimer;
+
     protected override void OnInitialized()
     {
         Theme.OnThemeChanged += HandleThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Auth.CurrentSession is not null)
+        {
+            await LoadNotifications();
+            _pollTimer = new System.Threading.Timer(async _ =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadNotifications();
+                    StateHasChanged();
+                });
+            }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadNotifications()
+    {
+        if (Auth.CurrentSession is null) return;
+        try
+        {
+            _unreadCount = await Api.GetUnreadNotificationCountAsync(Auth.CurrentSession.UserId);
+            _notifications = await Api.GetNotificationsAsync(Auth.CurrentSession.UserId);
+        }
+        catch { /* ignore polling errors */ }
+    }
+
+    private void ToggleNotifications() => _showNotifications = !_showNotifications;
+
+    private async Task MarkRead(Guid id)
+    {
+        await Api.MarkNotificationReadAsync(id);
+        await LoadNotifications();
+    }
+
+    private async Task MarkAllRead()
+    {
+        if (Auth.CurrentSession is null) return;
+        await Api.MarkAllNotificationsReadAsync(Auth.CurrentSession.UserId);
+        await LoadNotifications();
     }
 
     private async Task ToggleTheme()
@@ -45,6 +125,91 @@
 
     public void Dispose()
     {
+        _pollTimer?.Dispose();
         Theme.OnThemeChanged -= HandleThemeChanged;
     }
 }
+
+<style>
+.notification-wrapper {
+    position: relative;
+}
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--vb-red);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--vb-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--vb-bg-elevated);
+    border: 1px solid var(--vb-card-border);
+    border-radius: var(--vb-radius-md);
+    box-shadow: var(--vb-shadow);
+    z-index: 1000;
+}
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--vb-divider);
+    font-weight: 600;
+    color: var(--vb-text-primary);
+}
+.mark-all-btn {
+    background: none;
+    border: none;
+    color: var(--vb-red);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.notification-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--vb-divider);
+    cursor: pointer;
+    transition: var(--vb-transition);
+}
+.notification-item:hover {
+    background: var(--vb-bg);
+}
+.notification-item.unread {
+    background: rgba(var(--vb-red-rgb, 200, 50, 50), 0.05);
+    border-left: 3px solid var(--vb-red);
+}
+.notification-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--vb-text-primary);
+}
+.notification-message {
+    font-size: 0.8rem;
+    color: var(--vb-text-secondary);
+    margin-top: 2px;
+}
+.notification-time {
+    font-size: 0.7rem;
+    color: var(--vb-text-muted);
+    margin-top: 4px;
+}
+.notification-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--vb-text-muted);
+}
+</style>
