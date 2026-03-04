@@ -62,13 +62,13 @@
         var role = Auth.CurrentSession?.Role ?? "";
         _menuItems =
         [
-            new("platby", "Platby", "send", "paymant", () => true),
-            new("karty", "Karty", "credit-card", "fin", () => true),
+            new("platby", "Platby", "send", "payment", () => true),
+            new("karty", "Karty", "credit-card", "card", () => true),
             new("sporeni", "Spoření", "target", "target", () => role != "Child"),
             new("investice", "Investice", "investments", "chart", () => role != "Child"),
-            new("kurzy", "Kurzy", "exchange", null, () => role != "Child"),
-            new("produkty", "Produkty", "bank", null, () => role != "Child"),
-            new("rodina", "Rodina", "users", null, () => role == "Client"),
+            new("kurzy", "Kurzy", "exchange", "fin", () => role != "Child"),
+            new("produkty", "Produkty", "bank", "products", () => role != "Child"),
+            new("rodina", "Rodina", "users", "family", () => role == "Client"),
             new("zpravy", "Zprávy", "chat", "chat", () => true),
             new("sprava", "Správa", "clipboard", null, () => role == "Banker"),
             new("admin", "Admin", "settings", null, () => role == "Admin"),

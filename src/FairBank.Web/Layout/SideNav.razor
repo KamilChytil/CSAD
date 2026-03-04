@@ -21,11 +21,11 @@
             <span class="side-nav-label">Přehled</span>
         </NavLink>
         <NavLink class="side-nav-item" href="platby">
-            <span class="side-nav-icon"><NavIcon Name="paymant" IsActive="@IsActive("platby")" Size="40" /></span>
+            <span class="side-nav-icon"><NavIcon Name="payment" IsActive="@IsActive("platby")" Size="40" /></span>
             <span class="side-nav-label">Platby</span>
         </NavLink>
         <NavLink class="side-nav-item" href="karty">
-            <span class="side-nav-icon"><NavIcon Name="fin" IsActive="@IsActive("karty")" Size="40" /></span>
+            <span class="side-nav-icon"><NavIcon Name="card" IsActive="@IsActive("karty")" Size="40" /></span>
             <span class="side-nav-label">Karty</span>
         </NavLink>
         @if (Auth.CurrentSession?.Role != "Child")
@@ -39,21 +39,21 @@
                 <span class="side-nav-label">Investice</span>
             </NavLink>
             <NavLink class="side-nav-item" href="kurzy">
-                <span class="side-nav-icon"><VbIcon Name="exchange" Size="lg" /></span>
+                <span class="side-nav-icon"><NavIcon Name="fin" IsActive="@IsActive("kurzy")" Size="40" /></span>
                 <span class="side-nav-label">Kurzy</span>
             </NavLink>
         }
         @if (Auth.CurrentSession?.Role != "Child")
         {
             <NavLink class="side-nav-item" href="produkty">
-                <span class="side-nav-icon"><VbIcon Name="bank" Size="lg" /></span>
+                <span class="side-nav-icon"><NavIcon Name="products" IsActive="@IsActive("produkty")" Size="40" /></span>
                 <span class="side-nav-label">Produkty</span>
             </NavLink>
         }
         @if (Auth.CurrentSession?.Role == "Client")
         {
             <NavLink class="side-nav-item" href="rodina">
-                <span class="side-nav-icon"><VbIcon Name="users" Size="lg" /></span>
+                <span class="side-nav-icon"><NavIcon Name="family" IsActive="@IsActive("rodina")" Size="40" /></span>
                 <span class="side-nav-label">Rodina</span>
             </NavLink>
         }
