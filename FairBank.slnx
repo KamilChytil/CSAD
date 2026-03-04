@@ -67,5 +67,9 @@
     <Project Path="tests/FairBank.Payments.UnitTests/FairBank.Payments.UnitTests.csproj" />
     <Project Path="tests/FairBank.Web.Exchange.Tests/FairBank.Web.Exchange.Tests.csproj" />
     <Project Path="tests/FairBank.Web.Products.Tests/FairBank.Web.Products.Tests.csproj" />
+    <Project Path="tests/FairBank.ApiGateway.Tests/FairBank.ApiGateway.Tests.csproj" />
+    <Project Path="tests/FairBank.SharedKernel.Tests/FairBank.SharedKernel.Tests.csproj" />
+    <Project Path="tests/FairBank.Cards.UnitTests/FairBank.Cards.UnitTests.csproj" />
+    <Project Path="tests/FairBank.Chat.UnitTests/FairBank.Chat.UnitTests.csproj" />
   </Folder>
 </Solution>
