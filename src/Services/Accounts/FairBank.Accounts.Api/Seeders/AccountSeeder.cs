@@ -1,4 +1,5 @@
 using FairBank.Accounts.Application.Commands.CreateAccount;
+using FairBank.Accounts.Application.Commands.CreateInvestment;
 using FairBank.Accounts.Application.Commands.DepositMoney;
 using FairBank.Accounts.Domain.Aggregates;
 using FairBank.Accounts.Domain.Enums;
@@ -57,6 +58,9 @@ public static class AccountSeeder
                     Currency.CZK,
                     description));
             }
+
+            // Seed demo investments for the Client account
+            await SeedInvestmentsAsync(session, sender);
         }
         catch (Exception ex)
         {
@@ -64,5 +68,33 @@ public static class AccountSeeder
             var logger = services.GetService<ILoggerFactory>()?.CreateLogger("AccountSeeder");
             logger?.LogWarning(ex, "Account seeding failed (will retry on next restart)");
         }
+    }
+
+    private static async Task SeedInvestmentsAsync(IDocumentSession session, ISender sender)
+    {
+        // Find the client account
+        var clientAccount = await session.Query<Account>()
+            .FirstOrDefaultAsync(a => a.OwnerId == ClientSeedId);
+
+        if (clientAccount is null) return;
+
+        // Check if investments already exist for this account
+        var hasInvestments = await session.Query<Investment>()
+            .AnyAsync(i => i.AccountId == clientAccount.Id);
+
+        if (hasInvestments) return;
+
+        // Seed 3 demo investments
+        await sender.Send(new CreateInvestmentCommand(
+            clientAccount.Id, "Akciový fond VA-BANK", InvestmentType.Fund,
+            25_000m, 10m, 2_500m, Currency.CZK));
+
+        await sender.Send(new CreateInvestmentCommand(
+            clientAccount.Id, "Dluhopisový fond", InvestmentType.Bond,
+            15_000m, 15m, 1_000m, Currency.CZK));
+
+        await sender.Send(new CreateInvestmentCommand(
+            clientAccount.Id, "Bitcoin", InvestmentType.Crypto,
+            5_000m, 0.05m, 100_000m, Currency.CZK));
     }
 }

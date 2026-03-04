@@ -24,7 +24,8 @@ builder.Services.AddAccountsApplication();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
-builder.Services.AddAccountsInfrastructure(connectionString);
+var identityApiUrl = builder.Configuration["Services:IdentityApi"] ?? "http://identity-api:8080";
+builder.Services.AddAccountsInfrastructure(connectionString, identityApiUrl);
 
 // OpenAPI
 builder.Services.AddOpenApi();
@@ -43,6 +44,7 @@ app.MapAccountEndpoints();
 app.MapCardEndpoints();
 app.MapSavingsGoalEndpoints();
 app.MapSavingsRuleEndpoints();
+app.MapInvestmentEndpoints();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "Accounts" }))
     .WithTags("Health");
