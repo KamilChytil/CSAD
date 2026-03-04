@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -13,6 +14,7 @@ public class VerifyEmailCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUserWithVerificationToken()
     {
@@ -32,7 +34,7 @@ public class VerifyEmailCommandHandlerTests
         _userRepository.GetByEmailVerificationTokenAsync(token, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new VerifyEmailCommandHandler(_userRepository, _unitOfWork);
+        var handler = new VerifyEmailCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new VerifyEmailCommand(token);
 
         // Act
@@ -53,7 +55,7 @@ public class VerifyEmailCommandHandlerTests
         _userRepository.GetByEmailVerificationTokenAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new VerifyEmailCommandHandler(_userRepository, _unitOfWork);
+        var handler = new VerifyEmailCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new VerifyEmailCommand("invalid-token");
 
         // Act

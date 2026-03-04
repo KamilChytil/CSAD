@@ -4,6 +4,7 @@ using FairBank.Identity.Application.Users.Commands.RegisterDevice;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -11,6 +12,7 @@ public class RegisterDeviceCommandHandlerTests
 {
     private readonly IUserDeviceRepository _deviceRepository = Substitute.For<IUserDeviceRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     [Fact]
     public async Task Handle_WithNewDevice_ShouldCreateDevice()
@@ -23,7 +25,7 @@ public class RegisterDeviceCommandHandlerTests
                 userId, "Chrome", "Windows", "Desktop", Arg.Any<CancellationToken>())
             .Returns((UserDevice?)null);
 
-        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new RegisterDeviceCommand(
             userId, "My Desktop", "Desktop", "Chrome", "Windows", "192.168.1.1", sessionId);
 
@@ -57,7 +59,7 @@ public class RegisterDeviceCommandHandlerTests
                 userId, "Chrome", "Windows", "Desktop", Arg.Any<CancellationToken>())
             .Returns(existingDevice);
 
-        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new RegisterDeviceCommand(
             userId, "My Desktop", "Desktop", "Chrome", "Windows", "192.168.1.1", sessionId);
 
@@ -85,7 +87,7 @@ public class RegisterDeviceCommandHandlerTests
                 userId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((UserDevice?)null);
 
-        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork);
+        var handler = new RegisterDeviceCommandHandler(_deviceRepository, _unitOfWork, _sender);
         var command = new RegisterDeviceCommand(
             userId, "iPhone 15", "Mobile", "Safari", "iOS", "10.0.0.5", sessionId);
 

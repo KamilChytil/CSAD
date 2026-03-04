@@ -2,6 +2,7 @@ using FluentAssertions;
 using NSubstitute;
 using FairBank.Accounts.Application.Ports;
 using FairBank.Accounts.Application.Queries.GetAccountTransactions;
+using FairBank.Accounts.Domain.Enums;
 using FairBank.Accounts.Domain.Events;
 using FairBank.Accounts.Domain.ValueObjects;
 
@@ -15,8 +16,8 @@ public class GetAccountTransactionsQueryHandlerTests
     public async Task Handle_WithDepositAndWithdrawal_ShouldReturnTransactionsChronologically()
     {
         var accountId = Guid.NewGuid();
-        var deposit = new MoneyDeposited(accountId, 100m, "CZK", "Salary", DateTime.UtcNow.AddDays(-1));
-        var withdraw = new MoneyWithdrawn(accountId, 50m, "CZK", "Groceries", DateTime.UtcNow);
+        var deposit = new MoneyDeposited(accountId, 100m, Currency.CZK, "Salary", DateTime.UtcNow.AddDays(-1));
+        var withdraw = new MoneyWithdrawn(accountId, 50m, Currency.CZK, "Groceries", DateTime.UtcNow);
 
         _eventStore.GetStreamEventsAsync(accountId, Arg.Any<CancellationToken>())
             .Returns(new List<object> { deposit, withdraw });
@@ -35,8 +36,8 @@ public class GetAccountTransactionsQueryHandlerTests
     public async Task Handle_WithDateFilter_ShouldExcludeOutsideRange()
     {
         var accountId = Guid.NewGuid();
-        var old = new MoneyDeposited(accountId, 10m, "CZK", "Old", DateTime.UtcNow.AddMonths(-2));
-        var recent = new MoneyDeposited(accountId, 20m, "CZK", "Recent", DateTime.UtcNow);
+        var old = new MoneyDeposited(accountId, 10m, Currency.CZK, "Old", DateTime.UtcNow.AddMonths(-2));
+        var recent = new MoneyDeposited(accountId, 20m, Currency.CZK, "Recent", DateTime.UtcNow);
 
         _eventStore.GetStreamEventsAsync(accountId, Arg.Any<CancellationToken>())
             .Returns(new List<object> { old, recent });

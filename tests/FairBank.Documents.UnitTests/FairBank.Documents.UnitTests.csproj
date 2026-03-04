@@ -1,4 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -6,9 +12,15 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="../..\src\Services\Documents\FairBank.Documents.Domain\FairBank.Documents.Domain.csproj" />
-    <ProjectReference Include="../..\src\Services\Documents\FairBank.Documents.Application\FairBank.Documents.Application.csproj" />
-    <ProjectReference Include="../..\src\Services\Documents\FairBank.Documents.Infrastructure\FairBank.Documents.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Services/Documents/FairBank.Documents.Domain/FairBank.Documents.Domain.csproj" />
+    <ProjectReference Include="../../src/Services/Documents/FairBank.Documents.Application/FairBank.Documents.Application.csproj" />
+    <ProjectReference Include="../../src/Services/Documents/FairBank.Documents.Infrastructure/FairBank.Documents.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
 </Project>

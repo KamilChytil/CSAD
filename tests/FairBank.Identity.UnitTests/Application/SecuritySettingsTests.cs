@@ -6,6 +6,7 @@ using FairBank.Identity.Domain.Enums;
 using FairBank.Identity.Domain.Ports;
 using FairBank.Identity.Domain.ValueObjects;
 using FairBank.SharedKernel.Application;
+using MediatR;
 
 namespace FairBank.Identity.UnitTests.Application;
 
@@ -13,6 +14,7 @@ public class SecuritySettingsTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ISender _sender = Substitute.For<ISender>();
 
     private User CreateUser()
     {
@@ -30,7 +32,7 @@ public class SecuritySettingsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork);
+        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new SetSecuritySettingsCommand(userId, false, true, null);
 
         // Act
@@ -51,7 +53,7 @@ public class SecuritySettingsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork);
+        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new SetSecuritySettingsCommand(userId, true, false, null);
 
         // Act
@@ -72,7 +74,7 @@ public class SecuritySettingsTests
         _userRepository.GetByIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(user);
 
-        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork);
+        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new SetSecuritySettingsCommand(userId, true, true, 5000m);
 
         // Act
@@ -92,7 +94,7 @@ public class SecuritySettingsTests
         _userRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork);
+        var handler = new SetSecuritySettingsCommandHandler(_userRepository, _unitOfWork, _sender);
         var command = new SetSecuritySettingsCommand(Guid.NewGuid(), false, false, 1000m);
 
         // Act
