@@ -60,18 +60,6 @@ using (var scope = app.Services.CreateScope())
     var conn = db.Database.GetDbConnection();
     await conn.OpenAsync();
 
-    // Ensure schema + grants exist (init.sql only runs on first volume init)
-    await using (var grantCmd = conn.CreateCommand())
-    {
-        grantCmd.CommandText = """
-            CREATE SCHEMA IF NOT EXISTS chat_service;
-            GRANT ALL PRIVILEGES ON SCHEMA chat_service TO CURRENT_USER;
-            ALTER DEFAULT PRIVILEGES IN SCHEMA chat_service GRANT ALL ON TABLES TO CURRENT_USER;
-            ALTER DEFAULT PRIVILEGES IN SCHEMA chat_service GRANT ALL ON SEQUENCES TO CURRENT_USER;
-            """;
-        await grantCmd.ExecuteNonQueryAsync();
-    }
-
     await using (var checkCmd = conn.CreateCommand())
     {
         checkCmd.CommandText =
@@ -79,7 +67,9 @@ using (var scope = app.Services.CreateScope())
         var exists = (bool)(await checkCmd.ExecuteScalarAsync())!;
         if (!exists)
         {
-            var script = db.Database.GenerateCreateScript();
+            // Use IF NOT EXISTS to safely handle partially-created schemas.
+            var script = db.Database.GenerateCreateScript()
+                .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal);
             await using var createCmd = conn.CreateCommand();
             createCmd.CommandText = script;
             await createCmd.ExecuteNonQueryAsync();

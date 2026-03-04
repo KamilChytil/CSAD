@@ -38,7 +38,8 @@ using (var scope = app.Services.CreateScope())
         var exists = (bool)(await checkCmd.ExecuteScalarAsync())!;
         if (!exists)
         {
-            var script = db.Database.GenerateCreateScript();
+            var script = db.Database.GenerateCreateScript()
+                .Replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", StringComparison.Ordinal);
             await using var createCmd = conn.CreateCommand();
             createCmd.CommandText = script;
             await createCmd.ExecuteNonQueryAsync();
