@@ -184,15 +184,29 @@
                     _checkingBalance = _account.Balance;
                     _checkingAccountNumber = _account.AccountNumber;
 
-                    // Load real transactions
-                    var payments = await Api.GetPaymentsByAccountAsync(_account.Id);
-                    _transactions = payments.Select(p => new TransactionVm(
-                        p.Description ?? p.RecipientAccountNumber,
-                        p.CreatedAt,
-                        p.SenderAccountId == _account.Id ? -p.Amount : p.Amount,
-                        p.SenderAccountId == _account.Id ? "withdrawal" : "deposit",
-                        ""
-                    )).Take(5).ToList();
+                    // Load recent transactions from ALL accounts so cross-account transfers show on both sides
+                    var allPaymentTasks = accounts.Select(a => Api.GetPaymentsByAccountAsync(a.Id)).ToList();
+                    await Task.WhenAll(allPaymentTasks);
+                    var myAccountIds = accounts.Select(a => a.Id).ToHashSet();
+                    var myAccountNumbers = accounts.Select(a => a.AccountNumber).ToHashSet();
+                    _transactions = allPaymentTasks
+                        .SelectMany(t => t.Result)
+                        .GroupBy(p => p.Id)
+                        .Select(g => g.First())
+                        .OrderByDescending(p => p.CreatedAt)
+                        .Select(p =>
+                        {
+                            var isInternal = myAccountIds.Contains(p.SenderAccountId)
+                                             && myAccountNumbers.Contains(p.RecipientAccountNumber);
+                            var sign = myAccountIds.Contains(p.SenderAccountId) ? -p.Amount : p.Amount;
+                            var desc = isInternal
+                                ? $"Převod mezi vlastními účty{(string.IsNullOrWhiteSpace(p.Description) ? "" : $": {p.Description}")}"
+                                : (p.Description ?? p.RecipientAccountNumber ?? p.SenderAccountNumber ?? "-");
+                            var type = sign < 0 ? "withdrawal" : "deposit";
+                            return new TransactionVm(desc, p.CreatedAt, sign, type, "");
+                        })
+                        .Take(5)
+                        .ToList();
 
                     // Load pending transaction count for Child role
                     if (_session.Role == "Child")
