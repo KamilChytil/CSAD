@@ -13,13 +13,31 @@
 <div class="page-content overview-page">
 
     @* ── HERO BALANCE CARD ────────────────────── *@
-    <BalanceCard Amount="@_balance" Currency="Kč" Variant="hero" Label="ZŮSTATEK" SubText="@_accountNumber">
+    <BalanceCard Amount="@_checkingBalance" Currency="Kč" Variant="hero" Label="BěžNÝ ÚČET" SubText="@_checkingAccountNumber">
         <div class="hero-quick-actions">
             <VbButton Variant="outline" Size="sm" IconName="send" OnClick="@(() => Nav("platby"))">Poslat</VbButton>
             <VbButton Variant="outline" Size="sm" IconName="qr" OnClick="@(() => Nav("platby"))">QR</VbButton>
             <VbButton Variant="outline" Size="sm" IconName="arrow-down" OnClick="@(() => Nav("platby"))">Přijmout</VbButton>
         </div>
     </BalanceCard>
+
+    @* ── SAVINGS ACCOUNT CARD ─────────────────── *@
+    @if (_savingsAccount is not null)
+    {
+        <ContentCard Title="SPOŘICÍ ÚČET">
+            <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-gold)" /></Icon>
+            <HeaderAction><a class="link-action" href="sporeni">Spravovat</a></HeaderAction>
+            <ChildContent>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">
+                    <div>
+                        <div style="font-size:1.4rem;font-weight:700;color:var(--vb-text-primary);">@_savingsAccount.Balance.ToString("N0") Kč</div>
+                        <div style="font-size:0.75rem;color:var(--vb-text-muted);margin-top:2px;">@_savingsAccount.AccountNumber</div>
+                    </div>
+                    <VbIcon Name="target" Size="md" Color="var(--vb-gold)" />
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
 
     @* ── CHILD ROLE: SPENDING LIMIT & PENDING ─── *@
     @if (_session?.Role == "Child" && _account is not null)
@@ -142,8 +160,9 @@
 
     private FairBank.Web.Shared.Models.AuthSession? _session;
     private FairBank.Web.Shared.Models.AccountResponse? _account;
-    private decimal _balance = 0m;
-    private string _accountNumber = "---";
+    private FairBank.Web.Shared.Models.AccountResponse? _savingsAccount;
+    private decimal _checkingBalance = 0m;
+    private string _checkingAccountNumber = "---";
     private int _pendingCount;
     private List<TransactionVm> _transactions = [];
     private List<ChallengeVm> _challenges = [];
@@ -160,9 +179,10 @@
                 var accounts = await Api.GetAccountsByOwnerAsync(session.UserId);
                 if (accounts.Any())
                 {
-                    _account = accounts[0];
-                    _balance = accounts.Sum(a => a.Balance);
-                    _accountNumber = _account.AccountNumber;
+                    _account = accounts.FirstOrDefault(a => a.AccountType == "Checking") ?? accounts[0];
+                    _savingsAccount = accounts.FirstOrDefault(a => a.AccountType == "Savings");
+                    _checkingBalance = _account.Balance;
+                    _checkingAccountNumber = _account.AccountNumber;
 
                     // Load real transactions
                     var payments = await Api.GetPaymentsByAccountAsync(_account.Id);

@@ -20,6 +20,13 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
         return (await response.Content.ReadFromJsonAsync<AccountResponse>())!;
     }
 
+    public async Task<AccountResponse> CreateSavingsAccountAsync(Guid ownerId)
+    {
+        var response = await http.PostAsJsonAsync("api/v1/accounts", new { OwnerId = ownerId, Currency = "CZK", AccountType = 1 });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<AccountResponse>())!;
+    }
+
     public async Task<AccountResponse> DepositAsync(Guid accountId, decimal amount, string currency, string? description = null)
     {
         var response = await http.PostAsJsonAsync($"api/v1/accounts/{accountId}/deposit",

@@ -36,6 +36,58 @@
     }
     else
     {
+        @* ── Savings Account Status Card ── *@
+        @if (_savingsAccount is not null)
+        {
+            <ContentCard Title="SPŘICÍ ÚČET" CssClass="section-savings-account">
+                <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    <div class="savings-account-header">
+                        <div class="savings-account-balance">
+                            <span class="savings-balance-label">Zůstatek</span>
+                            <span class="savings-balance-amount">@_savingsAccount.Balance.ToString("N0") Kč</span>
+                        </div>
+                        <div class="savings-account-badge">
+                            <VbIcon Name="check" Size="xs" Color="var(--vb-green)" />
+                            <span>Aktivní</span>
+                        </div>
+                    </div>
+                    <div class="savings-account-number">@_savingsAccount.AccountNumber</div>
+                </ChildContent>
+            </ContentCard>
+        }
+        else
+        {
+            <ContentCard Title="SPOŘICÍ ÚČET" CssClass="section-savings-account">
+                <Icon><VbIcon Name="target" Size="sm" Color="var(--vb-text-muted)" /></Icon>
+                <ChildContent>
+                    <div class="savings-request-block">
+                        <div class="savings-request-info">
+                            <VbIcon Name="warning" Size="sm" Color="var(--vb-gold)" />
+                            <div>
+                                <span class="savings-request-title">Nemáte aktivní spořicí účet</span>
+                                <span class="savings-request-desc">Zažádejte o spořicí účet. Vaše žádost bude odeslána bankéři ke schválení.</span>
+                            </div>
+                        </div>
+                        @if (_requestSuccess)
+                        {
+                            <div class="success-banner"><VbIcon Name="check" Size="xs" /> Žádost úspěšně odeslána! Účet byl založen.</div>
+                        }
+                        else
+                        {
+                            <VbButton Variant="primary" FullWidth="true" OnClick="RequestSavingsAccount" Disabled="@_requestLoading">
+                                @(_requestLoading ? "Vytvářím účet..." : "Zažádat o spořicí účet")
+                            </VbButton>
+                            @if (!string.IsNullOrEmpty(_requestError))
+                            {
+                                <div class="error-banner">@_requestError</div>
+                            }
+                        }
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
         @* ── New Goal Form ── *@
         @if (_showNewGoalForm)
         {
@@ -377,16 +429,114 @@
         color: var(--vb-text-primary);
         margin-left: auto;
     }
+
+    .savings-account-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+
+    .savings-account-balance {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .savings-balance-label {
+        font-size: 0.75rem;
+        color: var(--vb-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .savings-balance-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--vb-text-primary);
+    }
+
+    .savings-account-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: rgba(39, 174, 96, 0.1);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--vb-green);
+    }
+
+    .savings-account-number {
+        font-size: 0.78rem;
+        color: var(--vb-text-muted);
+        font-family: monospace;
+        margin-top: 4px;
+    }
+
+    .savings-request-block {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .savings-request-info {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .savings-request-title {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        margin-bottom: 3px;
+    }
+
+    .savings-request-desc {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+    }
+
+    .success-banner {
+        padding: 10px 14px;
+        background: rgba(39, 174, 96, 0.1);
+        border-radius: var(--vb-radius-sm);
+        color: var(--vb-green);
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .error-banner {
+        padding: 10px 14px;
+        background: rgba(210, 63, 58, 0.08);
+        border-radius: var(--vb-radius-sm);
+        color: var(--vb-red);
+        font-size: 0.85rem;
+    }
+    }
 </style>
 
 @code {
     private AuthSession? _session;
     private Guid? _accountId;
+    private FairBank.Web.Shared.Models.AccountResponse? _savingsAccount;
 
     private bool _loading = true;
     private string? _error;
     private string _formError = "";
     private bool _saving;
+
+    // Savings account request
+    private bool _requestLoading;
+    private bool _requestSuccess;
+    private string _requestError = "";
 
     private List<SavingsGoalDto> _goals = [];
     private List<SavingsRuleDto> _rules = [];
@@ -427,7 +577,10 @@
             var accounts = await Api.GetAccountsByOwnerAsync(_session.UserId);
             if (accounts.Any())
             {
-                _accountId = accounts[0].Id;
+                _savingsAccount = accounts.FirstOrDefault(a => a.AccountType == "Savings");
+                // Goals and rules belong to the savings account if it exists, otherwise checking
+                var primaryAccount = _savingsAccount ?? accounts.FirstOrDefault(a => a.AccountType == "Checking") ?? accounts[0];
+                _accountId = primaryAccount.Id;
                 await LoadData();
             }
             else
@@ -460,6 +613,29 @@
         catch (Exception ex)
         {
             _error = $"Chyba při načítání dat: {ex.Message}";
+        }
+    }
+
+    private async Task RequestSavingsAccount()
+    {
+        if (_session is null) return;
+        _requestLoading = true;
+        _requestError = "";
+        try
+        {
+            var acc = await Api.CreateSavingsAccountAsync(_session.UserId);
+            _savingsAccount = acc;
+            _accountId = acc.Id;
+            _requestSuccess = true;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _requestError = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            _requestLoading = false;
         }
     }
 
