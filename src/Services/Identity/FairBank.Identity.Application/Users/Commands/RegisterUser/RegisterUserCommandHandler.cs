@@ -46,6 +46,7 @@ public sealed class RegisterUserCommandHandler(
             phoneNumber: phoneNumber,
             address: address);
 
+        user.GenerateEmailVerificationToken();
         await userRepository.AddAsync(user, ct);
 
         auditLogger.LogSecurityEvent("Register", "Success", user.Id, details: $"Email={user.Email.Value}");

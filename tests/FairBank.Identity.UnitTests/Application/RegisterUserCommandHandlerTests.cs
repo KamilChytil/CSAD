@@ -42,6 +42,8 @@ public class RegisterUserCommandHandlerTests
 
         await _userRepository.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _emailSender.Received(1).SendEmailVerificationAsync(
+            "jan@example.com", Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
