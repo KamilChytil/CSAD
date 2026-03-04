@@ -4,17 +4,109 @@
 
 ---
 
-## Architecture Overview
+## Technology Stack
+
+### Language & Runtime
+
+| Technology | Version |
+|---|---|
+| C# / .NET | **10.0** (`net10.0` target framework) |
+| .NET SDK (build) | `mcr.microsoft.com/dotnet/sdk:10.0-alpine` |
+| .NET ASP.NET Runtime | `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` |
+| Nullable reference types | Enabled globally |
+| Implicit usings | Enabled globally |
+| Warnings as errors | Enabled globally |
+
+### Frontend
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Blazor WebAssembly | 10.0.3 | SPA framework (client-side WASM) |
+| ASP.NET SignalR Client | 10.0.3 | Real-time communication (Chat) |
+| Razor Class Libraries | — | Modular UI (Auth, Overview, Payments, Cards, Savings, Investments, Exchange, Products, Profile) |
+| Vanilla CSS | — | Custom "Vabank" design system |
+| nginx (Alpine) | latest | Static file server + reverse proxy for WASM |
+
+### Backend — Microservices
+
+| Technology | Version | Purpose |
+|---|---|---|
+| ASP.NET Core Minimal APIs | 10.0 | HTTP endpoints (8 services) |
+| MediatR | 14.0.0 | CQRS command/query dispatch |
+| FluentValidation | 12.1.1 | Request validation |
+| Entity Framework Core | 10.0.3 | ORM / data access |
+| Npgsql (EF Core provider) | 10.0.0 | PostgreSQL driver |
+| Marten | 8.22.1 | Event sourcing (Payments service) |
+| BCrypt.Net-Next | 4.0.3 | Password hashing |
+| QRCoder | 1.6.0 | QR code generation (SPAYD) |
+| ClosedXML | 0.105.0 | XLSX document generation |
+| DocumentFormat.OpenXml | 3.1.1 | DOCX document generation |
+
+### API Gateway
+
+| Technology | Version | Purpose |
+|---|---|---|
+| YARP (Yet Another Reverse Proxy) | 2.3.0 | Request routing to microservices |
+| ASP.NET Rate Limiting | built-in | Fixed-window rate limiting (3 tiers) |
+| In-Memory Cache | built-in | Session validation cache (30s TTL) |
+
+### Logging & Observability
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Serilog.AspNetCore | 10.0.0 | Structured logging framework |
+| Serilog.Sinks.Console | 6.1.1 | Console log output |
+| Confluent.Kafka | 2.3.0 | Kafka producer (custom Serilog sink) |
+| Apache Kafka | latest (KRaft) | Centralized log streaming / message broker |
+
+### API Documentation
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Microsoft.AspNetCore.OpenApi | 10.0.3 | OpenAPI spec generation |
+| Scalar.AspNetCore | 2.4.12 | Interactive API documentation UI |
+
+### Database & Infrastructure
+
+| Technology | Version | Purpose |
+|---|---|---|
+| PostgreSQL | 16 (Alpine) | Primary database (with WAL streaming replication) |
+| PostgreSQL Replica | 16 (Alpine) | Read replica (hot standby) |
+| Docker Compose | — | Container orchestration (13 services) |
+
+### Testing
+
+| Technology | Version | Purpose |
+|---|---|---|
+| xUnit | 2.9.3 | Test framework |
+| xunit.runner.visualstudio | 3.1.5 | VS test adapter |
+| Microsoft.NET.Test.Sdk | 18.3.0 | Test host |
+| FluentAssertions | 8.8.0 | Assertion library |
+| NSubstitute | 5.3.0 | Mocking framework |
+| Testcontainers.PostgreSql | 4.10.0 | Integration test containers |
+| Microsoft.AspNetCore.Mvc.Testing | 10.0.3 | Integration test server |
+| EF Core SQLite (in-memory) | 10.0.3 | Lightweight test database |
+
+### Authentication & Security
+
+| Technology | Version | Purpose |
+|---|---|---|
+| ASP.NET Authentication.Cookies | 10.0.3 | Cookie-based auth support |
+| Custom session token system | — | Base64-encoded UserId+SessionId tokens |
+| TOTP (2FA) | — | Time-based one-time passwords with backup codes |
+| Internal API Key (`X-Internal-Api-Key`) | — | Inter-service authentication |
+
+### Architecture Summary
 
 | Layer | Technology |
 |---|---|
-| Frontend | Blazor WASM (modular Razor Class Libraries) |
-| API Gateway | YARP Reverse Proxy (.NET) |
-| Backend | 8 independent microservices (.NET Minimal APIs) |
-| Messaging | MediatR (CQRS), Kafka (centralized log streaming) |
+| Frontend | Blazor WASM (modular Razor Class Libraries) served by nginx |
+| API Gateway | YARP Reverse Proxy (.NET 10) |
+| Backend | 8 independent microservices (.NET 10 Minimal APIs) |
+| Messaging | MediatR 14 (CQRS), Kafka (centralized log streaming) |
 | Database | PostgreSQL 16 (primary + streaming replica) |
-| Logging | Serilog → Console + Kafka sink |
-| Deployment | Docker Compose (13 containers) |
+| Logging | Serilog 10 → Console + Kafka sink |
+| Deployment | Docker Compose (13 containers on Alpine Linux) |
 
 ---
 
