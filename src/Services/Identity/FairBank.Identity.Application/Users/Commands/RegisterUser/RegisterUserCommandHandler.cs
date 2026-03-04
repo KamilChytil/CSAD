@@ -1,5 +1,4 @@
 using FairBank.Identity.Application.Audit.Commands.RecordAuditLog;
-using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Application.Users.DTOs;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Ports;
@@ -12,7 +11,6 @@ namespace FairBank.Identity.Application.Users.Commands.RegisterUser;
 
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
-    IEmailSender emailSender,
     IUnitOfWork unitOfWork,
     IAuditLogger auditLogger,
     ISender sender)
