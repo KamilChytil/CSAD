@@ -1,0 +1,663 @@
+@page "/karty"
+@namespace FairBank.Web.Cards.Pages
+@inject IFairBankApi Api
+@inject IAuthService Auth
+
+<PageHeader Title="KARTY" ShowChip="false">
+    <Actions>
+        <VbButton Variant="outline" Size="sm" IconName="plus" OnClick="@(() => _showNewCardForm = true)">Novou kartu</VbButton>
+    </Actions>
+</PageHeader>
+
+<div class="page-content cards-page">
+
+    @if (_loading)
+    {
+        <ContentCard>
+            <ChildContent>
+                <div class="cards-loading">
+                    <VbIcon Name="payments" Size="md" Color="var(--vb-text-muted)" />
+                    <span style="color:var(--vb-text-muted);margin-top:8px;">Nacitam karty...</span>
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+    else if (_error is not null)
+    {
+        <ContentCard>
+            <ChildContent>
+                <div class="cards-error">
+                    <VbIcon Name="warning" Size="sm" Color="var(--vb-red)" />
+                    <span style="color:var(--vb-red);margin-top:4px;">@_error</span>
+                </div>
+            </ChildContent>
+        </ContentCard>
+    }
+    else
+    {
+        @* ── NEW CARD FORM ──────────────────────────── *@
+        @if (_showNewCardForm)
+        {
+            <ContentCard Title="Vydat novou kartu" CssClass="section-new-card">
+                <Icon><VbIcon Name="plus" Size="sm" Color="var(--vb-gold)" /></Icon>
+                <ChildContent>
+                    <div class="new-card-form">
+                        <div class="form-group">
+                            <label class="form-label">Jmeno drzitele</label>
+                            <input class="form-input" @bind="_newHolderName" placeholder="Jan Novak" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Typ karty</label>
+                            <select class="form-input" @bind="_newCardType">
+                                <option value="Debit">Debetni</option>
+                                <option value="Credit">Kreditni</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <VbButton Variant="primary" OnClick="IssueNewCard" Disabled="@_issuing">
+                                @(_issuing ? "Vydavam..." : "Vydat kartu")
+                            </VbButton>
+                            <VbButton Variant="ghost" OnClick="@(() => _showNewCardForm = false)">Zrusit</VbButton>
+                        </div>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+
+        @* ── CARD LIST ──────────────────────────────── *@
+        @if (!_cards.Any())
+        {
+            <ContentCard>
+                <ChildContent>
+                    <div class="cards-empty">
+                        <VbIcon Name="payments" Size="md" Color="var(--vb-text-muted)" />
+                        <span class="empty-title">Zadne karty</span>
+                        <span class="empty-desc">Zatim nemate zadnou kartu. Kliknete na "Novou kartu" pro vydani.</span>
+                        <VbButton Variant="outline" IconName="plus" OnClick="@(() => _showNewCardForm = true)">Vydat novou kartu</VbButton>
+                    </div>
+                </ChildContent>
+            </ContentCard>
+        }
+        else
+        {
+            @foreach (var card in _cards)
+            {
+                <ContentCard CssClass="@GetCardCssClass(card)">
+                    <Icon><VbIcon Name="payments" Size="sm" Color="@(card.IsFrozen ? "var(--vb-blue)" : card.IsActive ? "var(--vb-gold)" : "var(--vb-text-muted)")" /></Icon>
+                    <ChildContent>
+                        @* ── Card Visual ── *@
+                        <div class="card-visual">
+                            <div class="card-number">@card.MaskedNumber</div>
+                            <div class="card-details-row">
+                                <div class="card-detail">
+                                    <span class="card-detail-label">Drzitel</span>
+                                    <span class="card-detail-value">@card.HolderName</span>
+                                </div>
+                                <div class="card-detail">
+                                    <span class="card-detail-label">Platnost</span>
+                                    <span class="card-detail-value">@card.ExpirationDate.ToString("MM/yy")</span>
+                                </div>
+                                <div class="card-detail">
+                                    <span class="card-detail-label">Typ</span>
+                                    <span class="card-type-badge @(card.Type == "Credit" ? "badge-credit" : "badge-debit")">@(card.Type == "Credit" ? "Kreditni" : "Debetni")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* ── Status Badge ── *@
+                        <div class="card-status-row">
+                            @if (!card.IsActive)
+                            {
+                                <span class="status-badge status-inactive">
+                                    <VbIcon Name="x-circle" Size="xs" /> Deaktivovana
+                                </span>
+                            }
+                            else if (card.IsFrozen)
+                            {
+                                <span class="status-badge status-frozen">
+                                    <VbIcon Name="lock" Size="xs" /> Zmrazena
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-active">
+                                    <VbIcon Name="check" Size="xs" /> Aktivni
+                                </span>
+                            }
+                        </div>
+
+                        @if (card.IsActive)
+                        {
+                            @* ── Toggle Settings ── *@
+                            <div class="card-toggles">
+                                <ToggleSwitch Label="@(card.IsFrozen ? "Zmrazena — kliknutim odblokujete" : "Zmrazit kartu")"
+                                              IsOn="@card.IsFrozen"
+                                              IsOnChanged="@(frozen => ToggleFreeze(card, frozen))" />
+                                <ToggleSwitch Label="Online platby"
+                                              IsOn="@card.OnlinePaymentsEnabled"
+                                              IsOnChanged="@(val => UpdateSettings(card, val, card.ContactlessEnabled))" />
+                                <ToggleSwitch Label="Bezkontaktni platby"
+                                              IsOn="@card.ContactlessEnabled"
+                                              IsOnChanged="@(val => UpdateSettings(card, card.OnlinePaymentsEnabled, val))" />
+                            </div>
+
+                            @* ── Limits ── *@
+                            <div class="card-limits">
+                                <div class="limit-row">
+                                    <span class="limit-label">Denni limit</span>
+                                    <div class="limit-value-group">
+                                        @if (_editingLimitsCardId == card.Id)
+                                        {
+                                            <input class="form-input limit-input" type="number" @bind="_editDailyLimit" placeholder="0" />
+                                            <span class="limit-currency">CZK</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="limit-value">@(card.DailyLimit?.ToString("N0") ?? "Bez limitu") CZK</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="limit-row">
+                                    <span class="limit-label">Mesicni limit</span>
+                                    <div class="limit-value-group">
+                                        @if (_editingLimitsCardId == card.Id)
+                                        {
+                                            <input class="form-input limit-input" type="number" @bind="_editMonthlyLimit" placeholder="0" />
+                                            <span class="limit-currency">CZK</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="limit-value">@(card.MonthlyLimit?.ToString("N0") ?? "Bez limitu") CZK</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="limit-actions">
+                                    @if (_editingLimitsCardId == card.Id)
+                                    {
+                                        <VbButton Variant="primary" Size="sm" OnClick="@(() => SaveLimits(card))" Disabled="@_savingLimits">
+                                            @(_savingLimits ? "Ukladam..." : "Ulozit limity")
+                                        </VbButton>
+                                        <VbButton Variant="ghost" Size="sm" OnClick="@(() => _editingLimitsCardId = null)">Zrusit</VbButton>
+                                    }
+                                    else
+                                    {
+                                        <VbButton Variant="outline" Size="sm" IconName="settings" OnClick="@(() => StartEditLimits(card))">Upravit limity</VbButton>
+                                    }
+                                </div>
+                            </div>
+
+                            @* ── Deactivate ── *@
+                            <div class="card-danger-zone">
+                                @if (_confirmDeactivateCardId == card.Id)
+                                {
+                                    <div class="deactivate-confirm">
+                                        <span class="deactivate-warning">
+                                            <VbIcon Name="warning" Size="xs" Color="var(--vb-red)" />
+                                            Opravdu chcete kartu trvale deaktivovat?
+                                        </span>
+                                        <div class="deactivate-actions">
+                                            <VbButton Variant="danger" Size="sm" OnClick="@(() => DeactivateCard(card))" Disabled="@_deactivating">
+                                                @(_deactivating ? "Deaktivuji..." : "Ano, deaktivovat")
+                                            </VbButton>
+                                            <VbButton Variant="ghost" Size="sm" OnClick="@(() => _confirmDeactivateCardId = null)">Zrusit</VbButton>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <VbButton Variant="danger" Size="sm" IconName="x-circle" OnClick="@(() => _confirmDeactivateCardId = card.Id)">Deaktivovat kartu</VbButton>
+                                }
+                            </div>
+                        }
+                    </ChildContent>
+                </ContentCard>
+            }
+        }
+    }
+
+</div>
+
+<style>
+    .cards-page {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ── Loading / Error / Empty states ── */
+    .cards-loading, .cards-error, .cards-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .empty-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        margin-top: 8px;
+    }
+
+    .empty-desc {
+        font-size: 0.85rem;
+        color: var(--vb-text-muted);
+        max-width: 280px;
+        margin-bottom: 12px;
+    }
+
+    /* ── New Card Form ── */
+    .new-card-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-input {
+        padding: 10px 14px;
+        border: 1px solid var(--vb-input-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-input-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        font-family: var(--vb-font);
+        transition: border-color var(--vb-transition);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-gold);
+        box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.15);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    /* ── Card Visual ── */
+    .card-visual {
+        background: linear-gradient(135deg, var(--vb-dark) 0%, var(--vb-gray-900) 100%);
+        border-radius: var(--vb-radius-md);
+        padding: 20px;
+        margin-bottom: 12px;
+    }
+
+    .card-number {
+        font-family: 'Courier New', 'Consolas', monospace;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        color: var(--vb-gold-light);
+        margin-bottom: 16px;
+    }
+
+    .card-details-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .card-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .card-detail-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--vb-gray-400);
+    }
+
+    .card-detail-value {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--vb-white);
+    }
+
+    .card-type-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: var(--vb-radius-full);
+    }
+
+    .badge-debit {
+        background: rgba(39, 174, 96, 0.2);
+        color: var(--vb-green-light);
+    }
+
+    .badge-credit {
+        background: rgba(155, 89, 182, 0.2);
+        color: var(--vb-purple);
+    }
+
+    /* ── Status Badge ── */
+    .card-status-row {
+        margin-bottom: 12px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: var(--vb-radius-full);
+    }
+
+    .status-active {
+        background: rgba(39, 174, 96, 0.12);
+        color: var(--vb-green);
+    }
+
+    .status-frozen {
+        background: rgba(52, 152, 219, 0.12);
+        color: var(--vb-blue);
+    }
+
+    .status-inactive {
+        background: rgba(136, 136, 136, 0.12);
+        color: var(--vb-text-muted);
+    }
+
+    /* ── Toggle Settings ── */
+    .card-toggles {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 0;
+        border-top: 1px solid var(--vb-divider);
+    }
+
+    /* ── Limits ── */
+    .card-limits {
+        padding: 12px 0;
+        border-top: 1px solid var(--vb-divider);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .limit-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .limit-label {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+    }
+
+    .limit-value-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .limit-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+    }
+
+    .limit-input {
+        width: 120px;
+        padding: 6px 10px;
+        text-align: right;
+    }
+
+    .limit-currency {
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+    }
+
+    .limit-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    /* ── Danger Zone ── */
+    .card-danger-zone {
+        padding: 12px 0;
+        border-top: 1px solid var(--vb-divider);
+    }
+
+    .deactivate-confirm {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .deactivate-warning {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--vb-red);
+    }
+
+    .deactivate-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    /* ── Frozen / Inactive card overlay ── */
+    .section-card.card-frozen {
+        opacity: 0.85;
+    }
+
+    .section-card.card-frozen .card-visual {
+        background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%);
+    }
+
+    .section-card.card-inactive {
+        opacity: 0.6;
+    }
+
+    .section-card.card-inactive .card-visual {
+        background: linear-gradient(135deg, var(--vb-gray-700) 0%, var(--vb-gray-500) 100%);
+    }
+</style>
+
+@code {
+    private AuthSession? _session;
+    private List<CardDto> _cards = [];
+    private Guid? _selectedAccountId;
+
+    private bool _loading = true;
+    private string? _error;
+
+    // New card form
+    private bool _showNewCardForm;
+    private string _newHolderName = "";
+    private string _newCardType = "Debit";
+    private bool _issuing;
+
+    // Limit editing
+    private Guid? _editingLimitsCardId;
+    private decimal? _editDailyLimit;
+    private decimal? _editMonthlyLimit;
+    private bool _savingLimits;
+
+    // Deactivation
+    private Guid? _confirmDeactivateCardId;
+    private bool _deactivating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _session = Auth.CurrentSession;
+            if (_session is null)
+            {
+                _error = "Nejste prihlaseni.";
+                _loading = false;
+                return;
+            }
+
+            _newHolderName = $"{_session.FirstName} {_session.LastName}";
+
+            var accounts = await Api.GetAccountsByOwnerAsync(_session.UserId);
+            if (accounts.Any())
+            {
+                _selectedAccountId = accounts[0].Id;
+                await LoadCards();
+            }
+            else
+            {
+                _cards = [];
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri nacitani: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadCards()
+    {
+        if (_selectedAccountId is null) return;
+        try
+        {
+            _cards = await Api.GetCardsByAccountAsync(_selectedAccountId.Value);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri nacitani karet: {ex.Message}";
+        }
+    }
+
+    private async Task IssueNewCard()
+    {
+        if (_selectedAccountId is null || string.IsNullOrWhiteSpace(_newHolderName)) return;
+        _issuing = true;
+        try
+        {
+            await Api.IssueCardAsync(_selectedAccountId.Value, _newHolderName.Trim(), _newCardType);
+            _showNewCardForm = false;
+            _newCardType = "Debit";
+            if (_session is not null)
+                _newHolderName = $"{_session.FirstName} {_session.LastName}";
+            await LoadCards();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri vydavani karty: {ex.Message}";
+        }
+        finally
+        {
+            _issuing = false;
+        }
+    }
+
+    private async Task ToggleFreeze(CardDto card, bool freeze)
+    {
+        try
+        {
+            if (freeze)
+                await Api.FreezeCardAsync(card.Id);
+            else
+                await Api.UnfreezeCardAsync(card.Id);
+            await LoadCards();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateSettings(CardDto card, bool onlinePayments, bool contactless)
+    {
+        try
+        {
+            await Api.UpdateCardSettingsAsync(card.Id, onlinePayments, contactless);
+            await LoadCards();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri aktualizaci nastaveni: {ex.Message}";
+        }
+    }
+
+    private void StartEditLimits(CardDto card)
+    {
+        _editingLimitsCardId = card.Id;
+        _editDailyLimit = card.DailyLimit;
+        _editMonthlyLimit = card.MonthlyLimit;
+    }
+
+    private async Task SaveLimits(CardDto card)
+    {
+        _savingLimits = true;
+        try
+        {
+            await Api.SetCardLimitsAsync(card.Id, _editDailyLimit, _editMonthlyLimit);
+            _editingLimitsCardId = null;
+            await LoadCards();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri ukladani limitu: {ex.Message}";
+        }
+        finally
+        {
+            _savingLimits = false;
+        }
+    }
+
+    private static string GetCardCssClass(CardDto card)
+    {
+        var css = "section-card";
+        if (card.IsFrozen) css += " card-frozen";
+        if (!card.IsActive) css += " card-inactive";
+        return css;
+    }
+
+    private async Task DeactivateCard(CardDto card)
+    {
+        _deactivating = true;
+        try
+        {
+            await Api.DeactivateCardAsync(card.Id);
+            _confirmDeactivateCardId = null;
+            await LoadCards();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Chyba pri deaktivaci: {ex.Message}";
+        }
+        finally
+        {
+            _deactivating = false;
+        }
+    }
+}

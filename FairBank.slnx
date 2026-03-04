@@ -15,6 +15,7 @@
     <Project Path="src/FairBank.Web.Profile/FairBank.Web.Profile.csproj" />
     <Project Path="src/FairBank.Web.Exchange/FairBank.Web.Exchange.csproj" />
     <Project Path="src/FairBank.Web.Products/FairBank.Web.Products.csproj" />
+    <Project Path="src/FairBank.Web.Cards/FairBank.Web.Cards.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/">
@@ -46,6 +47,18 @@
     <Project Path="src/Services/Products/FairBank.Products.Application/FairBank.Products.Application.csproj" />
     <Project Path="src/Services/Products/FairBank.Products.Domain/FairBank.Products.Domain.csproj" />
     <Project Path="src/Services/Products/FairBank.Products.Infrastructure/FairBank.Products.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Cards/">
+    <Project Path="src/Services/Cards/FairBank.Cards.Api/FairBank.Cards.Api.csproj" />
+    <Project Path="src/Services/Cards/FairBank.Cards.Application/FairBank.Cards.Application.csproj" />
+    <Project Path="src/Services/Cards/FairBank.Cards.Domain/FairBank.Cards.Domain.csproj" />
+    <Project Path="src/Services/Cards/FairBank.Cards.Infrastructure/FairBank.Cards.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Notifications/">
+    <Project Path="src/Services/Notifications/FairBank.Notifications.Api/FairBank.Notifications.Api.csproj" />
+    <Project Path="src/Services/Notifications/FairBank.Notifications.Application/FairBank.Notifications.Application.csproj" />
+    <Project Path="src/Services/Notifications/FairBank.Notifications.Domain/FairBank.Notifications.Domain.csproj" />
+    <Project Path="src/Services/Notifications/FairBank.Notifications.Infrastructure/FairBank.Notifications.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FairBank.Accounts.UnitTests/FairBank.Accounts.UnitTests.csproj" />
