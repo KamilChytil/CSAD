@@ -39,8 +39,39 @@
             </div>
             <div class="info-row">
                 <span class="info-label">Email</span>
-                <span class="info-value">@_email</span>
+                <span class="info-value">
+                    @_email
+                    @if (!_showChangeEmail)
+                    {
+                        <button class="inline-link-btn" @onclick="StartEmailChange">Změnit email</button>
+                    }
+                </span>
             </div>
+            @if (_showChangeEmail)
+            {
+                <div class="inline-edit-form">
+                    <div class="form-group">
+                        <label class="form-label">Nový email</label>
+                        <input class="form-input" type="email" @bind="_newEmail" placeholder="novyemail@example.com" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_emailError))
+                    {
+                        <div class="field-error">@_emailError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_emailSuccess))
+                    {
+                        <div class="save-success">
+                            <VbIcon Name="check" Size="xs" Color="var(--vb-green)" /> @_emailSuccess
+                        </div>
+                    }
+                    <div class="form-actions">
+                        <VbButton Variant="primary" Size="sm" OnClick="HandleChangeEmail" Disabled="@_emailSaving">
+                            @(_emailSaving ? "Ukládám..." : "Uložit")
+                        </VbButton>
+                        <VbButton Variant="ghost" Size="sm" OnClick="CancelEmailChange">Zrušit</VbButton>
+                    </div>
+                </div>
+            }
             <div class="info-row">
                 <span class="info-label">Role</span>
                 <span class="info-value">@_role</span>
@@ -85,16 +116,225 @@
         </ChildContent>
     </ContentCard>
 
-    @* ── SECURITY ─────────────────────────────── *@
+    @* ── 2FA SECTION ─────────────────────────── *@
+    <ContentCard Title="Dvoufaktorové ověření (2FA)">
+        <Icon><VbIcon Name="shield" Size="sm" Color="var(--vb-red)" /></Icon>
+        <ChildContent>
+            @if (_2faLoading)
+            {
+                <div class="section-loading">
+                    <span class="loading-text">Načítání...</span>
+                </div>
+            }
+            else if (_2faEnabled)
+            {
+                @* 2FA is enabled — show status and option to disable *@
+                <div class="twofa-status">
+                    <div class="twofa-status-row">
+                        <div class="security-info">
+                            <VbIcon Name="check" Size="sm" Color="var(--vb-green)" />
+                            <span>Dvoufaktorové ověření je <strong>aktivní</strong></span>
+                        </div>
+                        <span class="badge badge-green">Zapnuto</span>
+                    </div>
+                </div>
+
+                @if (_showDisable2fa)
+                {
+                    <div class="twofa-action-area">
+                        <div class="form-group">
+                            <label class="form-label">Zadejte kód z autentizační aplikace pro vypnutí</label>
+                            <input class="form-input" type="text" maxlength="6" inputmode="numeric"
+                                   @bind="_disable2faCode" @bind:event="oninput"
+                                   placeholder="000000" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(_2faError))
+                        {
+                            <div class="field-error">@_2faError</div>
+                        }
+                        <div class="form-actions">
+                            <VbButton Variant="danger" Size="sm" OnClick="HandleDisable2fa" Disabled="@_2faSaving">
+                                @(_2faSaving ? "Vypínání..." : "Vypnout 2FA")
+                            </VbButton>
+                            <VbButton Variant="ghost" Size="sm" OnClick="@(() => { _showDisable2fa = false; _2faError = ""; })">Zrušit</VbButton>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="twofa-action-area">
+                        <VbButton Variant="outline" Size="sm" IconName="x-circle" OnClick="@(() => _showDisable2fa = true)">Vypnout 2FA</VbButton>
+                    </div>
+                }
+            }
+            else
+            {
+                @* 2FA is disabled — show enable flow *@
+                <div class="twofa-status">
+                    <div class="twofa-status-row">
+                        <div class="security-info">
+                            <VbIcon Name="warning" Size="sm" Color="var(--vb-orange)" />
+                            <span>Dvoufaktorové ověření je <strong>vypnuto</strong></span>
+                        </div>
+                        <span class="badge badge-red">Vypnuto</span>
+                    </div>
+                </div>
+
+                @if (_2faSetupResponse is not null)
+                {
+                    @* Setup flow — show OTP URI and verify *@
+                    <div class="twofa-setup">
+                        <div class="twofa-setup-instructions">
+                            <p class="setup-step">1. Otevřete svou autentizační aplikaci (Google Authenticator, Authy apod.)</p>
+                            <p class="setup-step">2. Přidejte nový účet pomocí tajného klíče níže:</p>
+                        </div>
+
+                        <div class="twofa-secret-box">
+                            <span class="secret-label">Tajný klíč</span>
+                            <code class="secret-value">@_2faSetupResponse.Secret</code>
+                        </div>
+
+                        <div class="twofa-uri-box">
+                            <span class="secret-label">OTP URI (pro ruční zadání)</span>
+                            <code class="secret-value uri-value">@_2faSetupResponse.OtpAuthUri</code>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">3. Zadejte ověřovací kód z aplikace</label>
+                            <input class="form-input" type="text" maxlength="6" inputmode="numeric"
+                                   @bind="_enable2faCode" @bind:event="oninput"
+                                   placeholder="000000" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(_2faError))
+                        {
+                            <div class="field-error">@_2faError</div>
+                        }
+
+                        <div class="form-actions">
+                            <VbButton Variant="primary" Size="sm" OnClick="HandleEnable2fa" Disabled="@_2faSaving">
+                                @(_2faSaving ? "Ověřování..." : "Ověřit a zapnout")
+                            </VbButton>
+                            <VbButton Variant="ghost" Size="sm" OnClick="@(() => { _2faSetupResponse = null; _2faError = ""; })">Zrušit</VbButton>
+                        </div>
+                    </div>
+                }
+                else if (_backupCodes is not null)
+                {
+                    @* Show backup codes after successful enable *@
+                    <div class="twofa-backup-codes">
+                        <div class="backup-warning">
+                            <VbIcon Name="warning" Size="sm" Color="var(--vb-orange)" />
+                            <span><strong>Uložte si záložní kódy!</strong> Tyto kódy se zobrazí pouze jednou. Uložte je na bezpečné místo.</span>
+                        </div>
+                        <div class="backup-codes-grid">
+                            @foreach (var backupCode in _backupCodes)
+                            {
+                                <code class="backup-code">@backupCode</code>
+                            }
+                        </div>
+                        <VbButton Variant="primary" Size="sm" OnClick="@(() => _backupCodes = null)">Hotovo, kódy jsem si uložil/a</VbButton>
+                    </div>
+                }
+                else
+                {
+                    <div class="twofa-action-area">
+                        <VbButton Variant="primary" Size="sm" IconName="shield" OnClick="HandleSetup2fa" Disabled="@_2faSaving">
+                            @(_2faSaving ? "Příprava..." : "Zapnout 2FA")
+                        </VbButton>
+                    </div>
+                }
+            }
+        </ChildContent>
+    </ContentCard>
+
+    @* ── DEVICES SECTION ─────────────────────── *@
+    <ContentCard Title="Přihlášená zařízení">
+        <Icon><VbIcon Name="lock" Size="sm" Color="var(--vb-red)" /></Icon>
+        <ChildContent>
+            @if (_devicesLoading)
+            {
+                <div class="section-loading">
+                    <span class="loading-text">Načítání zařízení...</span>
+                </div>
+            }
+            else if (!_devices.Any())
+            {
+                <div class="section-empty">
+                    <span class="empty-text">Žádná zařízení</span>
+                </div>
+            }
+            else
+            {
+                @foreach (var device in _devices)
+                {
+                    <div class="device-item @(device.IsCurrentDevice ? "device-current" : "")">
+                        <div class="device-info">
+                            <div class="device-header">
+                                <span class="device-name">
+                                    @device.DeviceName
+                                    @if (device.IsCurrentDevice)
+                                    {
+                                        <span class="badge badge-green badge-sm">Toto zařízení</span>
+                                    }
+                                </span>
+                                @if (device.IsTrusted)
+                                {
+                                    <span class="badge badge-gold badge-sm">Důvěryhodné</span>
+                                }
+                            </div>
+                            <div class="device-details">
+                                @if (!string.IsNullOrEmpty(device.Browser))
+                                {
+                                    <span class="device-detail">@device.Browser</span>
+                                }
+                                @if (!string.IsNullOrEmpty(device.OperatingSystem))
+                                {
+                                    <span class="device-detail">@device.OperatingSystem</span>
+                                }
+                                @if (!string.IsNullOrEmpty(device.IpAddress))
+                                {
+                                    <span class="device-detail">@device.IpAddress</span>
+                                }
+                            </div>
+                            <span class="device-last-active">Aktivní: @device.LastActiveAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <div class="device-actions">
+                            @if (!device.IsCurrentDevice)
+                            {
+                                @if (_confirmRevokeDeviceId == device.Id)
+                                {
+                                    <div class="device-confirm">
+                                        <span class="device-confirm-text">Opravdu odhlásit?</span>
+                                        <VbButton Variant="danger" Size="sm" OnClick="@(() => HandleRevokeDevice(device.Id))" Disabled="@_deviceActionLoading">Ano</VbButton>
+                                        <VbButton Variant="ghost" Size="sm" OnClick="@(() => _confirmRevokeDeviceId = null)">Ne</VbButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <VbButton Variant="ghost" Size="sm" OnClick="@(() => HandleTrustDevice(device))" Disabled="@_deviceActionLoading">
+                                        @(device.IsTrusted ? "Nedůvěřovat" : "Důvěřovat")
+                                    </VbButton>
+                                    <VbButton Variant="outline" Size="sm" IconName="logout" OnClick="@(() => _confirmRevokeDeviceId = device.Id)">Odhlásit</VbButton>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </ChildContent>
+    </ContentCard>
+
+    @* ── SECURITY SETTINGS ───────────────────── *@
     <ContentCard Title="Zabezpečení">
         <Icon><VbIcon Name="shield" Size="sm" Color="var(--vb-red)" /></Icon>
         <ChildContent>
             <div class="security-item">
                 <div class="security-info">
-                    <VbIcon Name="shield" Size="sm" Color="var(--vb-green)" />
+                    <VbIcon Name="shield" Size="sm" Color="@(_2faEnabled ? "var(--vb-green)" : "var(--vb-orange)")" />
                     <span>Dvoufaktorové ověření</span>
                 </div>
-                <span class="badge badge-green">Aktivní</span>
+                <span class="badge @(_2faEnabled ? "badge-green" : "badge-red")">@(_2faEnabled ? "Aktivní" : "Vypnuto")</span>
             </div>
             <div class="security-item">
                 <div class="security-info">
@@ -103,12 +343,447 @@
                 </div>
                 <span class="info-value">Dnes</span>
             </div>
+            <div class="settings-divider"></div>
+            <ToggleSwitch Label="Noční transakce (23:00–06:00)" @bind-IsOn="_nightTransactionsEnabled" />
+            <div class="settings-divider"></div>
+            <ToggleSwitch Label="Mezinárodní platby" @bind-IsOn="_internationalPaymentsEnabled" />
+            <div class="settings-divider"></div>
+
+            @* ── Change Password ── *@
+            @if (_showChangePassword)
+            {
+                <div class="password-change-form">
+                    <div class="form-group">
+                        <label class="form-label">Současné heslo</label>
+                        <input class="form-input" type="password" @bind="_currentPassword" placeholder="Zadejte současné heslo" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nové heslo</label>
+                        <input class="form-input" type="password" @bind="_newPassword" @bind:event="oninput" placeholder="Zadejte nové heslo" />
+                        @if (!string.IsNullOrEmpty(_newPassword))
+                        {
+                            <div class="password-requirements">
+                                <span class="pwd-req @(_newPassword.Length >= 8 ? "pwd-ok" : "pwd-fail")">
+                                    @(_newPassword.Length >= 8 ? "\u2713" : "\u2717") Minimálně 8 znaků
+                                </span>
+                                <span class="pwd-req @(_newPassword.Any(char.IsUpper) ? "pwd-ok" : "pwd-fail")">
+                                    @(_newPassword.Any(char.IsUpper) ? "\u2713" : "\u2717") Velké písmeno
+                                </span>
+                                <span class="pwd-req @(_newPassword.Any(char.IsLower) ? "pwd-ok" : "pwd-fail")">
+                                    @(_newPassword.Any(char.IsLower) ? "\u2713" : "\u2717") Malé písmeno
+                                </span>
+                                <span class="pwd-req @(_newPassword.Any(char.IsDigit) ? "pwd-ok" : "pwd-fail")">
+                                    @(_newPassword.Any(char.IsDigit) ? "\u2713" : "\u2717") Číslice
+                                </span>
+                                <span class="pwd-req @(_newPassword.Any(c => !char.IsLetterOrDigit(c)) ? "pwd-ok" : "pwd-fail")">
+                                    @(_newPassword.Any(c => !char.IsLetterOrDigit(c)) ? "\u2713" : "\u2717") Speciální znak
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Potvrzení nového hesla</label>
+                        <input class="form-input" type="password" @bind="_confirmPassword" placeholder="Zopakujte nové heslo" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_passwordError))
+                    {
+                        <div class="field-error">@_passwordError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_passwordSuccess))
+                    {
+                        <div class="save-success">
+                            <VbIcon Name="check" Size="xs" Color="var(--vb-green)" /> @_passwordSuccess
+                        </div>
+                    }
+                    <div class="form-actions">
+                        <VbButton Variant="primary" Size="sm" OnClick="HandleChangePassword" Disabled="@_passwordSaving">
+                            @(_passwordSaving ? "Měním heslo..." : "Změnit heslo")
+                        </VbButton>
+                        <VbButton Variant="ghost" Size="sm" OnClick="CancelPasswordChange">Zrušit</VbButton>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <VbButton Variant="outline" Size="sm" IconName="lock" OnClick="@(() => _showChangePassword = true)">Změnit heslo</VbButton>
+            }
+        </ChildContent>
+    </ContentCard>
+
+    @* ── NOTIFICATION PREFERENCES ────────────── *@
+    <ContentCard Title="Notifikace">
+        <Icon><VbIcon Name="bell" Size="sm" Color="var(--vb-red)" /></Icon>
+        <ChildContent>
+            @if (_notifPrefsLoading)
+            {
+                <div class="section-loading">
+                    <span class="loading-text">Načítání předvoleb...</span>
+                </div>
+            }
+            else if (_notifPrefs is not null)
+            {
+                <ToggleSwitch Label="Transakční notifikace" IsOn="@_notifPrefs.TransactionNotifications"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.TransactionNotifications = v))" />
+                <div class="settings-divider"></div>
+                <ToggleSwitch Label="Bezpečnostní notifikace" IsOn="@_notifPrefs.SecurityNotifications"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.SecurityNotifications = v))" />
+                <div class="settings-divider"></div>
+                <ToggleSwitch Label="Notifikace o kartách" IsOn="@_notifPrefs.CardNotifications"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.CardNotifications = v))" />
+                <div class="settings-divider"></div>
+                <ToggleSwitch Label="Notifikace o limitech" IsOn="@_notifPrefs.LimitNotifications"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.LimitNotifications = v))" />
+                <div class="settings-divider"></div>
+                <ToggleSwitch Label="Chatové notifikace" IsOn="@_notifPrefs.ChatNotifications"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.ChatNotifications = v))" />
+                <div class="settings-divider"></div>
+                <ToggleSwitch Label="E-mailové notifikace" IsOn="@_notifPrefs.EmailNotificationsEnabled"
+                              IsOnChanged="@(v => UpdateNotifPref(p => p.EmailNotificationsEnabled = v))" />
+
+                @if (!string.IsNullOrEmpty(_notifPrefsSaveError))
+                {
+                    <div class="field-error" style="margin-top:8px">@_notifPrefsSaveError</div>
+                }
+                @if (_notifPrefsSaved)
+                {
+                    <div class="save-success" style="margin-top:8px">
+                        <VbIcon Name="check" Size="xs" Color="var(--vb-green)" /> Uloženo
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="section-empty">
+                    <span class="empty-text">Předvolby nejsou dostupné</span>
+                </div>
+            }
         </ChildContent>
     </ContentCard>
 
     @* ── LOGOUT ───────────────────────────────── *@
     <VbButton Variant="danger" FullWidth="true" IconName="logout" OnClick="HandleLogout">Odhlásit se</VbButton>
 </div>
+
+<style>
+    /* ── 2FA Section ── */
+    .twofa-status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+    }
+
+    .twofa-action-area {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--vb-divider);
+    }
+
+    .twofa-setup {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--vb-divider);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .twofa-setup-instructions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .setup-step {
+        font-size: 0.85rem;
+        color: var(--vb-text-secondary);
+        margin: 0;
+    }
+
+    .twofa-secret-box,
+    .twofa-uri-box {
+        background: var(--vb-input-bg);
+        border: 1px solid var(--vb-input-border);
+        border-radius: var(--vb-radius-sm);
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .secret-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--vb-text-muted);
+    }
+
+    .secret-value {
+        font-family: 'Courier New', 'Consolas', monospace;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        word-break: break-all;
+        background: none;
+        padding: 0;
+    }
+
+    .uri-value {
+        font-size: 0.75rem;
+        font-weight: 400;
+    }
+
+    /* ── Backup codes ── */
+    .twofa-backup-codes {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--vb-divider);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .backup-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 14px;
+        background: rgba(230, 126, 34, 0.08);
+        border: 1px solid rgba(230, 126, 34, 0.2);
+        border-radius: var(--vb-radius-sm);
+        font-size: 0.85rem;
+        color: var(--vb-text-primary);
+    }
+
+    .backup-codes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+    }
+
+    .backup-code {
+        font-family: 'Courier New', 'Consolas', monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 8px 12px;
+        text-align: center;
+        background: var(--vb-input-bg);
+        border: 1px solid var(--vb-input-border);
+        border-radius: var(--vb-radius-xs);
+        color: var(--vb-text-primary);
+    }
+
+    /* ── Devices Section ── */
+    .device-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--vb-divider);
+        gap: 12px;
+    }
+
+    .device-item:last-child {
+        border-bottom: none;
+    }
+
+    .device-current {
+        background: rgba(39, 174, 96, 0.04);
+        border-radius: var(--vb-radius-sm);
+        padding: 12px;
+        margin: 0 -12px;
+    }
+
+    .device-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .device-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .device-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--vb-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .badge-sm {
+        font-size: 0.65rem;
+        padding: 1px 6px;
+    }
+
+    .device-details {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .device-detail {
+        font-size: 0.8rem;
+        color: var(--vb-text-muted);
+    }
+
+    .device-last-active {
+        font-size: 0.75rem;
+        color: var(--vb-text-muted);
+    }
+
+    .device-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .device-confirm {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .device-confirm-text {
+        font-size: 0.8rem;
+        color: var(--vb-red);
+        white-space: nowrap;
+    }
+
+    /* ── Shared section states ── */
+    .section-loading,
+    .section-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .loading-text,
+    .empty-text {
+        font-size: 0.85rem;
+        color: var(--vb-text-muted);
+    }
+
+    .save-success {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        color: var(--vb-green);
+    }
+
+    /* ── Form elements (match existing patterns) ── */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--vb-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-input {
+        padding: 10px 14px;
+        border: 1px solid var(--vb-input-border);
+        border-radius: var(--vb-radius-sm);
+        background: var(--vb-input-bg);
+        color: var(--vb-text-primary);
+        font-size: 0.95rem;
+        font-family: var(--vb-font);
+        transition: border-color var(--vb-transition);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--vb-gold);
+        box-shadow: 0 0 0 2px rgba(212, 168, 67, 0.15);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .field-error {
+        font-size: 0.8rem;
+        color: var(--vb-red);
+    }
+
+    /* ── Inline edit forms ── */
+    .inline-link-btn {
+        background: none;
+        border: none;
+        color: var(--vb-gold);
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 8px;
+        text-decoration: underline;
+        font-family: var(--vb-font);
+    }
+
+    .inline-link-btn:hover {
+        color: var(--vb-gold-light);
+    }
+
+    .inline-edit-form {
+        margin-top: 8px;
+        padding: 12px;
+        background: var(--vb-input-bg);
+        border: 1px solid var(--vb-divider);
+        border-radius: var(--vb-radius-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .password-change-form {
+        margin-top: 8px;
+        padding: 12px;
+        background: var(--vb-input-bg);
+        border: 1px solid var(--vb-divider);
+        border-radius: var(--vb-radius-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .password-requirements {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 4px;
+    }
+
+    .pwd-req {
+        font-size: 0.75rem;
+    }
+
+    .pwd-ok {
+        color: var(--vb-green);
+    }
+
+    .pwd-fail {
+        color: var(--vb-text-muted);
+    }
+</style>
 
 @code {
     private string _firstName = "";
@@ -125,6 +800,49 @@
     private string _initials => string.IsNullOrEmpty(_firstName) || string.IsNullOrEmpty(_lastName)
         ? "VB"
         : $"{_firstName[0]}{_lastName[0]}";
+
+    // ── 2FA state ──
+    private bool _2faLoading = true;
+    private bool _2faEnabled;
+    private bool _2faSaving;
+    private string _2faError = "";
+    private TwoFactorSetupResponse? _2faSetupResponse;
+    private string _enable2faCode = "";
+    private bool _showDisable2fa;
+    private string _disable2faCode = "";
+    private string[]? _backupCodes;
+
+    // ── Devices state ──
+    private bool _devicesLoading = true;
+    private bool _deviceActionLoading;
+    private List<DeviceDto> _devices = [];
+    private Guid? _confirmRevokeDeviceId;
+
+    // ── Security settings ──
+    private bool _nightTransactionsEnabled;
+    private bool _internationalPaymentsEnabled;
+
+    // ── Email change ──
+    private bool _showChangeEmail;
+    private string _newEmail = "";
+    private string _emailError = "";
+    private string _emailSuccess = "";
+    private bool _emailSaving;
+
+    // ── Password change ──
+    private bool _showChangePassword;
+    private string _currentPassword = "";
+    private string _newPassword = "";
+    private string _confirmPassword = "";
+    private string _passwordError = "";
+    private string _passwordSuccess = "";
+    private bool _passwordSaving;
+
+    // ── Notification preferences ──
+    private bool _notifPrefsLoading = true;
+    private NotificationPreferenceDto? _notifPrefs;
+    private string _notifPrefsSaveError = "";
+    private bool _notifPrefsSaved;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,7 +870,344 @@
             }
         }
         catch { /* Use default */ }
+
+        // Load 2FA status, devices, and notification preferences in parallel
+        if (Auth.CurrentSession is { } sess)
+        {
+            var userId = sess.UserId;
+
+            var tasks = new List<Task>
+            {
+                Load2faStatusAsync(userId),
+                LoadDevicesAsync(userId),
+                LoadNotificationPreferencesAsync(userId)
+            };
+
+            await Task.WhenAll(tasks);
+        }
+        else
+        {
+            _2faLoading = false;
+            _devicesLoading = false;
+            _notifPrefsLoading = false;
+        }
     }
+
+    private async Task Load2faStatusAsync(Guid userId)
+    {
+        try
+        {
+            var setup = await Api.SetupTwoFactorAsync(userId);
+            _2faEnabled = setup?.IsAlreadyEnabled ?? false;
+        }
+        catch { /* assume disabled */ }
+        finally { _2faLoading = false; }
+    }
+
+    private async Task LoadDevicesAsync(Guid userId)
+    {
+        try
+        {
+            _devices = await Api.GetDevicesAsync(userId);
+        }
+        catch { _devices = []; }
+        finally { _devicesLoading = false; }
+    }
+
+    private async Task LoadNotificationPreferencesAsync(Guid userId)
+    {
+        try
+        {
+            _notifPrefs = await Api.GetNotificationPreferencesAsync(userId);
+            _notifPrefs ??= new NotificationPreferenceDto();
+        }
+        catch { _notifPrefs = new NotificationPreferenceDto(); }
+        finally { _notifPrefsLoading = false; }
+    }
+
+    // ── 2FA handlers ──
+
+    private async Task HandleSetup2fa()
+    {
+        if (Auth.CurrentSession is null) return;
+        _2faSaving = true;
+        _2faError = "";
+        try
+        {
+            _2faSetupResponse = await Api.SetupTwoFactorAsync(Auth.CurrentSession.UserId);
+            if (_2faSetupResponse?.IsAlreadyEnabled == true)
+            {
+                _2faEnabled = true;
+                _2faSetupResponse = null;
+            }
+        }
+        catch
+        {
+            _2faError = "Chyba při přípravě 2FA. Zkuste to znovu.";
+        }
+        finally { _2faSaving = false; }
+    }
+
+    private async Task HandleEnable2fa()
+    {
+        if (Auth.CurrentSession is null || string.IsNullOrWhiteSpace(_enable2faCode)) return;
+        _2faSaving = true;
+        _2faError = "";
+        try
+        {
+            var codes = await Api.EnableTwoFactorAsync(Auth.CurrentSession.UserId, _enable2faCode.Trim());
+            if (codes is not null)
+            {
+                _backupCodes = codes;
+                _2faEnabled = true;
+                _2faSetupResponse = null;
+                _enable2faCode = "";
+            }
+            else
+            {
+                _2faError = "Neplatný kód. Zkuste to znovu.";
+            }
+        }
+        catch
+        {
+            _2faError = "Chyba při aktivaci 2FA. Zkuste to znovu.";
+        }
+        finally { _2faSaving = false; }
+    }
+
+    private async Task HandleDisable2fa()
+    {
+        if (Auth.CurrentSession is null || string.IsNullOrWhiteSpace(_disable2faCode)) return;
+        _2faSaving = true;
+        _2faError = "";
+        try
+        {
+            await Api.DisableTwoFactorAsync(Auth.CurrentSession.UserId, _disable2faCode.Trim());
+            _2faEnabled = false;
+            _showDisable2fa = false;
+            _disable2faCode = "";
+        }
+        catch
+        {
+            _2faError = "Neplatný kód nebo chyba. Zkuste to znovu.";
+        }
+        finally { _2faSaving = false; }
+    }
+
+    // ── Device handlers ──
+
+    private async Task HandleRevokeDevice(Guid deviceId)
+    {
+        _deviceActionLoading = true;
+        try
+        {
+            await Api.RevokeDeviceAsync(deviceId);
+            _confirmRevokeDeviceId = null;
+            if (Auth.CurrentSession is { } s)
+                await LoadDevicesAsync(s.UserId);
+        }
+        catch { /* ignore */ }
+        finally
+        {
+            _deviceActionLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleTrustDevice(DeviceDto device)
+    {
+        _deviceActionLoading = true;
+        try
+        {
+            await Api.TrustDeviceAsync(device.Id);
+            if (Auth.CurrentSession is { } s)
+                await LoadDevicesAsync(s.UserId);
+        }
+        catch { /* ignore */ }
+        finally
+        {
+            _deviceActionLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // ── Email change handlers ──
+
+    private void StartEmailChange()
+    {
+        _showChangeEmail = true;
+        _newEmail = _email;
+        _emailError = "";
+        _emailSuccess = "";
+    }
+
+    private void CancelEmailChange()
+    {
+        _showChangeEmail = false;
+        _emailError = "";
+        _emailSuccess = "";
+    }
+
+    private async Task HandleChangeEmail()
+    {
+        if (Auth.CurrentSession is null) return;
+
+        _emailError = "";
+        _emailSuccess = "";
+
+        if (string.IsNullOrWhiteSpace(_newEmail) || !_newEmail.Contains('@'))
+        {
+            _emailError = "Zadejte platnou e-mailovou adresu.";
+            return;
+        }
+
+        if (_newEmail.Trim() == _email)
+        {
+            _emailError = "Nový email je stejný jako současný.";
+            return;
+        }
+
+        _emailSaving = true;
+        try
+        {
+            await Api.ChangeEmailAsync(Auth.CurrentSession.UserId, _newEmail.Trim());
+            _email = _newEmail.Trim();
+            _emailSuccess = "Email byl úspěšně změněn.";
+            _showChangeEmail = false;
+
+            // Re-login to refresh the session with new email
+            try
+            {
+                await Auth.InitializeAsync();
+            }
+            catch { /* Session will be refreshed on next load */ }
+        }
+        catch (Exception ex)
+        {
+            _emailError = $"Chyba při změně emailu: {ex.Message}";
+        }
+        finally
+        {
+            _emailSaving = false;
+        }
+    }
+
+    // ── Password change handlers ──
+
+    private void CancelPasswordChange()
+    {
+        _showChangePassword = false;
+        _passwordError = "";
+        _passwordSuccess = "";
+        _currentPassword = "";
+        _newPassword = "";
+        _confirmPassword = "";
+    }
+
+    private async Task HandleChangePassword()
+    {
+        if (Auth.CurrentSession is null) return;
+
+        _passwordError = "";
+        _passwordSuccess = "";
+
+        if (string.IsNullOrWhiteSpace(_currentPassword))
+        {
+            _passwordError = "Zadejte současné heslo.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newPassword))
+        {
+            _passwordError = "Zadejte nové heslo.";
+            return;
+        }
+
+        // Validate password requirements
+        if (_newPassword.Length < 8)
+        {
+            _passwordError = "Heslo musí mít alespoň 8 znaků.";
+            return;
+        }
+        if (!_newPassword.Any(char.IsUpper))
+        {
+            _passwordError = "Heslo musí obsahovat velké písmeno.";
+            return;
+        }
+        if (!_newPassword.Any(char.IsLower))
+        {
+            _passwordError = "Heslo musí obsahovat malé písmeno.";
+            return;
+        }
+        if (!_newPassword.Any(char.IsDigit))
+        {
+            _passwordError = "Heslo musí obsahovat číslici.";
+            return;
+        }
+        if (!_newPassword.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            _passwordError = "Heslo musí obsahovat speciální znak.";
+            return;
+        }
+
+        if (_newPassword != _confirmPassword)
+        {
+            _passwordError = "Hesla se neshodují.";
+            return;
+        }
+
+        _passwordSaving = true;
+        try
+        {
+            await Api.ChangePasswordAsync(Auth.CurrentSession.UserId, _currentPassword, _newPassword);
+            _passwordSuccess = "Heslo bylo úspěšně změněno.";
+            _currentPassword = "";
+            _newPassword = "";
+            _confirmPassword = "";
+
+            // Auto-hide success after delay
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                _passwordSuccess = "";
+                _showChangePassword = false;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        catch (Exception ex)
+        {
+            _passwordError = $"Chyba při změně hesla: {ex.Message}";
+        }
+        finally
+        {
+            _passwordSaving = false;
+        }
+    }
+
+    // ── Notification preferences ──
+
+    private async Task UpdateNotifPref(Action<NotificationPreferenceDto> update)
+    {
+        if (_notifPrefs is null || Auth.CurrentSession is null) return;
+        update(_notifPrefs);
+        _notifPrefsSaveError = "";
+        _notifPrefsSaved = false;
+        try
+        {
+            await Api.UpdateNotificationPreferencesAsync(Auth.CurrentSession.UserId, _notifPrefs);
+            _notifPrefsSaved = true;
+            _ = Task.Delay(2000).ContinueWith(_ =>
+            {
+                _notifPrefsSaved = false;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        catch
+        {
+            _notifPrefsSaveError = "Chyba při ukládání. Zkuste to znovu.";
+        }
+    }
+
+    // ── Common handlers ──
 
     private async Task OnDarkModeToggled(bool isDark)
     {
