@@ -11,6 +11,10 @@
         <span class="nav-icon"><VbIcon Name="payments" Size="sm" /></span>
         <span class="nav-label">Platby</span>
     </NavLink>
+    <NavLink class="nav-item" href="karty">
+        <span class="nav-icon"><VbIcon Name="credit-card" Size="sm" /></span>
+        <span class="nav-label">Karty</span>
+    </NavLink>
     <NavLink class="nav-item" href="sporeni">
         <span class="nav-icon"><VbIcon Name="target" Size="sm" /></span>
         <span class="nav-label">Spoření</span>
@@ -28,6 +32,13 @@
         <NavLink class="nav-item" href="produkty">
             <span class="nav-icon"><VbIcon Name="bank" Size="sm" /></span>
             <span class="nav-label">Produkty</span>
+        </NavLink>
+    }
+    @if (Auth.CurrentSession?.Role == "Client")
+    {
+        <NavLink class="nav-item" href="rodina">
+            <span class="nav-icon"><VbIcon Name="users" Size="sm" /></span>
+            <span class="nav-label">Rodina</span>
         </NavLink>
     }
     <NavLink class="nav-item" href="zpravy">

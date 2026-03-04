@@ -2,6 +2,7 @@
 @namespace FairBank.Web.Auth.Pages
 @layout FairBank.Web.Shared.Components.LoginLayout
 @inject IAuthService Auth
+@inject IFairBankApi Api
 @inject NavigationManager Nav
 
 <div class="auth-page">
@@ -16,93 +17,162 @@
     </div>
 
     <div class="auth-card">
-        <h2 class="auth-card-title">Přihlášení</h2>
-
-        @if (Auth.IsLocked)
+        @if (_requiresTwoFactor)
         {
-            <div class="auth-alert auth-alert-danger">
-                <span class="alert-icon"><VbIcon Name="lock" Size="sm" /></span>
-                <div>
-                    <strong>Účet dočasně zablokován</strong>
-                    <p>Příliš mnoho neúspěšných pokusů. Zkuste to znovu za chvíli.</p>
+            @* ── 2FA Verification Step ── *@
+            <h2 class="auth-card-title">Dvoufaktorové ověření</h2>
+
+            <div class="twofa-login-info">
+                <VbIcon Name="shield" Size="sm" Color="var(--vb-blue)" />
+                <span>Zadejte kód z vaší autentizační aplikace</span>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="auth-alert auth-alert-danger">
+                    <span class="alert-icon"><VbIcon Name="danger" Size="sm" /></span>
+                    <span>@_errorMessage</span>
                 </div>
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <div class="auth-alert auth-alert-danger">
-                <span class="alert-icon"><VbIcon Name="danger" Size="sm" /></span>
-                <span>@_errorMessage</span>
-            </div>
-        }
-
-        @if (_sessionExpired)
-        {
-            <div class="auth-alert auth-alert-warning">
-                <span class="alert-icon"><VbIcon Name="clock" Size="sm" /></span>
-                <span>Relace vypršela. Přihlaste se znovu.</span>
-            </div>
-        }
-
-        <div class="form-group">
-            <label class="form-label">Email</label>
-            <input class="form-input @(_emailError ? "input-error" : "")"
-                   type="email"
-                   @bind="_email"
-                   @bind:event="oninput"
-                   placeholder="vas@email.cz"
-                   disabled="@(Auth.IsLocked || _isLoading)" />
-            @if (_emailError)
-            {
-                <span class="field-error">Zadejte platný email</span>
             }
-        </div>
 
-        <div class="form-group">
-            <label class="form-label">Heslo</label>
-            <div class="password-wrapper">
-                <input class="form-input @(_passwordError ? "input-error" : "")"
-                       type="@(_showPassword ? "text" : "password")"
-                       @bind="_password"
+            <div class="form-group">
+                <label class="form-label">Ověřovací kód</label>
+                <input class="form-input @(_totpError ? "input-error" : "")"
+                       type="text"
+                       maxlength="6"
+                       inputmode="numeric"
+                       @bind="_totpCode"
                        @bind:event="oninput"
-                       placeholder="Zadejte heslo"
-                       disabled="@(Auth.IsLocked || _isLoading)"
-                       @onkeydown="HandleKeyDown" />
-                <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility">
-                    <VbIcon Name="@(_showPassword ? "eye-off" : "eye")" Size="sm" />
-                </button>
+                       placeholder="000000"
+                       disabled="@_isLoading"
+                       @onkeydown="HandleTotpKeyDown" />
+                @if (_totpError)
+                {
+                    <span class="field-error">Zadejte 6místný kód</span>
+                }
             </div>
-            @if (_passwordError)
-            {
-                <span class="field-error">Zadejte heslo</span>
-            }
-        </div>
 
-        @if (Auth.RemainingAttempts < 5 && Auth.RemainingAttempts > 0)
-        {
-            <div class="auth-attempts-warning">
-                Zbývající pokusy: <strong>@Auth.RemainingAttempts</strong> z 5
+            <VbButton OnClick="HandleVerifyTwoFactor" Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="btn-loading">Ověřování...</span>
+                }
+                else
+                {
+                    <span>Ověřit</span>
+                }
+            </VbButton>
+
+            <div class="auth-footer">
+                <button type="button" class="link-action" @onclick="BackToLogin">Zpět na přihlášení</button>
             </div>
         }
+        else
+        {
+            @* ── Standard Login Step ── *@
+            <h2 class="auth-card-title">Přihlášení</h2>
 
-        <VbButton OnClick="HandleLogin" Disabled="@(Auth.IsLocked || _isLoading)">
-            @if (_isLoading)
+            @if (Auth.IsLocked)
             {
-                <span class="btn-loading">Přihlašování...</span>
+                <div class="auth-alert auth-alert-danger">
+                    <span class="alert-icon"><VbIcon Name="lock" Size="sm" /></span>
+                    <div>
+                        <strong>Účet dočasně zablokován</strong>
+                        <p>Příliš mnoho neúspěšných pokusů. Zkuste to znovu za chvíli.</p>
+                    </div>
+                </div>
             }
-            else
-            {
-                <span>Přihlásit se</span>
-            }
-        </VbButton>
 
-        <div class="auth-footer">
-            <span>Nemáte účet?</span>
-            <a class="link-action" href="register">Zaregistrovat se</a>
-        </div>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="auth-alert auth-alert-danger">
+                    <span class="alert-icon"><VbIcon Name="danger" Size="sm" /></span>
+                    <span>@_errorMessage</span>
+                </div>
+            }
+
+            @if (_sessionExpired)
+            {
+                <div class="auth-alert auth-alert-warning">
+                    <span class="alert-icon"><VbIcon Name="clock" Size="sm" /></span>
+                    <span>Relace vypršela. Přihlaste se znovu.</span>
+                </div>
+            }
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input @(_emailError ? "input-error" : "")"
+                       type="email"
+                       @bind="_email"
+                       @bind:event="oninput"
+                       placeholder="vas@email.cz"
+                       disabled="@(Auth.IsLocked || _isLoading)" />
+                @if (_emailError)
+                {
+                    <span class="field-error">Zadejte platný email</span>
+                }
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Heslo</label>
+                <div class="password-wrapper">
+                    <input class="form-input @(_passwordError ? "input-error" : "")"
+                           type="@(_showPassword ? "text" : "password")"
+                           @bind="_password"
+                           @bind:event="oninput"
+                           placeholder="Zadejte heslo"
+                           disabled="@(Auth.IsLocked || _isLoading)"
+                           @onkeydown="HandleKeyDown" />
+                    <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility">
+                        <VbIcon Name="@(_showPassword ? "eye-off" : "eye")" Size="sm" />
+                    </button>
+                </div>
+                @if (_passwordError)
+                {
+                    <span class="field-error">Zadejte heslo</span>
+                }
+            </div>
+
+            @if (Auth.RemainingAttempts < 5 && Auth.RemainingAttempts > 0)
+            {
+                <div class="auth-attempts-warning">
+                    Zbývající pokusy: <strong>@Auth.RemainingAttempts</strong> z 5
+                </div>
+            }
+
+            <VbButton OnClick="HandleLogin" Disabled="@(Auth.IsLocked || _isLoading)">
+                @if (_isLoading)
+                {
+                    <span class="btn-loading">Přihlašování...</span>
+                }
+                else
+                {
+                    <span>Přihlásit se</span>
+                }
+            </VbButton>
+
+            <div class="auth-footer">
+                <span>Nemáte účet?</span>
+                <a class="link-action" href="register">Zaregistrovat se</a>
+            </div>
+        }
     </div>
 </div>
+
+<style>
+    .twofa-login-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: rgba(52, 152, 219, 0.08);
+        border: 1px solid rgba(52, 152, 219, 0.15);
+        border-radius: var(--vb-radius-sm);
+        font-size: 0.9rem;
+        color: var(--vb-text-primary);
+        margin-bottom: 16px;
+    }
+</style>
 
 @code {
     private string _email = "";
@@ -113,6 +183,12 @@
     private bool _isLoading;
     private bool _showPassword;
     private bool _sessionExpired;
+
+    // 2FA state
+    private bool _requiresTwoFactor;
+    private Guid _pendingUserId;
+    private string _totpCode = "";
+    private bool _totpError;
 
     protected override void OnInitialized()
     {
@@ -131,9 +207,26 @@
         }
     }
 
+    private async Task HandleTotpKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleVerifyTwoFactor();
+        }
+    }
+
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
+    }
+
+    private void BackToLogin()
+    {
+        _requiresTwoFactor = false;
+        _pendingUserId = Guid.Empty;
+        _totpCode = "";
+        _totpError = false;
+        _errorMessage = "";
     }
 
     private async Task HandleLogin()
@@ -181,11 +274,74 @@
                 return;
             }
 
+            // Check if 2FA is required
+            if (result.RequiresTwoFactor)
+            {
+                _pendingUserId = result.UserId;
+                _requiresTwoFactor = true;
+                _errorMessage = "";
+                // Clear the partial session — it should not grant access without 2FA verification
+                await Auth.LogoutAsync();
+                return;
+            }
+
             Nav.NavigateTo("/prehled", forceLoad: false);
         }
         catch
         {
             _errorMessage = "Chyba připojení k serveru. Zkuste to později.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleVerifyTwoFactor()
+    {
+        _errorMessage = "";
+        _totpError = false;
+
+        var code = _totpCode.Trim();
+        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
+        {
+            _totpError = true;
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Verify the TOTP code with the server
+            var verifyResult = await Api.VerifyTwoFactorAsync(_pendingUserId, code);
+
+            if (verifyResult is null)
+            {
+                _errorMessage = "Neplatný ověřovací kód. Zkuste to znovu.";
+                return;
+            }
+
+            // 2FA verified — re-login to establish a proper session.
+            // The server should now recognize that 2FA was just verified
+            // and allow login without requiring another TOTP code.
+            var loginResult = await Auth.LoginAsync(new LoginRequest(_email.Trim(), _password));
+
+            if (loginResult is not null && !loginResult.RequiresTwoFactor)
+            {
+                Nav.NavigateTo("/prehled", forceLoad: false);
+            }
+            else
+            {
+                // If server still requires 2FA or login failed, show error
+                _errorMessage = "Chyba při dokončení přihlášení. Zkuste to znovu.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "Chyba při ověřování kódu. Zkuste to později.";
         }
         finally
         {

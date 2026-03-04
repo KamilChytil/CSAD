@@ -14,8 +14,10 @@ public sealed class Account
     [JsonInclude] public bool IsActive { get; private set; }
     [JsonInclude] public DateTime CreatedAt { get; private set; }
     [JsonInclude] public Money? SpendingLimit { get; private set; }
+    [JsonInclude] public string? Alias { get; private set; }
     [JsonInclude] public bool RequiresApproval { get; private set; }
     [JsonInclude] public Money? ApprovalThreshold { get; private set; }
+    [JsonInclude] public AccountLimits? Limits { get; private set; }
 
     private readonly List<object> _uncommittedEvents = [];
 
@@ -87,6 +89,36 @@ public sealed class Account
         RaiseEvent(new SpendingLimitSet(Id, limit.Amount, limit.Currency, DateTime.UtcNow));
     }
 
+    public void Close()
+    {
+        EnsureActive();
+        if (Balance.Amount != 0)
+            throw new InvalidOperationException("Cannot close account with non-zero balance.");
+        IsActive = false;
+        RaiseEvent(new AccountClosed(Id, DateTime.UtcNow));
+    }
+
+    public void Rename(string? alias)
+    {
+        EnsureActive();
+        Alias = alias?.Trim();
+        RaiseEvent(new AccountRenamed(Id, Alias, DateTime.UtcNow));
+    }
+
+    public void SetAccountLimits(AccountLimits limits)
+    {
+        EnsureActive();
+        Limits = limits;
+        RaiseEvent(new AccountLimitsSet(
+            Id,
+            limits.DailyTransactionLimit,
+            limits.MonthlyTransactionLimit,
+            limits.SingleTransactionLimit,
+            limits.DailyTransactionCount,
+            limits.OnlinePaymentLimit,
+            DateTime.UtcNow));
+    }
+
     public bool NeedsApproval(Money amount)
     {
         if (!RequiresApproval || ApprovalThreshold is null) return false;
@@ -133,5 +165,25 @@ public sealed class Account
         SpendingLimit = Money.Create(@event.Limit, @event.Currency);
         RequiresApproval = true;
         ApprovalThreshold = SpendingLimit;
+    }
+
+    public void Apply(AccountClosed @event)
+    {
+        IsActive = false;
+    }
+
+    public void Apply(AccountRenamed @event)
+    {
+        Alias = @event.Alias;
+    }
+
+    public void Apply(AccountLimitsSet @event)
+    {
+        Limits = AccountLimits.Create(
+            @event.DailyTransactionLimit,
+            @event.MonthlyTransactionLimit,
+            @event.SingleTransactionLimit,
+            @event.DailyTransactionCount,
+            @event.OnlinePaymentLimit);
     }
 }

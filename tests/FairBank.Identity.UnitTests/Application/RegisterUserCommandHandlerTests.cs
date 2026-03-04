@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using FairBank.Identity.Application.Ports;
 using FairBank.Identity.Application.Users.Commands.RegisterUser;
 using FairBank.Identity.Domain.Entities;
 using FairBank.Identity.Domain.Enums;
@@ -12,6 +13,7 @@ namespace FairBank.Identity.UnitTests.Application;
 public class RegisterUserCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IEmailSender _emailSender = Substitute.For<IEmailSender>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     [Fact]
@@ -21,7 +23,7 @@ public class RegisterUserCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var handler = new RegisterUserCommandHandler(_userRepository, _unitOfWork);
+        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork);
         var command = new RegisterUserCommand("Jan", "Novák", "jan@example.com", "Password1!", UserRole.Client);
 
         // Act
@@ -36,6 +38,8 @@ public class RegisterUserCommandHandlerTests
 
         await _userRepository.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _emailSender.Received(1).SendEmailVerificationAsync(
+            "jan@example.com", Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -45,7 +49,7 @@ public class RegisterUserCommandHandlerTests
         _userRepository.ExistsWithEmailAsync(Arg.Any<Email>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        var handler = new RegisterUserCommandHandler(_userRepository, _unitOfWork);
+        var handler = new RegisterUserCommandHandler(_userRepository, _emailSender, _unitOfWork);
         var command = new RegisterUserCommand("Jan", "Novák", "jan@example.com", "Password1!", UserRole.Client);
 
         // Act

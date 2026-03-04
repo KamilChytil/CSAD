@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/node_modules/
+.git/
+.gitignore
+.gitattributes
+**/*.user
+**/*.suo
+**/Thumbs.db
+**/.DS_Store
+docs/
+agent-instructions/
+build_log.txt
+tests/
