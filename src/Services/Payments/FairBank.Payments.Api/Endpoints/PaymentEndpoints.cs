@@ -19,11 +19,19 @@ public static class PaymentEndpoints
 
         group.MapPost("/", async (SendPaymentCommand command, ISender sender) =>
         {
-            var result = await sender.Send(command);
-            return Results.Created($"/api/v1/payments/{result.Id}", result);
+            try
+            {
+                var result = await sender.Send(command);
+                return Results.Created($"/api/v1/payments/{result.Id}", result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithName("SendPayment")
         .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
         .ProducesValidationProblem();
 
         group.MapGet("/account/{accountId:guid}", async (Guid accountId, ISender sender, int? limit) =>

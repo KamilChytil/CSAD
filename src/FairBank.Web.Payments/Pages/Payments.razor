@@ -1038,9 +1038,9 @@
             _soEndDate = null;
             await LoadData();
         }
-        catch
+        catch (Exception ex)
         {
-            _errorMessage = "Vytvoření trvalého příkazu se nezdařilo.";
+            _errorMessage = ex.Message.Contains("Insufficient") ? "Nedostatek prostředků na účtu." : ex.Message.Contains("nezdaři") ? ex.Message : "Vytvoření trvalého příkazu se nezdařilo.";
         }
         finally
         {

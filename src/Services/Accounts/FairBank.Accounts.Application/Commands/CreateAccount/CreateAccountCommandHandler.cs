@@ -5,12 +5,13 @@ using MediatR;
 
 namespace FairBank.Accounts.Application.Commands.CreateAccount;
 
-public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore)
+public sealed class CreateAccountCommandHandler(IAccountEventStore eventStore, IAccountNumberGenerator numberGenerator)
     : IRequestHandler<CreateAccountCommand, AccountResponse>
 {
     public async Task<AccountResponse> Handle(CreateAccountCommand request, CancellationToken ct)
     {
-        var account = Account.Create(request.OwnerId, request.Currency, request.AccountNumber);
+        var accountNumber = request.AccountNumber ?? await numberGenerator.NextAsync(ct);
+        var account = Account.Create(request.OwnerId, request.Currency, accountNumber);
 
         await eventStore.StartStreamAsync(account, ct);
 

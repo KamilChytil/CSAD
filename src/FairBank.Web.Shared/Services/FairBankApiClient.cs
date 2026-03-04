@@ -159,7 +159,11 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
     {
         var response = await http.PostAsJsonAsync("api/v1/payments",
             new { SenderAccountId = senderAccountId, RecipientAccountNumber = recipientAccountNumber, Amount = amount, Currency = currency, Description = description, IsInstant = isInstant });
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadFromJsonAsync<ErrorBody>();
+            throw new InvalidOperationException(body?.Error ?? "Platba se nezdařila.");
+        }
         return (await response.Content.ReadFromJsonAsync<PaymentDto>())!;
     }
 
@@ -173,7 +177,11 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
     {
         var response = await http.PostAsJsonAsync("api/v1/standing-orders",
             new { SenderAccountId = senderAccountId, RecipientAccountNumber = recipientAccountNumber, Amount = amount, Currency = currency, Interval = interval, FirstExecutionDate = firstExecutionDate, Description = description, EndDate = endDate });
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadFromJsonAsync<ErrorBody>();
+            throw new InvalidOperationException(body?.Error ?? "Trvaly příkaz se nepodařilo vytvořit.");
+        }
         return (await response.Content.ReadFromJsonAsync<StandingOrderDto>())!;
     }
 
@@ -528,4 +536,5 @@ public sealed class FairBankApiClient(HttpClient http) : IFairBankApi
     }
 
     private sealed record UnreadCountDto(int Count);
+    private sealed record ErrorBody(string? Error);
 }

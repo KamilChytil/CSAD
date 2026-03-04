@@ -36,6 +36,13 @@ builder.Services.Configure<AdminSeederSettings>(
 builder.Services.ConfigureHttpJsonOptions(opts =>
     opts.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+// HTTP client for accounts-api (to auto-provision account on registration)
+builder.Services.AddHttpClient("accounts-api", client =>
+{
+    var url = builder.Configuration["Services:AccountsApi"] ?? "http://accounts-api:8080";
+    client.BaseAddress = new Uri(url);
+});
+
 // OpenAPI
 builder.Services.AddOpenApi();
 
