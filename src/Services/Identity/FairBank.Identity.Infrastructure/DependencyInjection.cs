@@ -21,6 +21,7 @@ public static class DependencyInjection
             }));
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
 
         return services;
