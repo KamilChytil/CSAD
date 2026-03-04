@@ -2279,6 +2279,17 @@ a:hover { color: var(--vb-red-light); }
         align-items: center;
         gap: 14px;
         padding: 24px 20px 20px;
+        border-bottom: none;
+    }
+
+    .side-nav-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--vb-gray-400);
         border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
@@ -2952,6 +2963,16 @@ a:hover { color: var(--vb-red-light); }
 .topbar-title {
     font-weight: 800; font-size: 18px; color: var(--vb-text-primary);
     letter-spacing: -0.5px;
+}
+.topbar-user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vb-text-secondary);
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
 }
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
 .topbar-btn {
