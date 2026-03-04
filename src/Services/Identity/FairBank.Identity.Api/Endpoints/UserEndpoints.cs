@@ -1,6 +1,10 @@
 using FairBank.Identity.Application.Helpers;
+using FairBank.Identity.Application.Users.Commands.ActivateUser;
 using FairBank.Identity.Application.Users.Commands.ChangeEmail;
 using FairBank.Identity.Application.Users.Commands.ChangePassword;
+using FairBank.Identity.Application.Users.Commands.DeactivateUser;
+using FairBank.Identity.Application.Users.Commands.DeleteUser;
+using FairBank.Identity.Application.Users.Commands.UpdateUserRole;
 using FairBank.Identity.Application.Users.Commands.CreateChild;
 using FairBank.Identity.Application.Users.Commands.ForgotPassword;
 using FairBank.Identity.Application.Users.Commands.LoginUser;
@@ -15,12 +19,14 @@ using FairBank.Identity.Application.Users.Commands.DisableTwoFactor;
 using FairBank.Identity.Application.Users.Commands.VerifyTwoFactor;
 using FairBank.Identity.Application.Users.Commands.VerifyEmail;
 using FairBank.Identity.Application.Users.DTOs;
+using FairBank.Identity.Application.Users.Queries.GetAllUsers;
 using FairBank.Identity.Application.Users.Queries.GetChildren;
 using FairBank.Identity.Application.Users.Queries.GetBankers;
 using FairBank.Identity.Application.Users.Queries.GetUserById;
 using FairBank.Identity.Application.Users.Queries.GetSecuritySettings;
 using FairBank.Identity.Application.Users.Queries.ValidateSession;
 using FairBank.Identity.Domain.Entities;
+using FairBank.Identity.Domain.Enums;
 using MediatR;
 
 namespace FairBank.Identity.Api.Endpoints;
@@ -210,35 +216,106 @@ public static class UserEndpoints
 
         group.MapPost("/2fa/setup", async (SetupTwoFactorCommand command, ISender sender) =>
         {
-            var result = await sender.Send(command);
-            return Results.Ok(result);
+            try
+            {
+                var result = await sender.Send(command);
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithName("SetupTwoFactor")
-        .Produces(StatusCodes.Status200OK);
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPost("/2fa/enable", async (EnableTwoFactorCommand command, ISender sender) =>
         {
-            var backupCodes = await sender.Send(command);
-            return Results.Ok(new { backupCodes });
+            try
+            {
+                var backupCodes = await sender.Send(command);
+                return Results.Ok(new { backupCodes });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithName("EnableTwoFactor")
-        .Produces(StatusCodes.Status200OK);
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPost("/2fa/disable", async (DisableTwoFactorCommand command, ISender sender) =>
         {
-            await sender.Send(command);
-            return Results.Ok(new { disabled = true });
+            try
+            {
+                await sender.Send(command);
+                return Results.Ok(new { disabled = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithName("DisableTwoFactor")
-        .Produces(StatusCodes.Status200OK);
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPost("/2fa/verify", async (VerifyTwoFactorCommand command, ISender sender) =>
         {
-            var result = await sender.Send(command);
-            return Results.Ok(result);
+            try
+            {
+                var result = await sender.Send(command);
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithName("VerifyTwoFactor")
-        .Produces<LoginResponse>(StatusCodes.Status200OK);
+        .Produces<LoginResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        // ── Admin User Management ────────────────────────────
+
+        group.MapGet("/", async (ISender sender, int page = 1, int pageSize = 20, UserRole? role = null, string? search = null) =>
+            Results.Ok(await sender.Send(new GetAllUsersQuery(page, pageSize, role, search))))
+        .WithName("GetAllUsers")
+        .Produces<PagedUsersResponse>(StatusCodes.Status200OK);
+
+        group.MapPut("/{id:guid}/role", async (Guid id, UpdateUserRoleCommand command, ISender sender) =>
+        {
+            await sender.Send(command with { UserId = id });
+            return Results.NoContent();
+        })
+        .WithName("UpdateUserRole")
+        .Produces(StatusCodes.Status204NoContent);
+
+        group.MapPost("/{id:guid}/deactivate", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new DeactivateUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("DeactivateUser")
+        .Produces(StatusCodes.Status204NoContent);
+
+        group.MapPost("/{id:guid}/activate", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new ActivateUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("ActivateUser")
+        .Produces(StatusCodes.Status204NoContent);
+
+        group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
+        {
+            await sender.Send(new DeleteUserCommand(id));
+            return Results.NoContent();
+        })
+        .WithName("DeleteUser")
+        .Produces(StatusCodes.Status204NoContent);
 
         return group;
     }
