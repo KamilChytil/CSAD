@@ -14,9 +14,9 @@
 
     <div class="filters-card">
         <div class="filters-grid">
-            <VbInput @bind-Value="_filterUserId" Placeholder="ID uživatele (Guid)" />
-            <VbInput @bind-Value="_filterAction" Placeholder="Akce" />
-            <VbInput @bind-Value="_filterEntityName" Placeholder="Entita" />
+            <input type="text" class="vb-input" @bind="_filterUserId" placeholder="ID uživatele (Guid)" />
+            <input type="text" class="vb-input" @bind="_filterAction" placeholder="Akce" />
+            <input type="text" class="vb-input" @bind="_filterEntityName" placeholder="Entita" />
             <div class="date-range">
                 <input type="date" class="vb-input date-input" @bind="_filterStartDate" />
                 <span>-</span>
