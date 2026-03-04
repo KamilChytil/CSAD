@@ -1,0 +1,35 @@
+@namespace FairBank.Web.Shared.Components
+@inject ThemeService Theme
+@implements IDisposable
+
+<img class="nav-icon-img @(IsActive ? "active" : "")"
+     src="@GetIconPath()"
+     alt="@Name"
+     width="@Size"
+     height="@Size"
+     loading="eager" />
+
+@code {
+    [Parameter] public string Name { get; set; } = "home";
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public int Size { get; set; } = 26;
+
+    private static readonly HashSet<string> AvailableIcons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "home", "paymant", "target", "chart", "chat", "user", "fin"
+    };
+
+    protected override void OnInitialized() => Theme.OnThemeChanged += HandleThemeChanged;
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Theme.OnThemeChanged -= HandleThemeChanged;
+
+    private string GetIconPath()
+    {
+        if (!AvailableIcons.Contains(Name))
+            return "";
+
+        var theme = Theme.IsDarkMode ? "dark" : "light";
+        var state = IsActive ? "active_" : "";
+        return $"icons/nav/{Name}_{state}{theme}.png";
+    }
+}

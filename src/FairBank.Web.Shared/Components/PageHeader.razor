@@ -1,12 +1,12 @@
 @namespace FairBank.Web.Shared.Components
+@inject ThemeService Theme
+@implements IDisposable
 
 <header class="page-header">
     @if (ShowChip)
     {
         <div class="header-chip">
-            <div class="chip-outer">
-                <div class="chip-inner">V</div>
-            </div>
+            <img src="@ChipPath" alt="" class="header-chip-img" />
         </div>
     }
     <div class="header-content">
@@ -29,4 +29,10 @@
     [Parameter] public string? Subtitle { get; set; }
     [Parameter] public bool ShowChip { get; set; } = true;
     [Parameter] public RenderFragment? Actions { get; set; }
+
+    private string ChipPath => Theme.IsDarkMode ? "icons/chip_dark.png" : "icons/chip_light.png";
+
+    protected override void OnInitialized() => Theme.OnThemeChanged += HandleThemeChanged;
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Theme.OnThemeChanged -= HandleThemeChanged;
 }

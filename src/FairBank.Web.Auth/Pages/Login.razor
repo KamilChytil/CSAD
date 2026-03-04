@@ -7,11 +7,7 @@
 
 <div class="auth-page">
     <div class="auth-header">
-        <div class="header-chip">
-            <div class="chip-outer">
-                <div class="chip-inner">V</div>
-            </div>
-        </div>
+        <img src="icons/logo.svg" alt="Va-bank" class="auth-logo" />
         <h1 class="auth-title">VA-BANK</h1>
         <p class="auth-subtitle">Jediná banka na kterou můžete vsadit.</p>
     </div>
@@ -280,8 +276,8 @@
                 _pendingUserId = result.UserId;
                 _requiresTwoFactor = true;
                 _errorMessage = "";
-                // Clear the partial session — it should not grant access without 2FA verification
-                await Auth.LogoutAsync();
+                // No session was saved for 2FA — AuthService skips session creation
+                // when RequiresTwoFactor is true.
                 return;
             }
 
@@ -324,20 +320,9 @@
                 return;
             }
 
-            // 2FA verified — re-login to establish a proper session.
-            // The server should now recognize that 2FA was just verified
-            // and allow login without requiring another TOTP code.
-            var loginResult = await Auth.LoginAsync(new LoginRequest(_email.Trim(), _password));
-
-            if (loginResult is not null && !loginResult.RequiresTwoFactor)
-            {
-                Nav.NavigateTo("/prehled", forceLoad: false);
-            }
-            else
-            {
-                // If server still requires 2FA or login failed, show error
-                _errorMessage = "Chyba při dokončení přihlášení. Zkuste to znovu.";
-            }
+            // 2FA verified — the server returns a full session. Establish it directly.
+            await Auth.EstablishSessionFromResponseAsync(verifyResult);
+            Nav.NavigateTo("/prehled", forceLoad: false);
         }
         catch
         {

@@ -1,18 +1,11 @@
-// Va-bank Service Worker — Offline-first caching
-const CACHE_NAME = 'vabank-v2';
+// Va-bank Service Worker — Network-first caching
+const CACHE_NAME = 'vabank-v3';
 const OFFLINE_URL = '/offline.html';
-
-const PRECACHE_URLS = [
-    '/',
-    '/css/app.css',
-    '/_content/FairBank.Web.Shared/css/vabank-theme.css',
-    '/manifest.json'
-];
 
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(PRECACHE_URLS))
+            .then(cache => cache.addAll([OFFLINE_URL]))
             .then(() => self.skipWaiting())
     );
 });
@@ -33,38 +26,26 @@ self.addEventListener('fetch', event => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    // Network-first for API calls
-    if (event.request.url.includes('/api/')) {
-        event.respondWith(
-            fetch(event.request)
-                .catch(() => caches.match(event.request))
-        );
-        return;
-    }
-
-    // Cache-first for static assets
-    if (event.request.url.match(/\.(css|js|woff2?|png|jpg|svg|ico)$/)) {
-        event.respondWith(
-            caches.match(event.request).then(cached => {
-                if (cached) return cached;
-                return fetch(event.request).then(response => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                    return response;
-                });
-            })
-        );
-        return;
-    }
-
-    // Network-first for navigation
+    // Network-first for everything — cache as fallback for offline
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                // Cache successful responses for offline fallback
+                if (response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                }
                 return response;
             })
-            .catch(() => caches.match(event.request))
+            .catch(() => {
+                // Offline — try cache, then offline page for navigation
+                return caches.match(event.request).then(cached => {
+                    if (cached) return cached;
+                    if (event.request.mode === 'navigate') {
+                        return caches.match(OFFLINE_URL);
+                    }
+                    return new Response('', { status: 408, statusText: 'Offline' });
+                });
+            })
     );
 });

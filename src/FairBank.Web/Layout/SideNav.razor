@@ -1,80 +1,85 @@
 @using Microsoft.AspNetCore.Components.Routing
 @inject IAuthService Auth
 @inject ThemeService Theme
+@inject NavigationManager Nav
 @implements IDisposable
 
 <nav class="side-nav">
     <div class="side-nav-brand">
-        <div class="side-nav-chip">
-            <div class="chip-outer">
-                <div class="chip-inner">V</div>
-            </div>
+        <img src="icons/logo.svg" alt="Va-bank" class="side-nav-logo" />
+        <div class="side-nav-brand-text">
+            <span class="side-nav-title">Va-bank</span>
+            <span class="side-nav-subtitle">Internet Banking</span>
         </div>
-        <span class="side-nav-title">Va-bank</span>
     </div>
+
+    <div class="side-nav-section-label">Menu</div>
 
     <div class="side-nav-links">
         <NavLink class="side-nav-item" href="prehled" Match="NavLinkMatch.All">
-            <span class="side-nav-icon"><VbIcon Name="home" Size="sm" /></span>
+            <span class="side-nav-icon"><NavIcon Name="home" IsActive="@IsActive("prehled")" Size="40" /></span>
             <span class="side-nav-label">Přehled</span>
         </NavLink>
         <NavLink class="side-nav-item" href="platby">
-            <span class="side-nav-icon"><VbIcon Name="payments" Size="sm" /></span>
+            <span class="side-nav-icon"><NavIcon Name="paymant" IsActive="@IsActive("platby")" Size="40" /></span>
             <span class="side-nav-label">Platby</span>
         </NavLink>
         <NavLink class="side-nav-item" href="karty">
-            <span class="side-nav-icon"><VbIcon Name="credit-card" Size="sm" /></span>
+            <span class="side-nav-icon"><NavIcon Name="fin" IsActive="@IsActive("karty")" Size="40" /></span>
             <span class="side-nav-label">Karty</span>
         </NavLink>
         @if (Auth.CurrentSession?.Role != "Child")
         {
             <NavLink class="side-nav-item" href="sporeni">
-                <span class="side-nav-icon"><VbIcon Name="target" Size="sm" /></span>
+                <span class="side-nav-icon"><NavIcon Name="target" IsActive="@IsActive("sporeni")" Size="40" /></span>
                 <span class="side-nav-label">Spoření</span>
             </NavLink>
             <NavLink class="side-nav-item" href="investice">
-                <span class="side-nav-icon"><VbIcon Name="investments" Size="sm" /></span>
+                <span class="side-nav-icon"><NavIcon Name="chart" IsActive="@IsActive("investice")" Size="40" /></span>
                 <span class="side-nav-label">Investice</span>
             </NavLink>
             <NavLink class="side-nav-item" href="kurzy">
-                <span class="side-nav-icon"><VbIcon Name="exchange" Size="sm" /></span>
+                <span class="side-nav-icon"><VbIcon Name="exchange" Size="lg" /></span>
                 <span class="side-nav-label">Kurzy</span>
             </NavLink>
         }
         @if (Auth.CurrentSession?.Role != "Child")
         {
             <NavLink class="side-nav-item" href="produkty">
-                <span class="side-nav-icon"><VbIcon Name="bank" Size="sm" /></span>
+                <span class="side-nav-icon"><VbIcon Name="bank" Size="lg" /></span>
                 <span class="side-nav-label">Produkty</span>
             </NavLink>
         }
         @if (Auth.CurrentSession?.Role == "Client")
         {
             <NavLink class="side-nav-item" href="rodina">
-                <span class="side-nav-icon"><VbIcon Name="users" Size="sm" /></span>
+                <span class="side-nav-icon"><VbIcon Name="users" Size="lg" /></span>
                 <span class="side-nav-label">Rodina</span>
             </NavLink>
         }
+
+        <div class="side-nav-section-label">Ostatní</div>
+
         <NavLink class="side-nav-item" href="zpravy">
-            <span class="side-nav-icon"><VbIcon Name="chat" Size="sm" /></span>
+            <span class="side-nav-icon"><NavIcon Name="chat" IsActive="@IsActive("zpravy")" Size="40" /></span>
             <span class="side-nav-label">Zprávy</span>
         </NavLink>
         @if (Auth.CurrentSession?.Role == "Banker")
         {
             <NavLink class="side-nav-item" href="sprava">
-                <span class="side-nav-icon"><VbIcon Name="clipboard" Size="sm" /></span>
+                <span class="side-nav-icon"><VbIcon Name="clipboard" Size="lg" /></span>
                 <span class="side-nav-label">Správa</span>
             </NavLink>
         }
         @if (Auth.CurrentSession?.Role == "Admin")
         {
             <NavLink class="side-nav-item" href="admin">
-                <span class="side-nav-icon"><VbIcon Name="settings" Size="sm" /></span>
+                <span class="side-nav-icon"><VbIcon Name="settings" Size="lg" /></span>
                 <span class="side-nav-label">Admin</span>
             </NavLink>
         }
         <NavLink class="side-nav-item" href="profil">
-            <span class="side-nav-icon"><VbIcon Name="user" Size="sm" /></span>
+            <span class="side-nav-icon"><NavIcon Name="user" IsActive="@IsActive("profil")" Size="40" /></span>
             <span class="side-nav-label">Profil</span>
         </NavLink>
     </div>
@@ -84,24 +89,37 @@
             <VbIcon Name="@(Theme.IsDarkMode ? "sun" : "moon")" Size="sm" />
             <span>@(Theme.IsDarkMode ? "Světlý" : "Tmavý") režim</span>
         </button>
-        <span class="side-nav-tagline">Jediná banka na kterou můžete vsadit.</span>
+        <div class="side-nav-tagline-wrap">
+            <span class="side-nav-tagline">Jediná banka na kterou můžete vsadit.</span>
+        </div>
     </div>
 </nav>
 
 @code {
     protected override void OnInitialized()
     {
-        Auth.AuthStateChanged += HandleAuthChanged;
-        Theme.OnThemeChanged += HandleAuthChanged;
+        Auth.AuthStateChanged += HandleChanged;
+        Theme.OnThemeChanged += HandleChanged;
+        Nav.LocationChanged += HandleLocationChanged;
+    }
+
+    private bool IsActive(string path)
+    {
+        var uri = Nav.ToBaseRelativePath(Nav.Uri).ToLowerInvariant();
+        return uri.StartsWith(path, StringComparison.OrdinalIgnoreCase)
+               || (path == "prehled" && uri == "");
     }
 
     private async Task ToggleTheme() => await Theme.ToggleAsync();
 
-    private void HandleAuthChanged() => InvokeAsync(StateHasChanged);
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
-        Auth.AuthStateChanged -= HandleAuthChanged;
-        Theme.OnThemeChanged -= HandleAuthChanged;
+        Auth.AuthStateChanged -= HandleChanged;
+        Theme.OnThemeChanged -= HandleChanged;
+        Nav.LocationChanged -= HandleLocationChanged;
     }
 }

@@ -8,7 +8,11 @@ builder.RootComponents.Add<FairBank.Web.App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp =>
-    new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+    new HttpClient
+    {
+        BaseAddress = new Uri(builder.HostEnvironment.BaseAddress),
+        Timeout = TimeSpan.FromSeconds(15)
+    });
 
 builder.Services.AddScoped<IFairBankApi, FairBankApiClient>();
 builder.Services.AddScoped<IAuthService, AuthService>();

@@ -26,6 +26,9 @@ public interface IAuthService
     Task LogoutAsync();
     Task<UserResponse?> RegisterAsync(RegisterRequest request);
 
+    /// <summary>Uloží relaci z úspěšného 2FA ověření a nastaví auth hlavičky.</summary>
+    Task EstablishSessionFromResponseAsync(LoginResponse loginResponse);
+
     /// <summary>Obnoví timeout při aktivitě uživatele.</summary>
     void ResetInactivityTimer();
 

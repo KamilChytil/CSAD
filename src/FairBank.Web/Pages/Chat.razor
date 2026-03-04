@@ -217,13 +217,20 @@
             _bankers = (await ChatService.GetBankersAsync()).ToList();
         }
 
-        await ChatService.InitializeAsync(session.Token);
-        await ChatService.JoinConversationAsync(ConversationId);
+        try
+        {
+            await ChatService.InitializeAsync(session.Token);
+            await ChatService.JoinConversationAsync(ConversationId);
 
-        _messages = (await ChatService.GetConversationMessagesAsync(ConversationId)).ToList();
-        ChatService.OnMessageReceived += HandleMessageReceived;
+            _messages = (await ChatService.GetConversationMessagesAsync(ConversationId)).ToList();
+            ChatService.OnMessageReceived += HandleMessageReceived;
 
-        await LoadConversationDetails(session.UserId, session.Role, _senderName);
+            await LoadConversationDetails(session.UserId, session.Role, _senderName);
+        }
+        catch
+        {
+            // Chat service unavailable
+        }
     }
 
     private void ToggleTransfer() => _showTransfer = !_showTransfer;

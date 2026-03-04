@@ -1,11 +1,13 @@
 @namespace FairBank.Web.Shared.Components
+@inject ThemeService Theme
+@implements IDisposable
 
 @if (Variant == "hero")
 {
     <div class="balance-card balance-card-hero">
         <div class="hero-bg">
-            <div class="hero-chip-deco"></div>
-            <div class="hero-chip-deco hero-chip-deco-2"></div>
+            <img src="@ChipPath" alt="" class="hero-chip-deco" />
+            <img src="@ChipPath" alt="" class="hero-chip-deco hero-chip-deco-2" />
         </div>
         <span class="balance-label">@Label</span>
         <span class="balance-amount">
@@ -40,4 +42,10 @@ else
     [Parameter] public string Label { get; set; } = "Zůstatek";
     [Parameter] public string? SubText { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ChipPath => Theme.IsDarkMode ? "icons/chip_dark.png" : "icons/chip_light.png";
+
+    protected override void OnInitialized() => Theme.OnThemeChanged += HandleThemeChanged;
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Theme.OnThemeChanged -= HandleThemeChanged;
 }
